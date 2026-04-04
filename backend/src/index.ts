@@ -1,8 +1,9 @@
-import express from 'express'
+import express, { Response } from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import connectDB from './config/database'
 import authRoutes from './routes/authRoutes'
+import { authenticate, AuthRequest } from './middlewares/auth'
 
 dotenv.config()
 
@@ -21,6 +22,14 @@ app.use('/api/auth', authRoutes)
 // Ruta de prueba
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'SupportDesk API running' })
+})
+
+// Ruta protegida de prueba
+app.get('/api/protected', authenticate, (req: AuthRequest, res: Response) => {
+  res.json({
+    message: 'Accediste a una ruta protegida',
+    user: req.user
+  })
 })
 
 app.listen(PORT, () => {
