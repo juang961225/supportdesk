@@ -7,6 +7,7 @@ export interface IUser extends Document {
   password: string
   rol: 'superadmin' | 'admin' | 'soporte' | 'usuario'
   estado: 'activo' | 'inactivo'
+  marca?: mongoose.Types.ObjectId  // ← opcional, SuperAdmin no la tiene
   createdAt: Date
 }
 
@@ -39,6 +40,11 @@ const UserSchema = new Schema<IUser>(
       type: String,
       enum: ['activo', 'inactivo'],
       default: 'activo'
+    },
+    marca: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Brand',  // referencia al modelo Brand
+      required: false // opcional — superadmin no tiene marca
     }
   },
   {
