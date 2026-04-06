@@ -5,6 +5,7 @@ import connectDB from './config/database'
 import authRoutes from './routes/authRoutes'
 import { authenticate, AuthRequest } from './middlewares/auth'
 import brandRoutes from './routes/brandRoutes'
+import categoryRoutes from './routes/categoryRoutes'
 
 dotenv.config()
 
@@ -20,6 +21,7 @@ app.use(express.json())
 
 app.use('/api/auth', authRoutes) 
 app.use('/api/brands', brandRoutes)
+app.use('/api/categories', categoryRoutes)
 
 // Ruta de prueba
 app.get('/health', (req, res) => {
