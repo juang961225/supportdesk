@@ -26,7 +26,7 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
     const token = authHeader.split(' ')[1]
 
     // Verificamos que el token sea válido y no haya expirado
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { id: string, rol: string }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { id: string, rol: string, marca?: string }
 
     // Guardamos los datos del usuario en req para usarlos en el controller
     req.user = decoded
