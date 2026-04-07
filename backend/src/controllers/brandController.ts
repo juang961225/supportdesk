@@ -1,4 +1,4 @@
-import { Response } from 'express'
+import { Response, NextFunction } from 'express'
 import Brand from '../models/Brand'
 import { AuthRequest } from '../middlewares/auth'
 
@@ -12,7 +12,7 @@ const generateSlug = (nombre: string): string => {
 }
 
 // POST /api/brands — crear marca (solo superadmin)
-export const createBrand = async (req: AuthRequest, res: Response): Promise<void> => {
+export const createBrand = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { nombre } = req.body || {}
 
@@ -39,13 +39,12 @@ export const createBrand = async (req: AuthRequest, res: Response): Promise<void
     })
 
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Error interno del servidor' })
+    next(error)
   }
 }
 
 // GET /api/brands — listar todas las marcas (solo superadmin)
-export const getBrands = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getBrands = async (_req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const brands = await Brand.find()
       .populate('admin', 'nombre email') // trae solo nombre y email del admin
@@ -54,13 +53,12 @@ export const getBrands = async (req: AuthRequest, res: Response): Promise<void> 
     res.status(200).json({ brands })
 
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Error interno del servidor' })
+    next(error)
   }
 }
 
 // GET /api/brands/:id — ver una marca
-export const getBrandById = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getBrandById = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const brand = await Brand.findById(req.params.id)
       .populate('admin', 'nombre email')
@@ -73,15 +71,20 @@ export const getBrandById = async (req: AuthRequest, res: Response): Promise<voi
     res.status(200).json({ brand })
 
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Error interno del servidor' })
+    next(error)
   }
 }
 
 // PUT /api/brands/:id — actualizar marca (solo superadmin)
-export const updateBrand = async (req: AuthRequest, res: Response): Promise<void> => {
+export const updateBrand = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { nombre, estado } = req.body
+
+    const estadosValidos = ['activo', 'inactivo']
+    if (estado && !estadosValidos.includes(estado)) {
+      res.status(400).json({ message: 'Estado inválido. Debe ser activo o inactivo' })
+      return
+    }
 
     const brand = await Brand.findById(req.params.id)
     if (!brand) {
@@ -104,7 +107,6 @@ export const updateBrand = async (req: AuthRequest, res: Response): Promise<void
     })
 
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Error interno del servidor' })
+    next(error)
   }
 }

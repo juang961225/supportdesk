@@ -1,11 +1,11 @@
-import { Request, Response } from 'express'
+import { Request, Response, NextFunction } from 'express'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import User from '../models/User'
 import Brand from '../models/Brand'
 import { AuthRequest } from '../middlewares/auth'
 
-export const register = async (req: Request, res: Response): Promise<void> => {
+export const register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { nombre, email, password } = req.body
 
@@ -49,12 +49,11 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     })
 
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Error interno del servidor' })
+    next(error)
   }
 }
 
-export const login = async (req: Request, res: Response): Promise<void> => {
+export const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { email, password } = req.body
 
@@ -98,14 +97,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     })
 
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Error interno del servidor' })
+    next(error)
   }
 }
 
 // POST /api/auth/create-user — solo superadmin crea admins
 // solo admin crea soporters y usuarios de su marca
-export const createUser = async (req: AuthRequest, res: Response): Promise<void> => {
+export const createUser = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { nombre, email, password, rol, marcaId } = req.body
 
@@ -176,7 +174,6 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
     })
 
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Error interno del servidor' })
+    next(error)
   }
 }

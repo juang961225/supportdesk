@@ -1,9 +1,9 @@
-import { Response } from 'express'
+import { Response, NextFunction } from 'express'
 import TicketCategory from '../models/TicketCategory'
 import { AuthRequest } from '../middlewares/auth'
 
 // POST /api/categories — crear categoría (solo admin)
-export const createCategory = async (req: AuthRequest, res: Response): Promise<void> => {
+export const createCategory = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { nombre, descripcion } = req.body || {}
 
@@ -39,13 +39,12 @@ export const createCategory = async (req: AuthRequest, res: Response): Promise<v
     })
 
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Error interno del servidor' })
+    next(error)
   }
 }
 
 // GET /api/categories — listar categorías de la marca
-export const getCategories = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getCategories = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const marcaId = req.user?.marca
 
@@ -62,13 +61,12 @@ export const getCategories = async (req: AuthRequest, res: Response): Promise<vo
     res.status(200).json({ categories })
 
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Error interno del servidor' })
+    next(error)
   }
 }
 
 // PUT /api/categories/:id — editar categoría (solo admin)
-export const updateCategory = async (req: AuthRequest, res: Response): Promise<void> => {
+export const updateCategory = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { nombre, descripcion, activo } = req.body || {}
     const marcaId = req.user?.marca
@@ -95,13 +93,12 @@ export const updateCategory = async (req: AuthRequest, res: Response): Promise<v
     })
 
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Error interno del servidor' })
+    next(error)
   }
 }
 
 // DELETE /api/categories/:id — desactivar categoría (solo admin)
-export const deleteCategory = async (req: AuthRequest, res: Response): Promise<void> => {
+export const deleteCategory = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const marcaId = req.user?.marca
 
@@ -123,7 +120,6 @@ export const deleteCategory = async (req: AuthRequest, res: Response): Promise<v
     res.status(200).json({ message: 'Categoría desactivada exitosamente' })
 
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Error interno del servidor' })
+    next(error)
   }
 }
