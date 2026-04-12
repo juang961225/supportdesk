@@ -7,6 +7,7 @@ import brandRoutes from './routes/brandRoutes'
 import categoryRoutes from './routes/categoryRoutes'
 import ticketRoutes from './routes/ticketRoutes'
 import { errorHandler } from './middlewares/errorHandler'
+import commentRoutes from './routes/commentRoutes'
 
 dotenv.config()
 
@@ -22,6 +23,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/brands', brandRoutes)
 app.use('/api/categories', categoryRoutes)
 app.use('/api/tickets', ticketRoutes)
+app.use('/api/tickets/:id/comments', commentRoutes)
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'SupportDesk API running' })

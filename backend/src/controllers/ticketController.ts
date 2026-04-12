@@ -63,9 +63,10 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
 
     // Populate para devolver datos completos
     const ticketPopulado = await Ticket.findById(ticket._id)
+      .populate('asignadoA', 'nombre email')
       .populate('categoria', 'nombre')
       .populate('creadoPor', 'nombre email')
-      .populate('marca', 'nombre')
+      .populate('marca', 'nombre')  // ← agrega esto
 
     res.status(201).json({
       message: 'Ticket creado exitosamente',
@@ -175,6 +176,7 @@ export const assignTicket = async (req: AuthRequest, res: Response, next: NextFu
       .populate('asignadoA', 'nombre email')
       .populate('categoria', 'nombre')
       .populate('creadoPor', 'nombre email')
+      .populate('marca', 'nombre') 
 
     res.status(200).json({
       message: 'Ticket asignado exitosamente',
@@ -213,9 +215,16 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
     }
     await ticket.save()
 
+    //busca el ticket actualizado con populate
+    const ticketActualizado = await Ticket.findById(ticket._id)
+      .populate('asignadoA', 'nombre email')
+      .populate('categoria', 'nombre')
+      .populate('creadoPor', 'nombre email')
+      .populate('marca', 'nombre')
+
     res.status(200).json({
       message: 'Estado actualizado exitosamente',
-      ticket
+      ticket: ticketActualizado 
     })
 
   } catch (error) {
