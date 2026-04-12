@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express'
 import Brand from '../models/Brand'
 import { AuthRequest } from '../middlewares/auth'
+import User from '../models/User'
 
 // Función helper — convierte "BMW Colombia" en "bmw-colombia"
 const generateSlug = (nombre: string): string => {
@@ -108,5 +109,53 @@ export const updateBrand = async (req: AuthRequest, res: Response, next: NextFun
 
   } catch (error) {
     next(error)
+  }
+}
+
+// PUT /api/brands/:id/assign-admin — asignar admin a una marca
+export const assignAdmin = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { adminId } = req.body || {}
+
+    if (!adminId) {
+      res.status(400).json({ message: 'El ID del admin es obligatorio' })
+      return
+    }
+
+    // Verificar que la marca existe
+    const brand = await Brand.findById(req.params.id)
+    if (!brand) {
+      res.status(404).json({ message: 'Marca no encontrada' })
+      return
+    }
+
+    // Verificar que el usuario existe y es admin
+    const admin = await User.findOne({ _id: adminId, rol: 'admin' })
+    if (!admin) {
+      res.status(404).json({ message: 'Admin no encontrado' })
+      return
+    }
+
+    // Verificar que el admin pertenece a esta marca
+    if (String(admin.marca) !== String(brand._id)) {
+      res.status(400).json({ message: 'Este admin no pertenece a esta marca' })
+      return
+    }
+
+    // Asignar el admin a la marca
+    brand.admin = adminId
+    await brand.save()
+
+    const brandActualizada = await Brand.findById(brand._id)
+      .populate('admin', 'nombre email')
+
+    res.status(200).json({
+      message: 'Admin asignado exitosamente',
+      brand: brandActualizada
+    })
+
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Error interno del servidor' })
   }
 }

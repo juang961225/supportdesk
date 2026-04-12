@@ -162,6 +162,11 @@ export const createUser = async (req: AuthRequest, res: Response, next: NextFunc
       marca: marcaId || undefined
     })
 
+    // Si el usuario creado es admin, actualizar Brand.admin automáticamente
+    if (rol === 'admin' && marcaId) {
+      await Brand.findByIdAndUpdate(marcaId, { admin: user._id })
+    }
+
     res.status(201).json({
       message: 'Usuario creado exitosamente',
       user: {
@@ -175,5 +180,33 @@ export const createUser = async (req: AuthRequest, res: Response, next: NextFunc
 
   } catch (error) {
     next(error)
+  }
+}
+
+// GET /api/users — listar usuarios de la marca (admin y superadmin)
+export const getUsers = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { rol, marca } = req.user!
+
+    let filtro: any = {}
+
+    if (rol === 'superadmin') {
+      // superadmin ve todos los usuarios de todas las marcas
+      filtro = {}
+    } else if (rol === 'admin') {
+      // admin solo ve usuarios de su marca
+      filtro = { marca }
+    }
+
+    const users = await User.find(filtro)
+      .select('-password') // excluye el password de la respuesta
+      .populate('marca', 'nombre')
+      .sort({ createdAt: -1 })
+
+    res.status(200).json({ users })
+
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Error interno del servidor' })
   }
 }
