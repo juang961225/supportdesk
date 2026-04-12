@@ -1,11 +1,23 @@
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useTheme } from './hooks/useTheme'
+import LoginPage from './pages/LoginPage'
+import SuperAdminDashboard from './pages/SuperAdminDashboard'
+import AdminDashboard from './pages/AdminDashboard'
+import SoporteDashboard from './pages/SoporteDashboard'
+import UsuarioDashboard from './pages/UsuarioDashboard'
+
 function App() {
+  useTheme()
+
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow">
-        <h1 className="text-2xl font-bold text-gray-800">SupportDesk</h1>
-        <p className="text-gray-500 mt-2">Frontend funcionando ✅</p>
-      </div>
-    </div>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      <Route path="/soporte/dashboard" element={<SoporteDashboard />} />
+      <Route path="/usuario/dashboard" element={<UsuarioDashboard />} />
+      <Route path="*" element={<Navigate to="/login" />} />
+    </Routes>
   )
 }
 
