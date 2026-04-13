@@ -5,6 +5,7 @@ import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import SoporteDashboard from './pages/SoporteDashboard'
 import UsuarioDashboard from './pages/UsuarioDashboard'
+import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   useTheme()
@@ -12,10 +13,43 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
-      <Route path="/admin/dashboard" element={<AdminDashboard />} />
-      <Route path="/soporte/dashboard" element={<SoporteDashboard />} />
-      <Route path="/usuario/dashboard" element={<UsuarioDashboard />} />
+
+      <Route
+        path="/superadmin/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['superadmin']}>
+            <SuperAdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/soporte/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['soporte']}>
+            <SoporteDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/usuario/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['usuario']}>
+            <UsuarioDashboard />
+          </ProtectedRoute>
+        }
+      />
+
       <Route path="*" element={<Navigate to="/login" />} />
     </Routes>
   )
