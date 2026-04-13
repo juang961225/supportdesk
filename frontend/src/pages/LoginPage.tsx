@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { login } from '../services/authService'
+import { useAuth } from '../hooks/useAuth'
 import ThemeToggle from '../components/ThemeToggle'
 
 function LoginPage() {
@@ -9,7 +10,9 @@ function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+
   const navigate = useNavigate()
+  const { setAuth } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -21,13 +24,14 @@ function LoginPage() {
     setError('')
     try {
       const response = await login({ email, password })
-      localStorage.setItem('token', response.token)
-      localStorage.setItem('user', JSON.stringify(response.user))
+      setAuth(response.user, response.token)
+
       const rol = response.user.rol
       if (rol === 'superadmin') navigate('/superadmin/dashboard')
       else if (rol === 'admin') navigate('/admin/dashboard')
       else if (rol === 'soporte') navigate('/soporte/dashboard')
       else navigate('/usuario/dashboard')
+
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const mensaje = err.response?.data?.message || 'Error al iniciar sesión'
@@ -42,12 +46,9 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center transition-colors">
-
-      {/* Botón de tema en la esquina superior derecha */}
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
-
       <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow w-full max-w-md transition-colors">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
           SupportDesk
@@ -55,13 +56,11 @@ function LoginPage() {
         <p className="text-gray-500 dark:text-gray-400 mb-6">
           Inicia sesión en tu cuenta
         </p>
-
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded mb-4 text-sm">
             {error}
           </div>
         )}
-
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -75,7 +74,6 @@ function LoginPage() {
               placeholder="tu@email.com"
             />
           </div>
-
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Contraseña
@@ -88,7 +86,6 @@ function LoginPage() {
               placeholder="••••••"
             />
           </div>
-
           <button
             type="submit"
             disabled={isLoading}
