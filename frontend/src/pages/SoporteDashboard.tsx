@@ -1,15 +1,17 @@
+import Layout from '../components/Layout'
+
 function SoporteDashboard() {
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors">
-      <div className="p-8">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-          Dashboard Soporte
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-2">
-          Bienvenido al panel de Soporte
+    <Layout>
+      <div>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+          Mis Tickets
+        </h2>
+        <p className="text-gray-500 dark:text-gray-400">
+          Tickets asignados a ti
         </p>
       </div>
-    </div>
+    </Layout>
   )
 }
 
