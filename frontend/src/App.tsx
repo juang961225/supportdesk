@@ -6,6 +6,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import SoporteDashboard from './pages/SoporteDashboard'
 import UsuarioDashboard from './pages/UsuarioDashboard'
 import ProtectedRoute from './components/ProtectedRoute'
+import BrandsPage from './pages/superadmin/BrandsPage'
 
 function App() {
   useTheme()
@@ -46,6 +47,15 @@ function App() {
         element={
           <ProtectedRoute allowedRoles={['usuario']}>
             <UsuarioDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/superadmin/brands"
+        element={
+          <ProtectedRoute allowedRoles={['superadmin']}>
+            <BrandsPage />
           </ProtectedRoute>
         }
       />
