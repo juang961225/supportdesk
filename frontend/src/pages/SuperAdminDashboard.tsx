@@ -21,7 +21,7 @@ function SuperAdminDashboard() {
         ])
         setBrands(brandsData)
         setUsers(usersData)
-      } catch (err) {
+      } catch {
         setError('Error al cargar los datos')
       } finally {
         setIsLoading(false)

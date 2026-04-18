@@ -25,7 +25,7 @@ function BrandsPage() {
     try {
       const data = await getBrands()
       setBrands(data)
-    } catch (err) {
+    } catch {
       setError('Error al cargar las marcas')
     } finally {
       setIsLoading(false)

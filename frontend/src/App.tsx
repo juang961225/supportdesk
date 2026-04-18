@@ -2,11 +2,12 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useTheme } from './hooks/useTheme'
 import LoginPage from './pages/LoginPage'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
-import AdminDashboard from './pages/AdminDashboard'
+import AdminDashboard from './pages/admin/AdminDashboard'
 import SoporteDashboard from './pages/SoporteDashboard'
 import UsuarioDashboard from './pages/UsuarioDashboard'
 import ProtectedRoute from './components/ProtectedRoute'
 import BrandsPage from './pages/superadmin/BrandsPage'
+import UsersPage from './pages/superadmin/UsersPage'
 
 function App() {
   useTheme()
@@ -56,6 +57,15 @@ function App() {
         element={
           <ProtectedRoute allowedRoles={['superadmin']}>
             <BrandsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/superadmin/users"
+        element={
+          <ProtectedRoute allowedRoles={['superadmin']}>
+            <UsersPage />
           </ProtectedRoute>
         }
       />
