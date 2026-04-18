@@ -126,11 +126,6 @@ export const createUser = async (req: AuthRequest, res: Response, next: NextFunc
         res.status(403).json({ message: 'Un admin no puede crear otros admins' })
         return
       }
-      // El admin solo puede crear usuarios de su propia marca
-      if (String(req.user.marca) !== String(marcaId)) {
-        res.status(403).json({ message: 'Solo puedes crear usuarios de tu marca' })
-        return
-      }
     }
 
     // Verificar que el email no exista
@@ -140,9 +135,11 @@ export const createUser = async (req: AuthRequest, res: Response, next: NextFunc
       return
     }
 
-    // Si viene marcaId verificar que la marca exista
-    if (marcaId) {
-      const brand = await Brand.findById(marcaId)
+    // La marca viene del token si es admin, del body si es superadmin
+    const marcaFinal = req.user?.rol === 'admin' ? req.user?.marca : marcaId
+
+    if (marcaFinal) {
+      const brand = await Brand.findById(marcaFinal)
       if (!brand) {
         res.status(404).json({ message: 'Marca no encontrada' })
         return
@@ -159,12 +156,11 @@ export const createUser = async (req: AuthRequest, res: Response, next: NextFunc
       email,
       password: hashedPassword,
       rol,
-      marca: marcaId || undefined
+      marca: marcaFinal || undefined
     })
 
-    // Si el usuario creado es admin, actualizar Brand.admin automáticamente
-    if (rol === 'admin' && marcaId) {
-      await Brand.findByIdAndUpdate(marcaId, { admin: user._id })
+    if (rol === 'admin' && marcaFinal) {
+      await Brand.findByIdAndUpdate(marcaFinal, { admin: user._id })
     }
 
     res.status(201).json({
@@ -174,7 +170,8 @@ export const createUser = async (req: AuthRequest, res: Response, next: NextFunc
         nombre: user.nombre,
         email: user.email,
         rol: user.rol,
-        marca: user.marca
+        marca: user.marca,
+        estado: user.estado 
       }
     })
 
