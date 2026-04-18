@@ -10,6 +10,7 @@ import BrandsPage from './pages/superadmin/BrandsPage'
 import UsersPage from './pages/superadmin/UsersPage'
 import TicketsPage from './pages/admin/TicketsPage'
 import CategoriesPage from './pages/admin/CategoriesPage'
+import AdminUsersPage from './pages/admin/UsersPage'
 
 function App() {
   useTheme()
@@ -86,6 +87,15 @@ function App() {
         element={
           <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
             <CategoriesPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminUsersPage />
           </ProtectedRoute>
         }
       />
