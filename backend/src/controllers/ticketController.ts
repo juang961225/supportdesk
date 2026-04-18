@@ -1,7 +1,9 @@
 import { Response, NextFunction } from 'express'
+import mongoose from 'mongoose'
 import Ticket from '../models/Ticket'
 import TicketCategory from '../models/TicketCategory'
 import { AuthRequest } from '../middlewares/auth'
+import { PopulatedTicket } from '../types/ticket.types'
 
 // Calcula la fecha límite según la prioridad
 const calcularFechaLimite = (prioridad: string): Date => {
@@ -66,7 +68,7 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       .populate('asignadoA', 'nombre email')
       .populate('categoria', 'nombre')
       .populate('creadoPor', 'nombre email')
-      .populate('marca', 'nombre')  // ← agrega esto
+      .populate('marca', 'nombre')
 
     res.status(201).json({
       message: 'Ticket creado exitosamente',
@@ -83,7 +85,7 @@ export const getTickets = async (req: AuthRequest, res: Response, next: NextFunc
   try {
     const { rol, id, marca } = req.user!
 
-    let filtro: any = {}
+    let filtro: Record<string, unknown> = {}  // ← mejorado de any a Record
 
     if (rol === 'superadmin') {
       // superadmin ve todos los tickets de todas las marcas
@@ -130,11 +132,14 @@ export const getTicketById = async (req: AuthRequest, res: Response, next: NextF
     // Verificar que el usuario tiene acceso a este ticket
     const { rol, id, marca } = req.user!
 
+    // ← CAMBIO: cast limpio sin any
+    const populated = ticket as unknown as PopulatedTicket
+
     const tieneAcceso =
       rol === 'superadmin' ||
-      (rol === 'admin' && String(ticket.marca) === String(marca)) ||
-      (rol === 'soporte' && String(ticket.asignadoA) === String(id)) ||
-      (rol === 'usuario' && String(ticket.creadoPor) === String(id))
+      (rol === 'admin' && String(populated.marca._id) === String(marca)) ||
+      (rol === 'soporte' && String(populated.asignadoA?._id) === String(id)) ||
+      (rol === 'usuario' && String(populated.creadoPor._id) === String(id))
 
     if (!tieneAcceso) {
       res.status(403).json({ message: 'No tienes acceso a este ticket' })
@@ -176,7 +181,7 @@ export const assignTicket = async (req: AuthRequest, res: Response, next: NextFu
       .populate('asignadoA', 'nombre email')
       .populate('categoria', 'nombre')
       .populate('creadoPor', 'nombre email')
-      .populate('marca', 'nombre') 
+      .populate('marca', 'nombre')
 
     res.status(200).json({
       message: 'Ticket asignado exitosamente',
@@ -224,7 +229,7 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
 
     res.status(200).json({
       message: 'Estado actualizado exitosamente',
-      ticket: ticketActualizado 
+      ticket: ticketActualizado
     })
 
   } catch (error) {

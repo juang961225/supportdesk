@@ -1,16 +1,19 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useTheme } from './hooks/useTheme'
 import LoginPage from './pages/LoginPage'
-import SuperAdminDashboard from './pages/SuperAdminDashboard'
+import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard'
 import AdminDashboard from './pages/admin/AdminDashboard'
-import SoporteDashboard from './pages/SoporteDashboard'
-import UsuarioDashboard from './pages/UsuarioDashboard'
+import SoporteDashboard from './pages/soporte/SoporteDashboard'
+import UsuarioDashboard from './pages/usuario/UsuarioDashboard'
 import ProtectedRoute from './components/ProtectedRoute'
 import BrandsPage from './pages/superadmin/BrandsPage'
 import UsersPage from './pages/superadmin/UsersPage'
 import TicketsPage from './pages/admin/TicketsPage'
 import CategoriesPage from './pages/admin/CategoriesPage'
 import AdminUsersPage from './pages/admin/UsersPage'
+import SoporteTicketDetail from './pages/soporte/TicketDetail'
+import NewTicketPage from './pages/usuario/NewTicketPage'
+import UsuarioTicketDetail from './pages/usuario/TicketDetail'
 
 function App() {
   useTheme()
@@ -96,6 +99,42 @@ function App() {
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <AdminUsersPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/soporte/tickets/:id"
+        element={
+          <ProtectedRoute allowedRoles={['soporte']}>
+            <SoporteTicketDetail />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/usuario/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['usuario']}>
+            <UsuarioDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/usuario/tickets/new"
+        element={
+          <ProtectedRoute allowedRoles={['usuario']}>
+            <NewTicketPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/usuario/tickets/:id"
+        element={
+          <ProtectedRoute allowedRoles={['usuario']}>
+            <UsuarioTicketDetail />
           </ProtectedRoute>
         }
       />

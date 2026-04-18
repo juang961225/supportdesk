@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import Layout from '../components/Layout'
-import { getBrands } from '../services/brandService'
-import { getUsers } from '../services/userService'
-import type { Brand } from '../services/brandService'
-import type { User } from '../services/userService'
+import Layout from '../../components/Layout'
+import { getBrands } from '../../services/brandService'
+import { getUsers } from '../../services/userService'
+import type { Brand } from '../../services/brandService'
+import type { User } from '../../services/userService'
 
 function SuperAdminDashboard() {
   const [brands, setBrands] = useState<Brand[]>([])

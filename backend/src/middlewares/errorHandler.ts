@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { Error as MongooseError } from 'mongoose'
 
-export const errorHandler = (err: any, req: Request, res: Response, _next: NextFunction): void => {
+export const errorHandler = (err: unknown, req: Request, res: Response, _next: NextFunction): void => {
   // ID de MongoDB inválido (ej. "/api/tickets/abc")
   if (err instanceof MongooseError.CastError) {
     res.status(400).json({ message: 'ID inválido' })
@@ -9,8 +9,9 @@ export const errorHandler = (err: any, req: Request, res: Response, _next: NextF
   }
 
   // Clave única duplicada (email, slug, etc.)
-  if (err.code === 11000) {
-    const field = Object.keys(err.keyValue || {})[0]
+  if (typeof err === 'object' && err !== null && 'code' in err && (err as { code: unknown }).code === 11000) {
+    const keyValue = (err as { keyValue?: Record<string, unknown> }).keyValue
+    const field = Object.keys(keyValue || {})[0]
     const message = field ? `Ya existe un registro con ese ${field}` : 'Dato duplicado'
     res.status(400).json({ message })
     return

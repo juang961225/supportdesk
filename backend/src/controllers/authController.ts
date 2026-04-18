@@ -181,11 +181,11 @@ export const createUser = async (req: AuthRequest, res: Response, next: NextFunc
 }
 
 // GET /api/users — listar usuarios de la marca (admin y superadmin)
-export const getUsers = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getUsers = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { rol, marca } = req.user!
 
-    let filtro: any = {}
+    let filtro: Record<string, unknown> = {}
 
     if (rol === 'superadmin') {
       // superadmin ve todos los usuarios de todas las marcas
@@ -203,7 +203,6 @@ export const getUsers = async (req: AuthRequest, res: Response): Promise<void> =
     res.status(200).json({ users })
 
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Error interno del servidor' })
+    next(error)
   }
 }

@@ -113,7 +113,7 @@ export const updateBrand = async (req: AuthRequest, res: Response, next: NextFun
 }
 
 // PUT /api/brands/:id/assign-admin — asignar admin a una marca
-export const assignAdmin = async (req: AuthRequest, res: Response): Promise<void> => {
+export const assignAdmin = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { adminId } = req.body || {}
 
@@ -155,7 +155,6 @@ export const assignAdmin = async (req: AuthRequest, res: Response): Promise<void
     })
 
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Error interno del servidor' })
+    next(error)
   }
 }
