@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
-import { getTicketById } from '../../services/ticketService'
+import { getTicketById, updateTicketStatus } from '../../services/ticketService'
 import api from '../../services/api'
 import type { Ticket } from '../../types'
 
@@ -33,6 +33,7 @@ function UsuarioTicketDetail() {
   const [isLoading, setIsLoading] = useState(true)
   const [contenido, setContenido] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const [isReopening, setIsReopening] = useState(false)
 
   useEffect(() => {
     if (id) fetchData(id)
@@ -66,6 +67,19 @@ function UsuarioTicketDetail() {
       console.error(err)
     } finally {
       setIsSending(false)
+    }
+  }
+
+  const handleReopen = async () => {
+    if (!id) return
+    setIsReopening(true)
+    try {
+      const updated = await updateTicketStatus(id, 'reabierto')
+      setTicket(updated)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsReopening(false)
     }
   }
 
@@ -180,7 +194,23 @@ function UsuarioTicketDetail() {
           )}
         </div>
 
-        {/* Agregar comentario — solo si no está cerrado */}
+        {/* Ticket cerrado — opción de reabrir */}
+        {ticket.estado === 'cerrado' && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
+              Este ticket está cerrado. Si el problema no fue resuelto puedes reabrirlo.
+            </p>
+            <button
+              onClick={handleReopen}
+              disabled={isReopening}
+              className="px-4 py-2 text-sm bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 transition-colors"
+            >
+              {isReopening ? 'Reabriendo...' : 'Reabrir ticket'}
+            </button>
+          </div>
+        )}
+
+        {/* Ticket abierto — formulario de comentarios */}
         {ticket.estado !== 'cerrado' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">

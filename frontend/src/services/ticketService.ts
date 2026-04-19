@@ -1,34 +1,7 @@
 import api from './api'
+import type { Ticket } from '../types'
 
-export interface Ticket {
-  _id: string
-  titulo: string
-  descripcion: string
-  estado: 'abierto' | 'en_progreso' | 'en_revision' | 'cerrado' | 'reabierto'
-  prioridad: 'baja' | 'media' | 'alta' | 'critica'
-  categoria: {
-    _id: string
-    nombre: string
-  }
-  creadoPor: {
-    _id: string
-    nombre: string
-    email: string
-  }
-  asignadoA?: {
-    _id: string
-    nombre: string
-    email: string
-  }
-  marca: {
-    _id: string
-    nombre: string
-  }
-  archivos: string[]
-  fechaLimite?: string
-  fechaCierre?: string
-  createdAt: string
-}
+export type { Ticket }
 
 export const getTickets = async (): Promise<Ticket[]> => {
   const response = await api.get('/tickets')
