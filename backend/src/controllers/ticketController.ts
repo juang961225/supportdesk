@@ -197,7 +197,44 @@ export const assignTicket = async (req: AuthRequest, res: Response, next: NextFu
 export const updateTicketStatus = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { estado } = req.body || {}
+    const { rol, id } = req.user!
 
+    // El usuario solo puede reabrir — el soporte puede cambiar a cualquier estado válido
+    if (rol === 'usuario') {
+      if (estado !== 'reabierto') {
+        res.status(403).json({ message: 'Solo puedes reabrir un ticket' })
+        return
+      }
+      // Busca el ticket donde el usuario es el creador
+      const ticket = await Ticket.findOne({
+        _id: req.params.id,
+        creadoPor: id,
+        estado: 'cerrado' // solo puede reabrir tickets cerrados
+      })
+
+      if (!ticket) {
+        res.status(404).json({ message: 'Ticket no encontrado o no puedes reabrirlo' })
+        return
+      }
+
+      ticket.estado = 'reabierto'
+      ticket.fechaCierre = undefined
+      await ticket.save()
+
+      const ticketActualizado = await Ticket.findById(ticket._id)
+        .populate('asignadoA', 'nombre email')
+        .populate('categoria', 'nombre')
+        .populate('creadoPor', 'nombre email')
+        .populate('marca', 'nombre')
+
+      res.status(200).json({
+        message: 'Ticket reabierto exitosamente',
+        ticket: ticketActualizado
+      })
+      return
+    }
+
+    // Lógica del soporte — igual que antes
     const estadosValidos = ['en_progreso', 'en_revision', 'cerrado', 'reabierto']
     if (!estado || !estadosValidos.includes(estado)) {
       res.status(400).json({ message: `Estado inválido. Debe ser: ${estadosValidos.join(', ')}` })
@@ -206,7 +243,7 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
 
     const ticket = await Ticket.findOne({
       _id: req.params.id,
-      asignadoA: req.user?.id
+      asignadoA: id
     })
 
     if (!ticket) {
@@ -220,7 +257,6 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
     }
     await ticket.save()
 
-    //busca el ticket actualizado con populate
     const ticketActualizado = await Ticket.findById(ticket._id)
       .populate('asignadoA', 'nombre email')
       .populate('categoria', 'nombre')

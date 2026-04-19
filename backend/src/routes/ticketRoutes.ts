@@ -23,6 +23,6 @@ router.get('/:id', authenticate, authorize('superadmin', 'admin', 'soporte', 'us
 router.put('/:id/assign', authenticate, authorize('admin', 'superadmin'), assignTicket)
 
 // Actualizar estado — solo soporte
-router.put('/:id/status', authenticate, authorize('soporte'), updateTicketStatus)
+router.put('/:id/status', authenticate, authorize('soporte', 'usuario'), updateTicketStatus)
 
 export default router
