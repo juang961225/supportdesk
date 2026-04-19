@@ -7,12 +7,8 @@ interface ProtectedRouteProps {
 }
 
 function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, token, isLoading } = useAuth()
+  const { user, token } = useAuth()
 
-  // Espera a que termine de leer localStorage
-  if (isLoading) return null
-
-  // Si no hay token redirige al login
   if (!token || !user) {
     return <Navigate to="/login" replace />
   }

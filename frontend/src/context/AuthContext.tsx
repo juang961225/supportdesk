@@ -4,7 +4,6 @@ import type { User } from '../services/authService'
 interface AuthContextType {
   user: User | null
   token: string | null
-  isLoading: boolean
   setAuth: (user: User, token: string) => void
   logout: () => void
 }
@@ -14,15 +13,18 @@ export const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('user')
-    return saved ? JSON.parse(saved) : null
+    try {
+      const saved = localStorage.getItem('user')
+      return saved ? (JSON.parse(saved) as User) : null
+    } catch {
+      localStorage.removeItem('user')
+      return null
+    }
   })
 
   const [token, setToken] = useState<string | null>(() => {
     return localStorage.getItem('token')
   })
-
-  const [isLoading] = useState(false)
 
   const setAuth = (user: User, token: string) => {
     setUser(user)
@@ -39,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, setAuth, logout }}>
+    <AuthContext.Provider value={{ user, token, setAuth, logout }}>
       {children}
     </AuthContext.Provider>
   )
