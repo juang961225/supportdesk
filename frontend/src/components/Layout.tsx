@@ -6,6 +6,7 @@ import ThemeToggle from './ThemeToggle'
 const menuItems = {
   superadmin: [
     { label: 'Dashboard', path: '/superadmin/dashboard' },
+    { label: 'Tickets', path: '/admin/tickets' },
     { label: 'Marcas', path: '/superadmin/brands' },
     { label: 'Usuarios', path: '/superadmin/users' },
   ],

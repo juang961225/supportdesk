@@ -14,13 +14,14 @@ import AdminUsersPage from './pages/admin/UsersPage'
 import SoporteTicketDetail from './pages/soporte/TicketDetail'
 import NewTicketPage from './pages/usuario/NewTicketPage'
 import UsuarioTicketDetail from './pages/usuario/TicketDetail'
-import { ToastContainer } from './components/ToastContainer'   // ← NUEVO
+import { ToastContainer } from './components/ToastContainer'
+import AdminTicketDetail from './pages/admin/TicketDetail'
 
 function App() {
   useTheme()
 
   return (
-    <>                                                          {/* ← NUEVO Fragment */}
+    <>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 
@@ -101,6 +102,24 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminUsersPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/tickets"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+              <TicketsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/tickets/:id"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+              <AdminTicketDetail />
             </ProtectedRoute>
           }
         />

@@ -5,6 +5,7 @@ import { getTickets, assignTicket } from '../../services/ticketService'
 import { getUsers } from '../../services/userService'
 import { useToast } from '../../hooks/useToast'
 import type { Ticket, User } from '../../types'
+import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 
 // Colores reutilizables para prioridad y estado
@@ -29,6 +30,7 @@ function TicketsPage() {
   const [soporters, setSoporters] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+  const navigate = useNavigate()
 
   // Estado del modal de asignación
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -143,40 +145,47 @@ function TicketsPage() {
                 No hay tickets todavía
               </p>
             ) : (
-              tickets.map((ticket) => (
-                <div key={ticket._id} className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-800 dark:text-white">
-                        {ticket.titulo}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {ticket.creadoPor.nombre} · {ticket.categoria.nombre}
-                      </p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                        {ticket.asignadoA
-                          ? `Asignado a: ${ticket.asignadoA.nombre}`
-                          : 'Sin asignar'
-                        }
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 ml-4">
-                      <span className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}>
-                        {ticket.prioridad}
-                      </span>
-                      <span className={`text-xs px-2 py-1 rounded-full ${estadoColor[ticket.estado]}`}>
-                        {ticket.estado}
-                      </span>
-                      <button
-                        onClick={() => handleOpenAssign(ticket)}
-                        className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                      >
-                        {ticket.asignadoA ? 'Reasignar' : 'Asignar'}
-                      </button>
+                tickets.map((ticket) => (
+                  <div
+                    key={ticket._id}
+                    onClick={() => navigate(`/admin/tickets/${ticket._id}`)}
+                    className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-800 dark:text-white">
+                          {ticket.titulo}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          {ticket.creadoPor.nombre} · {ticket.categoria.nombre}
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                          {ticket.asignadoA
+                            ? `Asignado a: ${ticket.asignadoA.nombre}`
+                            : 'Sin asignar'
+                          }
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <span className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}>
+                          {ticket.prioridad}
+                        </span>
+                        <span className={`text-xs px-2 py-1 rounded-full ${estadoColor[ticket.estado]}`}>
+                          {ticket.estado}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleOpenAssign(ticket)
+                          }}
+                          className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                        >
+                          {ticket.asignadoA ? 'Reasignar' : 'Asignar'}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                ))
             )}
           </div>
         </div>
