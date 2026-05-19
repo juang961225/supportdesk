@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import axios from 'axios'
 import Layout from '../../components/Layout'
 import Modal from '../../components/Modal'
 import { getBrands, createBrand } from '../../services/brandService'
@@ -47,8 +48,12 @@ function BrandsPage() {
       setBrands([newBrand, ...brands]) // agrega al inicio de la lista
       setNombre('')
       setIsModalOpen(false)
-    } catch (err: any) {
-      setFormError(err.response?.data?.message || 'Error al crear la marca')
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setFormError(err.response?.data?.message || 'Error al crear la marca')
+      } else {
+        setFormError('Error al crear la marca')
+      }
     } finally {
       setIsSubmitting(false)
     }
