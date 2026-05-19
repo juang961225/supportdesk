@@ -87,6 +87,8 @@ function TicketsPage() {
       } else {
         setFormError('Error al asignar el ticket')
       }
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
