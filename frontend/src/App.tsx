@@ -14,133 +14,128 @@ import AdminUsersPage from './pages/admin/UsersPage'
 import SoporteTicketDetail from './pages/soporte/TicketDetail'
 import NewTicketPage from './pages/usuario/NewTicketPage'
 import UsuarioTicketDetail from './pages/usuario/TicketDetail'
+import { ToastContainer } from './components/ToastContainer'   // ← NUEVO
 
 function App() {
   useTheme()
 
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
+    <>                                                          {/* ← NUEVO Fragment */}
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
 
-      <Route
-        path="/superadmin/dashboard"
-        element={
-          <ProtectedRoute allowedRoles={['superadmin']}>
-            <SuperAdminDashboard />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/superadmin/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['superadmin']}>
+              <SuperAdminDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/admin/dashboard"
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <AdminDashboard />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/soporte/dashboard"
-        element={
-          <ProtectedRoute allowedRoles={['soporte']}>
-            <SoporteDashboard />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/soporte/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['soporte']}>
+              <SoporteDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/usuario/dashboard"
-        element={
-          <ProtectedRoute allowedRoles={['usuario']}>
-            <UsuarioDashboard />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/usuario/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['usuario']}>
+              <UsuarioDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/superadmin/brands"
-        element={
-          <ProtectedRoute allowedRoles={['superadmin']}>
-            <BrandsPage />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/superadmin/brands"
+          element={
+            <ProtectedRoute allowedRoles={['superadmin']}>
+              <BrandsPage />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/superadmin/users"
-        element={
-          <ProtectedRoute allowedRoles={['superadmin']}>
-            <UsersPage />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/superadmin/users"
+          element={
+            <ProtectedRoute allowedRoles={['superadmin']}>
+              <UsersPage />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/admin/tickets"
-        element={
-          <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
-            <TicketsPage />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/admin/tickets"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+              <TicketsPage />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/admin/categories"
-        element={
-          <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
-            <CategoriesPage />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/admin/categories"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+              <CategoriesPage />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/admin/users"
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <AdminUsersPage />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminUsersPage />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/soporte/tickets/:id"
-        element={
-          <ProtectedRoute allowedRoles={['soporte']}>
-            <SoporteTicketDetail />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/soporte/tickets/:id"
+          element={
+            <ProtectedRoute allowedRoles={['soporte']}>
+              <SoporteTicketDetail />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/usuario/dashboard"
-        element={
-          <ProtectedRoute allowedRoles={['usuario']}>
-            <UsuarioDashboard />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/usuario/tickets/new"
+          element={
+            <ProtectedRoute allowedRoles={['usuario']}>
+              <NewTicketPage />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/usuario/tickets/new"
-        element={
-          <ProtectedRoute allowedRoles={['usuario']}>
-            <NewTicketPage />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/usuario/tickets/:id"
+          element={
+            <ProtectedRoute allowedRoles={['usuario']}>
+              <UsuarioTicketDetail />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/usuario/tickets/:id"
-        element={
-          <ProtectedRoute allowedRoles={['usuario']}>
-            <UsuarioTicketDetail />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route path="*" element={<Navigate to="/login" />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/login" />} />
+      </Routes>
+      <ToastContainer />                                        {/* ← NUEVO */}
+    </>
   )
 }
 

@@ -4,11 +4,12 @@ import axios from 'axios'
 import { login } from '../services/authService'
 import { useAuth } from '../hooks/useAuth'
 import ThemeToggle from '../components/ThemeToggle'
+import { useToast } from '../hooks/useToast'
 
 function LoginPage() {
+  const { toast } = useToast()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   const navigate = useNavigate()
@@ -16,28 +17,29 @@ function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
     if (!email || !password) {
-      setError('Email y password son obligatorios')
+      toast.warning('Email y password son obligatorios')
       return
     }
+
     setIsLoading(true)
-    setError('')
     try {
       const response = await login({ email, password })
       setAuth(response.user, response.token)
+      toast.success(`Bienvenido, ${response.user.nombre}`)
 
       const rol = response.user.rol
       if (rol === 'superadmin') navigate('/superadmin/dashboard')
       else if (rol === 'admin') navigate('/admin/dashboard')
       else if (rol === 'soporte') navigate('/soporte/dashboard')
       else navigate('/usuario/dashboard')
-
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const mensaje = err.response?.data?.message || 'Error al iniciar sesión'
-        setError(mensaje)
+        toast.error(mensaje)
       } else {
-        setError('Error al iniciar sesión')
+        toast.error('Error al iniciar sesión')
       }
     } finally {
       setIsLoading(false)
@@ -56,11 +58,7 @@ function LoginPage() {
         <p className="text-gray-500 dark:text-gray-400 mb-6">
           Inicia sesión en tu cuenta
         </p>
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded mb-4 text-sm">
-            {error}
-          </div>
-        )}
+
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
