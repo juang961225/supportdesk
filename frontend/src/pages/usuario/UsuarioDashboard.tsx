@@ -5,6 +5,7 @@ import { getTickets } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
 import { prioridadColor, estadoColor } from '../../utils/ticketColors'
 import type { Ticket } from '../../types'
+import { TicketTimeBadge } from '../../components/TicketTimeBadge'
 
 function UsuarioDashboard() {
   const { toast } = useToast()
@@ -107,6 +108,7 @@ function UsuarioDashboard() {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
+                    <TicketTimeBadge fechaLimite={ticket.fechaLimite} />
                     <span className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}>
                       {ticket.prioridad}
                     </span>
