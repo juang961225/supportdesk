@@ -3,9 +3,11 @@ import axios from 'axios'
 import Layout from '../../components/Layout'
 import Modal from '../../components/Modal'
 import { getBrands, createBrand } from '../../services/brandService'
+import { useToast } from '../../hooks/useToast'
 import type { Brand } from '../../types'
 
 function BrandsPage() {
+  const { toast } = useToast()
   const [brands, setBrands] = useState<Brand[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -28,6 +30,7 @@ function BrandsPage() {
       setBrands(data)
     } catch {
       setError('Error al cargar las marcas')
+      toast.error('No se pudieron cargar las marcas')
     } finally {
       setIsLoading(false)
     }
@@ -37,6 +40,7 @@ function BrandsPage() {
     e.preventDefault()
     if (!nombre.trim()) {
       setFormError('El nombre es obligatorio')
+      toast.warning('El nombre es obligatorio')
       return
     }
 
@@ -46,13 +50,17 @@ function BrandsPage() {
     try {
       const newBrand = await createBrand(nombre)
       setBrands([newBrand, ...brands]) // agrega al inicio de la lista
+      toast.success(`Marca "${newBrand.nombre}" creada`)
       setNombre('')
       setIsModalOpen(false)
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        setFormError(err.response?.data?.message || 'Error al crear la marca')
+        const msg = err.response?.data?.message || 'Error al crear la marca'
+        setFormError(msg)
+        toast.error(msg)
       } else {
         setFormError('Error al crear la marca')
+        toast.error('Error al crear la marca')
       }
     } finally {
       setIsSubmitting(false)

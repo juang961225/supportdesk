@@ -3,6 +3,7 @@ import axios from 'axios'
 import Layout from '../../components/Layout'
 import Modal from '../../components/Modal'
 import { getUsers, createUser } from '../../services/userService'
+import { useToast } from '../../hooks/useToast'
 import type { User } from '../../types'
 
 const rolColor: Record<string, string> = {
@@ -12,6 +13,7 @@ const rolColor: Record<string, string> = {
 }
 
 function AdminUsersPage() {
+  const { toast } = useToast()
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -37,6 +39,7 @@ function AdminUsersPage() {
       setUsers(data.filter(u => u.rol !== 'superadmin'))
     } catch {
       setError('Error al cargar los usuarios')
+      toast.error('No se pudieron cargar los usuarios')
     } finally {
       setIsLoading(false)
     }
@@ -51,6 +54,7 @@ function AdminUsersPage() {
 
     if (!formData.nombre || !formData.email || !formData.password) {
       setFormError('Todos los campos son obligatorios')
+      toast.warning('Todos los campos son obligatorios')
       return
     }
 
@@ -60,12 +64,16 @@ function AdminUsersPage() {
     try {
       const newUser = await createUser(formData)
       setUsers([newUser, ...users])
+      toast.success(`Usuario "${newUser.nombre}" creado`)
       handleCloseModal()
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        setFormError(err.response?.data?.message || 'Error al crear el usuario')
+        const msg = err.response?.data?.message || 'Error al crear el usuario'
+        setFormError(msg)
+        toast.error(msg)
       } else {
         setFormError('Error al crear el usuario')
+        toast.error('Error al crear el usuario')
       }
     } finally {
       setIsSubmitting(false)

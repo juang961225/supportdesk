@@ -4,10 +4,12 @@ import Layout from '../../components/Layout'
 import Modal from '../../components/Modal'
 import { getUsers, createUser } from '../../services/userService'
 import { getBrands } from '../../services/brandService'
+import { useToast } from '../../hooks/useToast'
 import type { User } from '../../types'
 import type { Brand } from '../../types'
 
 function UsersPage() {
+  const { toast } = useToast()
   const [users, setUsers] = useState<User[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -41,6 +43,7 @@ function UsersPage() {
       setBrands(brandsData)
     } catch {
       setError('Error al cargar los datos')
+      toast.error('No se pudieron cargar los datos')
     } finally {
       setIsLoading(false)
     }
@@ -55,11 +58,13 @@ function UsersPage() {
 
     if (!formData.nombre || !formData.email || !formData.password) {
       setFormError('Nombre, email y password son obligatorios')
+      toast.warning('Nombre, email y password son obligatorios')
       return
     }
 
     if (formData.rol !== 'superadmin' && !formData.marcaId) {
       setFormError('Debes seleccionar una marca')
+      toast.warning('Debes seleccionar una marca')
       return
     }
 
@@ -69,10 +74,13 @@ function UsersPage() {
     try {
       const newUser = await createUser(formData)
       setUsers([newUser, ...users])
+      toast.success(`Usuario "${newUser.nombre}" creado`)
       handleCloseModal()
     } catch (err) {
-      const msg = axios.isAxiosError(err) ? err.response?.data?.message : undefined
-      setFormError(msg || 'Error al crear el usuario')
+      const apiMsg = axios.isAxiosError(err) ? err.response?.data?.message : undefined
+      const msg = apiMsg || 'Error al crear el usuario'
+      setFormError(msg)
+      toast.error(msg)
     } finally {
       setIsSubmitting(false)
     }

@@ -3,9 +3,11 @@ import axios from 'axios'
 import Layout from '../../components/Layout'
 import Modal from '../../components/Modal'
 import { getCategories, createCategory, updateCategory } from '../../services/categoryService'
+import { useToast } from '../../hooks/useToast'
 import type { Category } from '../../types'
 
 function CategoriesPage() {
+  const { toast } = useToast()
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -29,6 +31,7 @@ function CategoriesPage() {
       setCategories(data)
     } catch {
       setError('Error al cargar las categorías')
+      toast.error('No se pudieron cargar las categorías')
     } finally {
       setIsLoading(false)
     }
@@ -56,6 +59,7 @@ function CategoriesPage() {
 
     if (!formData.nombre.trim()) {
       setFormError('El nombre es obligatorio')
+      toast.warning('El nombre es obligatorio')
       return
     }
 
@@ -69,17 +73,22 @@ function CategoriesPage() {
         setCategories(categories.map(c =>
           c._id === updated._id ? updated : c
         ))
+        toast.success('Categoría actualizada')
       } else {
         // Crear nueva categoría
         const newCategory = await createCategory(formData)
         setCategories([newCategory, ...categories])
+        toast.success(`Categoría "${newCategory.nombre}" creada`)
       }
       handleCloseModal()
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        setFormError(err.response?.data?.message || 'Error al guardar la categoría')
+        const msg = err.response?.data?.message || 'Error al guardar la categoría'
+        setFormError(msg)
+        toast.error(msg)
       } else {
         setFormError('Error al guardar la categoría')
+        toast.error('Error al guardar la categoría')
       }
     } finally {
       setIsSubmitting(false)
@@ -92,8 +101,9 @@ function CategoriesPage() {
       setCategories(categories.map(c =>
         c._id === updated._id ? updated : c
       ))
-    } catch (err) {
-      console.error(err)
+      toast.success(`Categoría ${updated.activo ? 'activada' : 'desactivada'}`)
+    } catch {
+      toast.error('No se pudo cambiar el estado de la categoría')
     }
   }
 
