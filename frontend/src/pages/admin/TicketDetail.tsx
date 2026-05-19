@@ -249,7 +249,13 @@ function AdminTicketDetail() {
                         {comment.autor.nombre}
                       </p>
                       <span className="text-xs text-gray-400 dark:text-gray-500">
-                        {new Date(comment.createdAt).toLocaleString()}
+                        {new Date(comment.createdAt).toLocaleString('es-CO', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
