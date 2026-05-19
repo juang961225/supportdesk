@@ -7,6 +7,7 @@ import type { Comment } from '../../services/commentService'
 import { useToast } from '../../hooks/useToast'
 import { estadoColor } from '../../utils/ticketColors'
 import type { Ticket } from '../../types'
+import { TicketTimeBadge } from '../../components/TicketTimeBadge'
 
 function UsuarioTicketDetail() {
   const { id } = useParams<{ id: string }>()
@@ -123,7 +124,8 @@ function UsuarioTicketDetail() {
             <div>
               <p className="text-gray-500 dark:text-gray-400">Prioridad</p>
               <p className="text-gray-800 dark:text-white font-medium capitalize">
-                {ticket.prioridad}
+                {ticket.prioridad}&nbsp;&nbsp;&nbsp;
+                <TicketTimeBadge fechaLimite={ticket.fechaLimite} />
               </p>
             </div>
             <div>

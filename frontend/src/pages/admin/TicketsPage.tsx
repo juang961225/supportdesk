@@ -5,6 +5,7 @@ import { getTickets, assignTicket } from '../../services/ticketService'
 import { getUsers } from '../../services/userService'
 import { useToast } from '../../hooks/useToast'
 import { prioridadColor, estadoColor } from '../../utils/ticketColors'
+import { TicketTimeBadge } from '../../components/TicketTimeBadge'
 import type { Ticket, User } from '../../types'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
@@ -152,6 +153,7 @@ function TicketsPage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2 ml-4">
+                        <TicketTimeBadge fechaLimite={ticket.fechaLimite} />
                         <span className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}>
                           {ticket.prioridad}
                         </span>

@@ -9,6 +9,8 @@ import { getComments, createComment } from '../../services/commentService'
 import type { Comment } from '../../services/commentService'
 import { useToast } from '../../hooks/useToast'
 import type { Ticket, User } from '../../types'
+import { TicketTimeBadge } from '../../components/TicketTimeBadge'
+
 
 const prioridadColor: Record<string, string> = {
   critica: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
@@ -167,6 +169,7 @@ function AdminTicketDetail() {
               {ticket.titulo}
             </h2>
             <div className="flex items-center gap-2">
+              <TicketTimeBadge fechaLimite={ticket.fechaLimite} />
               <span
                 className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}
               >
