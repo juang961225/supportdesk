@@ -2,20 +2,10 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { getTicketById, updateTicketStatus } from '../../services/ticketService'
-import api from '../../services/api'
+import { getComments, createComment } from '../../services/commentService'
+import type { Comment } from '../../services/commentService'
 import { useToast } from '../../hooks/useToast'
 import type { Ticket } from '../../types'
-
-interface Comment {
-  _id: string
-  contenido: string
-  autor: {
-    _id: string
-    nombre: string
-    rol: string
-  }
-  createdAt: string
-}
 
 const estadoColor: Record<string, string> = {
   abierto: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
@@ -45,7 +35,7 @@ function UsuarioTicketDetail() {
     try {
       const [ticketData, commentsData] = await Promise.all([
         getTicketById(ticketId),
-        api.get(`/tickets/${ticketId}/comments`).then(r => r.data.comments)
+        getComments(ticketId)
       ])
       setTicket(ticketData)
       setComments(commentsData)
@@ -62,8 +52,8 @@ function UsuarioTicketDetail() {
 
     setIsSending(true)
     try {
-      const response = await api.post(`/tickets/${id}/comments`, { contenido })
-      setComments([...comments, response.data.comment])
+      const newComment = await createComment(id, contenido)
+      setComments([...comments, newComment])
       setContenido('')
       toast.success('Comentario enviado')
     } catch {
