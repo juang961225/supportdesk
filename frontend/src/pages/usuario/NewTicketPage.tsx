@@ -13,7 +13,6 @@ function NewTicketPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState('')
 
   const [formData, setFormData] = useState({
     titulo: '',
@@ -50,21 +49,21 @@ function NewTicketPage() {
     e.preventDefault()
 
     if (!formData.titulo || !formData.descripcion || !formData.categoriaId) {
-      setError('Todos los campos son obligatorios')
+      toast.warning('Todos los campos son obligatorios')
       return
     }
 
     setIsSubmitting(true)
-    setError('')
 
     try {
       await createTicket(formData)
+      toast.success(`Ticket "${formData.titulo}" creado correctamente`)
       navigate('/usuario/dashboard')
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.message || 'Error al crear el ticket')
+        toast.error(err.response?.data?.message || 'Error al crear el ticket')
       } else {
-        setError('Error al crear el ticket')
+        toast.error('Error al crear el ticket')
       }
     } finally {
       setIsSubmitting(false)
@@ -96,12 +95,6 @@ function NewTicketPage() {
         </h2>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-          {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded mb-4 text-sm">
-              {error}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { getTicketById, updateTicketStatus } from '../../services/ticketService'
 import api from '../../services/api'
+import { useToast } from '../../hooks/useToast'
 import type { Ticket } from '../../types'
 
 interface Comment {
@@ -27,6 +28,7 @@ const estadoColor: Record<string, string> = {
 function SoporteTicketDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { toast } = useToast()
 
   const [ticket, setTicket] = useState<Ticket | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
@@ -47,8 +49,8 @@ function SoporteTicketDetail() {
       ])
       setTicket(ticketData)
       setComments(commentsData)
-    } catch (err) {
-      console.error(err)
+    } catch {
+      toast.error('No se pudo cargar el ticket')
     } finally {
       setIsLoading(false)
     }
@@ -63,8 +65,9 @@ function SoporteTicketDetail() {
       const response = await api.post(`/tickets/${id}/comments`, { contenido })
       setComments([...comments, response.data.comment])
       setContenido('')
-    } catch (err) {
-      console.error(err)
+      toast.success('Comentario enviado')
+    } catch {
+      toast.error('No se pudo enviar el comentario')
     } finally {
       setIsSending(false)
     }
@@ -76,8 +79,9 @@ function SoporteTicketDetail() {
     try {
       const updated = await updateTicketStatus(id, estado)
       setTicket(updated)
-    } catch (err) {
-      console.error(err)
+      toast.success(`Ticket marcado como ${estado.replace('_', ' ')}`)
+    } catch {
+      toast.error('No se pudo actualizar el estado del ticket')
     } finally {
       setIsUpdatingStatus(false)
     }

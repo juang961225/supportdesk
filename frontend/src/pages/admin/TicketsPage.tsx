@@ -3,6 +3,7 @@ import Layout from '../../components/Layout'
 import Modal from '../../components/Modal'
 import { getTickets, assignTicket } from '../../services/ticketService'
 import { getUsers } from '../../services/userService'
+import { useToast } from '../../hooks/useToast'
 import type { Ticket, User } from '../../types'
 import axios from 'axios'
 
@@ -23,6 +24,7 @@ const estadoColor: Record<string, string> = {
 }
 
 function TicketsPage() {
+  const { toast } = useToast()
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [soporters, setSoporters] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -66,6 +68,7 @@ function TicketsPage() {
 
     if (!selectedSoporter) {
       setFormError('Debes seleccionar un soporter')
+      toast.warning('Debes seleccionar un soporter')
       return
     }
 
@@ -80,12 +83,16 @@ function TicketsPage() {
       setTickets(tickets.map(t =>
         t._id === updatedTicket._id ? updatedTicket : t
       ))
+      toast.success(`Ticket asignado a ${updatedTicket.asignadoA?.nombre ?? 'soporter'}`)
       handleCloseModal()
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        setFormError(err.response?.data?.message || 'Error al asignar el ticket')
+        const msg = err.response?.data?.message || 'Error al asignar el ticket'
+        setFormError(msg)
+        toast.error(msg)
       } else {
         setFormError('Error al asignar el ticket')
+        toast.error('Error al asignar el ticket')
       }
     } finally {
       setIsSubmitting(false)
