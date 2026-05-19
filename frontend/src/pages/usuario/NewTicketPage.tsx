@@ -4,10 +4,12 @@ import axios from 'axios'
 import Layout from '../../components/Layout'
 import { createTicket } from '../../services/ticketService'
 import { getCategories } from '../../services/categoryService'
+import { useToast } from '../../hooks/useToast'
 import type { Category } from '../../types'
 
 function NewTicketPage() {
   const navigate = useNavigate()
+  const { toast } = useToast()
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -28,13 +30,14 @@ function NewTicketPage() {
         if (data.length > 0) {
           setFormData(prev => ({ ...prev, categoriaId: data[0]._id }))
         }
-      } catch (err) {
-        console.error(err)
+      } catch {
+        toast.error('No se pudieron cargar las categorías')
       } finally {
         setIsLoading(false)
       }
     }
     fetchCategories()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleChange = (

@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { getTickets } from '../../services/ticketService'
 import { getUsers } from '../../services/userService'
+import { useToast } from '../../hooks/useToast'
 import type { Ticket } from '../../types'
 
 function AdminDashboard() {
+  const { toast } = useToast()
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [totalUsers, setTotalUsers] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
@@ -18,13 +20,14 @@ function AdminDashboard() {
         ])
         setTickets(ticketsData)
         setTotalUsers(usersData.length)
-      } catch (err) {
-        console.error(err)
+      } catch {
+        toast.error('No se pudieron cargar los datos del dashboard')
       } finally {
         setIsLoading(false)
       }
     }
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Métricas calculadas del lado del cliente

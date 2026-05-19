@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { getTickets } from '../../services/ticketService'
+import { useToast } from '../../hooks/useToast'
 import type { Ticket } from '../../types'
 
 const prioridadColor: Record<string, string> = {
@@ -20,6 +21,7 @@ const estadoColor: Record<string, string> = {
 }
 
 function UsuarioDashboard() {
+  const { toast } = useToast()
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const navigate = useNavigate()
@@ -29,13 +31,14 @@ function UsuarioDashboard() {
       try {
         const data = await getTickets()
         setTickets(data)
-      } catch (err) {
-        console.error(err)
+      } catch {
+        toast.error('No se pudieron cargar tus tickets')
       } finally {
         setIsLoading(false)
       }
     }
     fetchTickets()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const abiertos = tickets.filter(t => t.estado !== 'cerrado').length
