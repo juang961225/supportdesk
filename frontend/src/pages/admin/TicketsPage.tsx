@@ -36,8 +36,8 @@ function TicketsPage() {
         getUsers()
       ])
       setTickets(ticketsData)
-      // Solo los soporters pueden atender tickets
-      setSoporters(usersData.filter(u => u.rol === 'soporte'))
+      // Solo los soporters activos pueden atender tickets
+      setSoporters(usersData.filter(u => u.rol === 'soporte' && u.estado === 'activo'))
     } catch {
       setError('Error al cargar los datos')
     } finally {

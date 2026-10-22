@@ -59,7 +59,7 @@ function AdminTicketDetail() {
       ])
       setTicket(ticketData)
       setComments(commentsData)
-      setSoporters(usersData.filter((u) => u.rol === 'soporte'))
+      setSoporters(usersData.filter((u) => u.rol === 'soporte' && u.estado === 'activo'))
     } catch {
       toast.error('No se pudo cargar el ticket')
     } finally {
