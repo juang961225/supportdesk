@@ -63,6 +63,7 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       prioridad,
       categoria: categoriaId,
       marca: marcaId,
+      area: categoria.area, // el ticket entra a la cola del área de su categoría
       creadoPor: req.user?.id,
       fechaLimite
     })
