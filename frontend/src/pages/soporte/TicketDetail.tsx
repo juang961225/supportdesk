@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import axios from 'axios'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { getTicketById, updateTicketStatus } from '../../services/ticketService'
@@ -8,6 +9,18 @@ import { useToast } from '../../hooks/useToast'
 import { estadoColor } from '../../utils/ticketColors'
 import type { Ticket } from '../../types'
 import { TicketTimeBadge } from '../../components/TicketTimeBadge'
+import ConfirmDialog from '../../components/ConfirmDialog'
+import { transicionesSoporte } from '../../utils/ticketStatus'
+import type { EstadoTicket } from '../../utils/ticketStatus'
+
+// Texto y color del botón según el estado destino
+const accionEstado: Record<EstadoTicket, { label: string; className: string }> = {
+  en_progreso: { label: 'En progreso', className: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' },
+  en_revision: { label: 'En revisión', className: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' },
+  cerrado: { label: 'Cerrar ticket', className: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' },
+  abierto: { label: 'Abierto', className: '' },
+  reabierto: { label: 'Reabrir', className: '' },
+}
 
 function SoporteTicketDetail() {
   const { id } = useParams<{ id: string }>()
@@ -20,6 +33,7 @@ function SoporteTicketDetail() {
   const [contenido, setContenido] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [isConfirmingClose, setIsConfirmingClose] = useState(false)
 
   useEffect(() => {
     if (id) fetchData(id)
@@ -57,17 +71,28 @@ function SoporteTicketDetail() {
     }
   }
 
-  const handleUpdateStatus = async (estado: string) => {
+  const handleUpdateStatus = async (estado: EstadoTicket) => {
     if (!id) return
     setIsUpdatingStatus(true)
     try {
       const updated = await updateTicketStatus(id, estado)
       setTicket(updated)
-      toast.success(`Ticket marcado como ${estado.replace('_', ' ')}`)
-    } catch {
-      toast.error('No se pudo actualizar el estado del ticket')
+      toast.success(`Ticket marcado como ${accionEstado[estado].label.toLowerCase()}`)
+    } catch (err) {
+      const apiMsg = axios.isAxiosError(err) ? err.response?.data?.message : undefined
+      toast.error(apiMsg || 'No se pudo actualizar el estado del ticket')
     } finally {
       setIsUpdatingStatus(false)
+      setIsConfirmingClose(false)
+    }
+  }
+
+  // Cerrar pide confirmación; el resto de transiciones es directo
+  const handleClickEstado = (estado: EstadoTicket) => {
+    if (estado === 'cerrado') {
+      setIsConfirmingClose(true)
+    } else {
+      handleUpdateStatus(estado)
     }
   }
 
@@ -132,7 +157,7 @@ function SoporteTicketDetail() {
               <p className="text-gray-500 dark:text-gray-400">Prioridad</p>
               <p className="text-gray-800 dark:text-white font-medium capitalize">
                 {ticket.prioridad}&nbsp;&nbsp;&nbsp;
-                <TicketTimeBadge fechaLimite={ticket.fechaLimite} />
+                <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
               </p>
             </div>
             {ticket.fechaLimite && (
@@ -152,31 +177,16 @@ function SoporteTicketDetail() {
                 Cambiar estado:
               </p>
               <div className="flex gap-2 flex-wrap">
-                {ticket.estado !== 'en_progreso' && (
+                {transicionesSoporte(ticket.estado).map((estado) => (
                   <button
-                    onClick={() => handleUpdateStatus('en_progreso')}
+                    key={estado}
+                    onClick={() => handleClickEstado(estado)}
                     disabled={isUpdatingStatus}
-                    className="text-xs px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded hover:opacity-80 transition-opacity disabled:opacity-50"
+                    className={`text-xs px-3 py-1 rounded hover:opacity-80 transition-opacity disabled:opacity-50 ${accionEstado[estado].className}`}
                   >
-                    En progreso
+                    {accionEstado[estado].label}
                   </button>
-                )}
-                {ticket.estado !== 'en_revision' && (
-                  <button
-                    onClick={() => handleUpdateStatus('en_revision')}
-                    disabled={isUpdatingStatus}
-                    className="text-xs px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded hover:opacity-80 transition-opacity disabled:opacity-50"
-                  >
-                    En revisión
-                  </button>
-                )}
-                <button
-                  onClick={() => handleUpdateStatus('cerrado')}
-                  disabled={isUpdatingStatus}
-                  className="text-xs px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded hover:opacity-80 transition-opacity disabled:opacity-50"
-                >
-                  Cerrar ticket
-                </button>
+                ))}
               </div>
             </div>
           )}
@@ -253,6 +263,16 @@ function SoporteTicketDetail() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={isConfirmingClose}
+        title="Cerrar ticket"
+        message="El ticket quedará cerrado. Solo el usuario que lo creó podrá reabrirlo."
+        confirmLabel="Cerrar ticket"
+        isLoading={isUpdatingStatus}
+        onConfirm={() => handleUpdateStatus('cerrado')}
+        onCancel={() => setIsConfirmingClose(false)}
+      />
     </Layout>
   )
 }

@@ -1,8 +1,10 @@
 import { getTicketTimeStatus } from '../utils/ticketTime'
 import type { TicketTimeStatus } from '../utils/ticketTime'
+import type { Ticket } from '../types'
 
 interface TicketTimeBadgeProps {
   fechaLimite: string | undefined
+  estado: Ticket['estado']
 }
 
 const labels: Record<TicketTimeStatus, string> = {
@@ -19,7 +21,10 @@ const styles: Record<TicketTimeStatus, string> = {
   noLimit: '',
 }
 
-export function TicketTimeBadge({ fechaLimite }: TicketTimeBadgeProps) {
+export function TicketTimeBadge({ fechaLimite, estado }: TicketTimeBadgeProps) {
+  // Un ticket cerrado ya no vence
+  if (estado === 'cerrado') return null
+
   const status = getTicketTimeStatus(fechaLimite)
 
   // Si no hay nada que mostrar (normal o noLimit), no renderiza nada.

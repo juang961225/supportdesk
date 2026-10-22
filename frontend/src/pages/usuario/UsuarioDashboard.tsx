@@ -108,7 +108,7 @@ function UsuarioDashboard() {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <TicketTimeBadge fechaLimite={ticket.fechaLimite} />
+                    <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
                     <span className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}>
                       {ticket.prioridad}
                     </span>

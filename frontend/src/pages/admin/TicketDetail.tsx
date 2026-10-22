@@ -8,6 +8,7 @@ import { getUsers } from '../../services/userService'
 import { getComments, createComment } from '../../services/commentService'
 import type { Comment } from '../../services/commentService'
 import { useToast } from '../../hooks/useToast'
+import { useAuth } from '../../hooks/useAuth'
 import type { Ticket, User } from '../../types'
 import { TicketTimeBadge } from '../../components/TicketTimeBadge'
 
@@ -31,6 +32,9 @@ function AdminTicketDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { user } = useAuth()
+  // Superadmin es solo lectura en tickets
+  const canAssign = user?.rol === 'admin'
 
   const [ticket, setTicket] = useState<Ticket | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
@@ -169,7 +173,7 @@ function AdminTicketDetail() {
               {ticket.titulo}
             </h2>
             <div className="flex items-center gap-2">
-              <TicketTimeBadge fechaLimite={ticket.fechaLimite} />
+              <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
               <span
                 className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}
               >
@@ -216,15 +220,17 @@ function AdminTicketDetail() {
             )}
           </div>
 
-          {/* 🔵 ADMIN: única acción de escritura sobre el ticket */}
-          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <button
-              onClick={handleOpenAssign}
-              className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            >
-              {ticket.asignadoA ? 'Reasignar' : 'Asignar'}
-            </button>
-          </div>
+          {/* 🔵 ADMIN: única acción de escritura sobre el ticket (no en cerrados) */}
+          {canAssign && ticket.estado !== 'cerrado' && (
+            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={handleOpenAssign}
+                className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+              >
+                {ticket.asignadoA ? 'Reasignar' : 'Asignar'}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Historial de comentarios */}

@@ -8,6 +8,7 @@ import { useToast } from '../../hooks/useToast'
 import { estadoColor } from '../../utils/ticketColors'
 import type { Ticket } from '../../types'
 import { TicketTimeBadge } from '../../components/TicketTimeBadge'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 function UsuarioTicketDetail() {
   const { id } = useParams<{ id: string }>()
@@ -20,6 +21,7 @@ function UsuarioTicketDetail() {
   const [contenido, setContenido] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [isReopening, setIsReopening] = useState(false)
+  const [isConfirmingReopen, setIsConfirmingReopen] = useState(false)
 
   useEffect(() => {
     if (id) fetchData(id)
@@ -68,6 +70,7 @@ function UsuarioTicketDetail() {
       toast.error('No se pudo reabrir el ticket')
     } finally {
       setIsReopening(false)
+      setIsConfirmingReopen(false)
     }
   }
 
@@ -125,7 +128,7 @@ function UsuarioTicketDetail() {
               <p className="text-gray-500 dark:text-gray-400">Prioridad</p>
               <p className="text-gray-800 dark:text-white font-medium capitalize">
                 {ticket.prioridad}&nbsp;&nbsp;&nbsp;
-                <TicketTimeBadge fechaLimite={ticket.fechaLimite} />
+                <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
               </p>
             </div>
             <div>
@@ -196,7 +199,7 @@ function UsuarioTicketDetail() {
               Este ticket está cerrado. Si el problema no fue resuelto puedes reabrirlo.
             </p>
             <button
-              onClick={handleReopen}
+              onClick={() => setIsConfirmingReopen(true)}
               disabled={isReopening}
               className="px-4 py-2 text-sm bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 transition-colors"
             >
@@ -232,6 +235,17 @@ function UsuarioTicketDetail() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={isConfirmingReopen}
+        title="Reabrir ticket"
+        message="El ticket volverá al soporte que lo atendió para que lo revise de nuevo."
+        confirmLabel="Reabrir"
+        variant="default"
+        isLoading={isReopening}
+        onConfirm={handleReopen}
+        onCancel={() => setIsConfirmingReopen(false)}
+      />
     </Layout>
   )
 }

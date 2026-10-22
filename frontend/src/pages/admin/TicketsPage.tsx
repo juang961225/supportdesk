@@ -4,6 +4,7 @@ import Modal from '../../components/Modal'
 import { getTickets, assignTicket } from '../../services/ticketService'
 import { getUsers } from '../../services/userService'
 import { useToast } from '../../hooks/useToast'
+import { useAuth } from '../../hooks/useAuth'
 import { prioridadColor, estadoColor } from '../../utils/ticketColors'
 import { TicketTimeBadge } from '../../components/TicketTimeBadge'
 import type { Ticket, User } from '../../types'
@@ -12,6 +13,9 @@ import axios from 'axios'
 
 function TicketsPage() {
   const { toast } = useToast()
+  const { user } = useAuth()
+  // Superadmin es solo lectura en tickets
+  const canAssign = user?.rol === 'admin'
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [soporters, setSoporters] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -153,22 +157,24 @@ function TicketsPage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2 ml-4">
-                        <TicketTimeBadge fechaLimite={ticket.fechaLimite} />
+                        <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
                         <span className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}>
                           {ticket.prioridad}
                         </span>
                         <span className={`text-xs px-2 py-1 rounded-full ${estadoColor[ticket.estado]}`}>
                           {ticket.estado}
                         </span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleOpenAssign(ticket)
-                          }}
-                          className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                        >
-                          {ticket.asignadoA ? 'Reasignar' : 'Asignar'}
-                        </button>
+                        {canAssign && ticket.estado !== 'cerrado' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleOpenAssign(ticket)
+                            }}
+                            className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                          >
+                            {ticket.asignadoA ? 'Reasignar' : 'Asignar'}
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
