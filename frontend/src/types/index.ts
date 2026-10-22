@@ -1,7 +1,6 @@
 // Tipos compartidos en toda la app
 export interface User {
-  _id?: string
-  id?: string
+  _id: string
   nombre: string
   email: string
   rol: 'superadmin' | 'admin' | 'soporte' | 'usuario'

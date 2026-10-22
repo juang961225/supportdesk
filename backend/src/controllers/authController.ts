@@ -3,7 +3,6 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import User from '../models/User'
 import Brand from '../models/Brand'
-import { AuthRequest } from '../middlewares/auth'
 
 export const register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -41,7 +40,7 @@ export const register = async (req: Request, res: Response, next: NextFunction):
     res.status(201).json({
       message: 'Superadmin creado exitosamente',
       user: {
-        id: user._id,
+        _id: user._id,
         nombre: user.nombre,
         email: user.email,
         rol: user.rol
@@ -104,118 +103,12 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
       message: 'Login exitoso',
       token,
       user: {
-        id: user._id,
+        _id: user._id,
         nombre: user.nombre,
         email: user.email,
         rol: user.rol
       }
     })
-
-  } catch (error) {
-    next(error)
-  }
-}
-
-// POST /api/auth/create-user — solo superadmin crea admins
-// solo admin crea soporters y usuarios de su marca
-export const createUser = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { nombre, email, password, rol, marcaId } = req.body
-
-    // Validar datos obligatorios
-    if (!nombre || !email || !password || !rol) {
-      res.status(400).json({ message: 'Nombre, email, password y rol son obligatorios' })
-      return
-    }
-
-    // Validar que el rol sea válido
-    const rolesValidos = ['admin', 'soporte', 'usuario']
-    if (!rolesValidos.includes(rol)) {
-      res.status(400).json({ message: 'Rol inválido. Debe ser admin, soporte o usuario' })
-      return
-    }
-
-    // Si el que crea es admin, solo puede crear soporters y usuarios de su marca
-    if (req.user?.rol === 'admin') {
-      if (rol === 'admin') {
-        res.status(403).json({ message: 'Un admin no puede crear otros admins' })
-        return
-      }
-    }
-
-    // Verificar que el email no exista
-    const existing = await User.findOne({ email })
-    if (existing) {
-      res.status(400).json({ message: 'Ya existe un usuario con ese email' })
-      return
-    }
-
-    // La marca viene del token si es admin, del body si es superadmin
-    const marcaFinal = req.user?.rol === 'admin' ? req.user?.marca : marcaId
-
-    if (marcaFinal) {
-      const brand = await Brand.findById(marcaFinal)
-      if (!brand) {
-        res.status(404).json({ message: 'Marca no encontrada' })
-        return
-      }
-    }
-
-    // Encriptar password
-    const salt = await bcrypt.genSalt(10)
-    const hashedPassword = await bcrypt.hash(password, salt)
-
-    // Crear usuario
-    const user = await User.create({
-      nombre,
-      email,
-      password: hashedPassword,
-      rol,
-      marca: marcaFinal || undefined
-    })
-
-    if (rol === 'admin' && marcaFinal) {
-      await Brand.findByIdAndUpdate(marcaFinal, { admin: user._id })
-    }
-
-    res.status(201).json({
-      message: 'Usuario creado exitosamente',
-      user: {
-        id: user._id,
-        nombre: user.nombre,
-        email: user.email,
-        rol: user.rol,
-        marca: user.marca,
-        estado: user.estado 
-      }
-    })
-
-  } catch (error) {
-    next(error)
-  }
-}
-
-// GET /api/users — listar usuarios de la marca (admin y superadmin)
-export const getUsers = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { rol, marca } = req.user!
-
-    let filtro: Record<string, unknown> = {}
-
-    if (rol === 'superadmin') {
-      // superadmin ve todos los usuarios de todas las marcas
-      filtro = {}
-    } else if (rol === 'admin') {
-      // admin solo ve usuarios de su marca
-      filtro = { marca }
-    }
-
-    const users = await User.find(filtro)
-      .select('-password') // excluye el password de la respuesta
-      .populate('marca', 'nombre')
-      .sort({ createdAt: -1 })
-
-    res.status(200).json({ users })
 
   } catch (error) {
     next(error)
