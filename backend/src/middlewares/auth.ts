@@ -10,6 +10,7 @@ export interface AuthRequest extends Request {
     id: string
     rol: string
     marca?: string
+    areas: string[] // solo soporte; vacío para el resto
   }
 }
 
@@ -38,7 +39,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   try {
     // Leemos el usuario de la BD en cada petición: así un usuario desactivado
     // (o un cambio de rol/marca) aplica aunque su token siga vigente
-    const user = await User.findById(decoded.id).select('rol estado marca')
+    const user = await User.findById(decoded.id).select('rol estado marca areas')
     if (!user || user.estado === 'inactivo') {
       res.status(401).json({ message: 'Usuario inactivo o inexistente' })
       return
@@ -52,11 +53,12 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       }
     }
 
-    // rol y marca salen de la BD, no del token
+    // rol, marca y áreas salen de la BD, no del token
     req.user = {
       id: String(user._id),
       rol: user.rol,
-      marca: user.marca ? String(user.marca) : undefined
+      marca: user.marca ? String(user.marca) : undefined,
+      areas: user.areas.map(String)
     }
 
     // next() le dice a Express que siga al siguiente paso (el controller)

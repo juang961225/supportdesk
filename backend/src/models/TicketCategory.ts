@@ -4,6 +4,7 @@ export interface ITicketCategory extends Document {
   nombre: string
   descripcion?: string
   marca: mongoose.Types.ObjectId
+  area: mongoose.Types.ObjectId // área inicial de los tickets de esta categoría
   activo: boolean
 }
 
@@ -22,6 +23,11 @@ const TicketCategorySchema = new Schema<ITicketCategory>(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Brand',
       required: true
+    },
+    area: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Area'
+      // obligatorio al crear/editar (controller); no en el schema para no romper datos previos a la migración
     },
     activo: {
       type: Boolean,

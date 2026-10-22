@@ -10,6 +10,7 @@ export interface ITicket extends Document {
   creadoPor: mongoose.Types.ObjectId
   asignadoA?: mongoose.Types.ObjectId
   marca: mongoose.Types.ObjectId
+  area?: mongoose.Types.ObjectId // área actual (puede diferir de la de su categoría tras moverlo)
   fechaLimite?: Date
   fechaCierre?: Date
   createdAt: Date
@@ -60,6 +61,10 @@ const TicketSchema = new Schema<ITicket>(
       ref: 'Brand',
       required: true
     },
+    area: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Area'
+    },
     fechaLimite: {
       type: Date
     },
@@ -71,5 +76,8 @@ const TicketSchema = new Schema<ITicket>(
     timestamps: true
   }
 )
+
+// Cola de cada área: tickets por marca, área y estado
+TicketSchema.index({ marca: 1, area: 1, estado: 1 })
 
 export default mongoose.model<ITicket>('Ticket', TicketSchema)
