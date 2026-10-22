@@ -60,3 +60,19 @@ export interface Category {
   activo: boolean
   marca: string
 }
+export interface TicketEvent {
+  _id: string
+  tipo: 'creado' | 'asignado' | 'reasignado' | 'estado' | 'desasignado'
+  autor?: {
+    _id: string
+    nombre: string
+    rol: User['rol']
+  }
+  de?: string
+  a?: string
+  deNombre?: string
+  aNombre?: string
+  motivo?: string
+  createdAt: string | null
+  sintetico?: boolean
+}

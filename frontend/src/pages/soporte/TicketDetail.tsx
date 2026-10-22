@@ -3,6 +3,7 @@ import axios from 'axios'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import CommentThread from '../../components/CommentThread'
+import TicketTimeline from '../../components/TicketTimeline'
 import { getTicketById, updateTicketStatus } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
 import { estadoColor } from '../../utils/ticketColors'
@@ -165,6 +166,8 @@ function SoporteTicketDetail() {
             </div>
           )}
         </div>
+
+        <TicketTimeline ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.asignadoA?._id ?? ''}`} />
 
         <CommentThread ticketId={ticket._id} canComment={ticket.estado !== 'cerrado'} />
       </div>

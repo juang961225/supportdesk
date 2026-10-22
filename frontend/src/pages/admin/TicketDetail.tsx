@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import Layout from '../../components/Layout'
 import CommentThread from '../../components/CommentThread'
+import TicketTimeline from '../../components/TicketTimeline'
 import Modal from '../../components/Modal'
 import { getTicketById, assignTicket } from '../../services/ticketService'
 import { getUsers } from '../../services/userService'
@@ -195,6 +196,8 @@ function AdminTicketDetail() {
             </div>
           )}
         </div>
+
+        <TicketTimeline ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.asignadoA?._id ?? ''}`} />
 
         {/* El admin puede comentar siempre (administrativo) — decisión de producto */}
         <CommentThread ticketId={ticket._id} canComment />
