@@ -18,7 +18,7 @@ export const puedeTransicionar = (de: EstadoTicket, a: EstadoTicket): boolean =>
   TRANSICIONES[de].includes(a)
 
 // Aplica el nuevo estado y sus efectos (fecha de cierre).
-// Punto único de cambio de estado: aquí se registrará el historial (B1).
+// Punto único de cambio de estado (el controller registra el evento en el historial).
 export const aplicarEstado = (ticket: ITicket, nuevo: EstadoTicket): void => {
   ticket.estado = nuevo
   if (nuevo === 'cerrado') ticket.fechaCierre = new Date()

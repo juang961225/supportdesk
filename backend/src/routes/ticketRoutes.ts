@@ -4,7 +4,8 @@ import {
   getTickets,
   getTicketById,
   assignTicket,
-  updateTicketStatus
+  updateTicketStatus,
+  getTicketHistory
 } from '../controllers/ticketController'
 import { authenticate, authorize } from '../middlewares/auth'
 
@@ -18,6 +19,9 @@ router.get('/', authenticate, authorize('superadmin', 'admin', 'soporte', 'usuar
 
 // Ver un ticket — todos los roles
 router.get('/:id', authenticate, authorize('superadmin', 'admin', 'soporte', 'usuario'), getTicketById)
+
+// Historial interno — admin, soporte y superadmin (solo lectura)
+router.get('/:id/history', authenticate, authorize('superadmin', 'admin', 'soporte'), getTicketHistory)
 
 // Asignar ticket — solo admin (superadmin es solo lectura)
 router.put('/:id/assign', authenticate, authorize('admin'), assignTicket)

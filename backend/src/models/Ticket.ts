@@ -12,6 +12,7 @@ export interface ITicket extends Document {
   marca: mongoose.Types.ObjectId
   fechaLimite?: Date
   fechaCierre?: Date
+  createdAt: Date
 }
 
 const TicketSchema = new Schema<ITicket>(

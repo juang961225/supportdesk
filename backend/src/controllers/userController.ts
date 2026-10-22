@@ -5,6 +5,7 @@ import User, { IUser } from '../models/User'
 import Brand from '../models/Brand'
 import Ticket from '../models/Ticket'
 import { AuthRequest } from '../middlewares/auth'
+import { registrarEvento } from '../services/ticketEvents'
 
 const ROLES_EDITABLES: IUser['rol'][] = ['admin', 'soporte', 'usuario']
 const ESTADOS_VALIDOS: IUser['estado'][] = ['activo', 'inactivo']
@@ -190,10 +191,21 @@ export const updateUser = async (req: AuthRequest, res: Response, next: NextFunc
 
     // Un soporte desactivado suelta sus tickets abiertos (en B2: vuelven a la cola de su área)
     if (seDesactiva && target.rol === 'soporte') {
-      await Ticket.updateMany(
-        { asignadoA: target._id, estado: { $ne: 'cerrado' } },
-        { $unset: { asignadoA: 1 }, $set: { estado: 'abierto' } }
-      )
+      const tickets = await Ticket.find({ asignadoA: target._id, estado: { $ne: 'cerrado' } })
+      for (const ticket of tickets) {
+        ticket.asignadoA = undefined
+        ticket.estado = 'abierto'
+        await ticket.save()
+        await registrarEvento({
+          ticket: ticket._id,
+          marca: ticket.marca,
+          tipo: 'desasignado',
+          autor: actorId,
+          de: String(target._id),
+          deNombre: target.nombre,
+          motivo: 'Soporte desactivado'
+        })
+      }
     }
 
     res.status(200).json({

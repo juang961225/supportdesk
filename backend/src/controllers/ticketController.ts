@@ -3,9 +3,11 @@ import mongoose from 'mongoose'
 import Ticket from '../models/Ticket'
 import TicketCategory from '../models/TicketCategory'
 import User from '../models/User'
+import TicketEvent, { TipoEvento } from '../models/TicketEvent'
 import { esEstadoValido, puedeTransicionar, aplicarEstado } from '../utils/ticketStatus'
 import { AuthRequest } from '../middlewares/auth'
 import { puedeVerTicket } from '../utils/ticketAccess'
+import { registrarEvento } from '../services/ticketEvents'
 
 // Calcula la fecha límite según la prioridad
 const calcularFechaLimite = (prioridad: string): Date => {
@@ -63,6 +65,13 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       marca: marcaId,
       creadoPor: req.user?.id,
       fechaLimite
+    })
+
+    await registrarEvento({
+      ticket: ticket._id,
+      marca: ticket.marca,
+      tipo: 'creado',
+      autor: req.user!.id
     })
 
     // Populate para devolver datos completos
@@ -182,8 +191,26 @@ export const assignTicket = async (req: AuthRequest, res: Response, next: NextFu
       return
     }
 
+    const anteriorId = ticket.asignadoA
+    if (anteriorId && String(anteriorId) === String(soporte._id)) {
+      res.status(400).json({ message: 'El ticket ya está asignado a ese soporte' })
+      return
+    }
+    const anterior = anteriorId ? await User.findById(anteriorId).select('nombre') : null
+
     ticket.asignadoA = soporte._id
     await ticket.save()
+
+    await registrarEvento({
+      ticket: ticket._id,
+      marca: ticket.marca,
+      tipo: anteriorId ? 'reasignado' : 'asignado',
+      autor: req.user!.id,
+      de: anteriorId ? String(anteriorId) : undefined,
+      deNombre: anterior?.nombre,
+      a: String(soporte._id),
+      aNombre: soporte.nombre
+    })
 
     const ticketActualizado = await Ticket.findById(ticket._id)
       .populate('asignadoA', 'nombre email')
@@ -241,8 +268,18 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
     }
 
     // Al reabrir se conserva asignadoA: vuelve al soporte que lo cerró
+    const estadoAnterior = ticket.estado
     aplicarEstado(ticket, estado)
     await ticket.save()
+
+    await registrarEvento({
+      ticket: ticket._id,
+      marca: ticket.marca,
+      tipo: 'estado',
+      autor: id,
+      de: estadoAnterior,
+      a: estado
+    })
 
     const ticketActualizado = await Ticket.findById(ticket._id)
       .populate('asignadoA', 'nombre email')
@@ -254,6 +291,87 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
       message: estado === 'reabierto' ? 'Ticket reabierto exitosamente' : 'Estado actualizado exitosamente',
       ticket: ticketActualizado
     })
+
+  } catch (error) {
+    next(error)
+  }
+}
+
+// Forma de cada entrada del historial que recibe el frontend
+interface EventoHistorial {
+  _id: string
+  tipo: TipoEvento
+  autor?: unknown
+  de?: string
+  a?: string
+  deNombre?: string
+  aNombre?: string
+  motivo?: string
+  createdAt: Date | null
+  sintetico?: boolean
+}
+
+// GET /api/tickets/:id/history — historial interno (admin, soporte y superadmin)
+// Los tickets anteriores al historial reciben eventos sintéticos calculados aquí (no se guardan)
+export const getTicketHistory = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const ticket = await Ticket.findById(req.params.id)
+      .populate('creadoPor', 'nombre rol')
+      .populate('asignadoA', 'nombre')
+
+    if (!ticket) {
+      res.status(404).json({ message: 'Ticket no encontrado' })
+      return
+    }
+
+    if (!puedeVerTicket(req.user!, ticket)) {
+      res.status(403).json({ message: 'No tienes acceso a este ticket' })
+      return
+    }
+
+    const eventos = await TicketEvent.find({ ticket: ticket._id })
+      .populate('autor', 'nombre rol')
+      .sort({ createdAt: 1 })
+      .lean()
+
+    const historial: EventoHistorial[] = eventos.map((e) => ({
+      _id: String(e._id),
+      tipo: e.tipo,
+      autor: e.autor,
+      de: e.de,
+      a: e.a,
+      deNombre: e.deNombre,
+      aNombre: e.aNombre,
+      motivo: e.motivo,
+      createdAt: e.createdAt
+    }))
+    const creadoPor = ticket.creadoPor as unknown as { _id: mongoose.Types.ObjectId; nombre: string; rol: string }
+    const asignado = ticket.asignadoA as unknown as { _id: mongoose.Types.ObjectId; nombre: string } | undefined
+
+    if (!eventos.some((e) => e.tipo === 'creado')) {
+      historial.unshift({
+        _id: `sintetico-creado-${ticket._id}`,
+        tipo: 'creado',
+        autor: creadoPor,
+        createdAt: ticket.createdAt,
+        sintetico: true
+      })
+    }
+
+    const tieneAsignaciones = eventos.some((e) => e.tipo === 'asignado' || e.tipo === 'reasignado')
+    if (asignado && !tieneAsignaciones) {
+      // Sin autor ni fecha exacta: solo sabemos a quién está asignado hoy
+      historial.splice(1, 0, {
+        _id: `sintetico-asignado-${ticket._id}`,
+        tipo: 'asignado',
+        a: String(asignado._id),
+        aNombre: asignado.nombre,
+        createdAt: null,
+        sintetico: true
+      })
+    }
+
+    res.status(200).json({ eventos: historial })
 
   } catch (error) {
     next(error)
