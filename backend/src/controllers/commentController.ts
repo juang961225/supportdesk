@@ -3,7 +3,7 @@ import mongoose from 'mongoose'
 import Comment from '../models/Comment'
 import Ticket from '../models/Ticket'
 import { AuthRequest } from '../middlewares/auth'
-import { PopulatedTicket } from '../types/ticket.types'
+import { puedeVerTicket } from '../utils/ticketAccess'
 
 // POST /api/tickets/:id/comments — agregar comentario
 export const createComment = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -17,25 +17,12 @@ export const createComment = async (req: AuthRequest, res: Response, next: NextF
 
     // Verificar que el ticket existe y el usuario tiene acceso
     const ticket = await Ticket.findById(req.params.id)
-      .populate('marca', '_id')
-      .populate('creadoPor', '_id')
-      .populate('asignadoA', '_id')
     if (!ticket) {
       res.status(404).json({ message: 'Ticket no encontrado' })
       return
     }
 
-    const { rol, id, marca } = req.user!
-    const populated = ticket as unknown as PopulatedTicket
-
-    // Verificar acceso al ticket según rol
-    const tieneAcceso =
-      rol === 'superadmin' ||
-      (rol === 'admin' && String(populated.marca._id) === String(marca)) ||
-      (rol === 'soporte' && String(populated.asignadoA?._id) === String(id)) ||
-      (rol === 'usuario' && String(populated.creadoPor._id) === String(id))
-
-    if (!tieneAcceso) {
+    if (!puedeVerTicket(req.user!, ticket)) {
       res.status(403).json({ message: 'No tienes acceso a este ticket' })
       return
     }
@@ -43,7 +30,7 @@ export const createComment = async (req: AuthRequest, res: Response, next: NextF
     const comment = await Comment.create({
       contenido,
       ticket: new mongoose.Types.ObjectId(req.params.id as string),
-      autor: new mongoose.Types.ObjectId(id)
+      autor: new mongoose.Types.ObjectId(req.user!.id)
     })
 
     // Populate para devolver datos completos
@@ -65,25 +52,12 @@ export const getComments = async (req: AuthRequest, res: Response, next: NextFun
   try {
     // Verificar que el ticket existe
     const ticket = await Ticket.findById(req.params.id)
-      .populate('marca', '_id')
-      .populate('creadoPor', '_id')
-      .populate('asignadoA', '_id')
     if (!ticket) {
       res.status(404).json({ message: 'Ticket no encontrado' })
       return
     }
 
-    const { rol, id, marca } = req.user!
-    const populated = ticket as unknown as PopulatedTicket
-
-    // Verificar acceso al ticket según rol
-    const tieneAcceso =
-      rol === 'superadmin' ||
-      (rol === 'admin' && String(populated.marca._id) === String(marca)) ||
-      (rol === 'soporte' && String(populated.asignadoA?._id) === String(id)) ||
-      (rol === 'usuario' && String(populated.creadoPor._id) === String(id))
-
-    if (!tieneAcceso) {
+    if (!puedeVerTicket(req.user!, ticket)) {
       res.status(403).json({ message: 'No tienes acceso a este ticket' })
       return
     }

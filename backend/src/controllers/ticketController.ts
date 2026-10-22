@@ -5,7 +5,7 @@ import TicketCategory from '../models/TicketCategory'
 import User from '../models/User'
 import { esEstadoValido, puedeTransicionar, aplicarEstado } from '../utils/ticketStatus'
 import { AuthRequest } from '../middlewares/auth'
-import { PopulatedTicket } from '../types/ticket.types'
+import { puedeVerTicket } from '../utils/ticketAccess'
 
 // Calcula la fecha límite según la prioridad
 const calcularFechaLimite = (prioridad: string): Date => {
@@ -132,18 +132,7 @@ export const getTicketById = async (req: AuthRequest, res: Response, next: NextF
     }
 
     // Verificar que el usuario tiene acceso a este ticket
-    const { rol, id, marca } = req.user!
-
-    // ← CAMBIO: cast limpio sin any
-    const populated = ticket as unknown as PopulatedTicket
-
-    const tieneAcceso =
-      rol === 'superadmin' ||
-      (rol === 'admin' && String(populated.marca._id) === String(marca)) ||
-      (rol === 'soporte' && String(populated.asignadoA?._id) === String(id)) ||
-      (rol === 'usuario' && String(populated.creadoPor._id) === String(id))
-
-    if (!tieneAcceso) {
+    if (!puedeVerTicket(req.user!, ticket)) {
       res.status(403).json({ message: 'No tienes acceso a este ticket' })
       return
     }
