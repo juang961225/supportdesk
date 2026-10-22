@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
 import Modal from '../../components/Modal'
+import ConfirmDialog from '../../components/ConfirmDialog'
 import { getCategories, createCategory, updateCategory } from '../../services/categoryService'
 import { useToast } from '../../hooks/useToast'
 import type { Category } from '../../types'
@@ -20,6 +21,10 @@ function CategoriesPage() {
   const [formData, setFormData] = useState({ nombre: '', descripcion: '' })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
+
+  // Estado de la confirmación de desactivar
+  const [categoryToDeactivate, setCategoryToDeactivate] = useState<Category | null>(null)
+  const [isDeactivating, setIsDeactivating] = useState(false)
 
   useEffect(() => {
     fetchCategories()
@@ -95,7 +100,7 @@ function CategoriesPage() {
     }
   }
 
-  const handleToggleActive = async (category: Category) => {
+  const toggleActive = async (category: Category) => {
     try {
       const updated = await updateCategory(category._id, { activo: !category.activo })
       setCategories(categories.map(c =>
@@ -104,6 +109,26 @@ function CategoriesPage() {
       toast.success(`Categoría ${updated.activo ? 'activada' : 'desactivada'}`)
     } catch {
       toast.error('No se pudo cambiar el estado de la categoría')
+    }
+  }
+
+  // Desactivar pide confirmación; activar es directo
+  const handleToggleActive = (category: Category) => {
+    if (category.activo) {
+      setCategoryToDeactivate(category)
+    } else {
+      toggleActive(category)
+    }
+  }
+
+  const handleConfirmDeactivate = async () => {
+    if (!categoryToDeactivate) return
+    setIsDeactivating(true)
+    try {
+      await toggleActive(categoryToDeactivate)
+    } finally {
+      setIsDeactivating(false)
+      setCategoryToDeactivate(null)
     }
   }
 
@@ -257,6 +282,21 @@ function CategoriesPage() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={categoryToDeactivate !== null}
+        title="Desactivar categoría"
+        message={
+          <>
+            La categoría <span className="font-medium">"{categoryToDeactivate?.nombre}"</span> dejará
+            de estar disponible para nuevos tickets. Los tickets existentes no cambian.
+          </>
+        }
+        confirmLabel="Desactivar"
+        isLoading={isDeactivating}
+        onConfirm={handleConfirmDeactivate}
+        onCancel={() => setCategoryToDeactivate(null)}
+      />
     </Layout>
   )
 }

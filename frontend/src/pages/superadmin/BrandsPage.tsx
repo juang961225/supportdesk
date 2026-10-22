@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
 import Modal from '../../components/Modal'
-import { getBrands, createBrand } from '../../services/brandService'
+import ConfirmDialog from '../../components/ConfirmDialog'
+import { getBrands, createBrand, updateBrand } from '../../services/brandService'
 import { useToast } from '../../hooks/useToast'
 import type { Brand } from '../../types'
 
@@ -19,6 +20,10 @@ function BrandsPage() {
   const [nombre, setNombre] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
+
+  // Estado de la confirmación de desactivar
+  const [brandToDeactivate, setBrandToDeactivate] = useState<Brand | null>(null)
+  const [isDeactivating, setIsDeactivating] = useState(false)
 
   useEffect(() => {
     fetchBrands()
@@ -64,6 +69,38 @@ function BrandsPage() {
       }
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const changeEstado = async (brand: Brand, estado: Brand['estado']) => {
+    try {
+      const updated = await updateBrand(brand._id, { estado })
+      // El backend no devuelve el admin poblado: solo actualizamos el estado de la fila
+      setBrands(brands.map(b => (b._id === brand._id ? { ...b, estado: updated.estado } : b)))
+      toast.success(`Marca "${brand.nombre}" ${estado === 'activo' ? 'reactivada' : 'desactivada'}`)
+    } catch (err) {
+      const apiMsg = axios.isAxiosError(err) ? err.response?.data?.message : undefined
+      toast.error(apiMsg || 'No se pudo cambiar el estado de la marca')
+    }
+  }
+
+  // Desactivar pide confirmación; reactivar es directo
+  const handleToggleEstado = (brand: Brand) => {
+    if (brand.estado === 'activo') {
+      setBrandToDeactivate(brand)
+    } else {
+      changeEstado(brand, 'activo')
+    }
+  }
+
+  const handleConfirmDeactivate = async () => {
+    if (!brandToDeactivate) return
+    setIsDeactivating(true)
+    try {
+      await changeEstado(brandToDeactivate, 'inactivo')
+    } finally {
+      setIsDeactivating(false)
+      setBrandToDeactivate(null)
     }
   }
 
@@ -115,7 +152,7 @@ function BrandsPage() {
             ) : (
               brands.map((brand) => (
                 <div key={brand._id} className="p-6 flex items-center justify-between">
-                  <div>
+                  <div className={brand.estado === 'inactivo' ? 'opacity-50' : ''}>
                     <p className="font-medium text-gray-800 dark:text-white">
                       {brand.nombre}
                     </p>
@@ -123,13 +160,25 @@ function BrandsPage() {
                       {brand.admin ? brand.admin.nombre : 'Sin admin asignado'}
                     </p>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    brand.estado === 'activo'
-                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                      : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                  }`}>
-                    {brand.estado}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      brand.estado === 'activo'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                        : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                    }`}>
+                      {brand.estado}
+                    </span>
+                    <button
+                      onClick={() => handleToggleEstado(brand)}
+                      className={`text-xs px-3 py-1 rounded transition-colors ${
+                        brand.estado === 'activo'
+                          ? 'border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20'
+                          : 'border border-green-300 text-green-600 hover:bg-green-50 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-900/20'
+                      }`}
+                    >
+                      {brand.estado === 'activo' ? 'Desactivar' : 'Reactivar'}
+                    </button>
+                  </div>
                 </div>
               ))
             )}
@@ -182,6 +231,21 @@ function BrandsPage() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={brandToDeactivate !== null}
+        title="Desactivar marca"
+        message={
+          <>
+            Todos los usuarios de <span className="font-medium">"{brandToDeactivate?.nombre}"</span> perderán
+            el acceso. Los datos se conservan y podrás reactivarla después.
+          </>
+        }
+        confirmLabel="Desactivar"
+        isLoading={isDeactivating}
+        onConfirm={handleConfirmDeactivate}
+        onCancel={() => setBrandToDeactivate(null)}
+      />
     </Layout>
   )
 }

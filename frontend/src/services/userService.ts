@@ -3,8 +3,17 @@ import type { User } from '../types'
 
 export type { User }
 
+export interface UpdateUserData {
+  nombre?: string
+  email?: string
+  password?: string
+  estado?: User['estado']
+  rol?: User['rol']
+  marcaId?: string
+}
+
 export const getUsers = async (): Promise<User[]> => {
-  const response = await api.get('/auth/users')
+  const response = await api.get('/users')
   return response.data.users
 }
 
@@ -15,6 +24,11 @@ export const createUser = async (data: {
   rol: string
   marcaId?: string
 }): Promise<User> => {
-  const response = await api.post('/auth/create-user', data)
+  const response = await api.post('/users', data)
+  return response.data.user
+}
+
+export const updateUser = async (id: string, data: UpdateUserData): Promise<User> => {
+  const response = await api.patch(`/users/${id}`, data)
   return response.data.user
 }

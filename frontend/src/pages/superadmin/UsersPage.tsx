@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
 import Modal from '../../components/Modal'
-import { getUsers, createUser } from '../../services/userService'
+import ConfirmDialog from '../../components/ConfirmDialog'
+import EditUserModal from '../../components/EditUserModal'
+import { getUsers, createUser, updateUser } from '../../services/userService'
 import { getBrands } from '../../services/brandService'
 import { useToast } from '../../hooks/useToast'
 import type { User } from '../../types'
@@ -28,6 +30,11 @@ function UsersPage() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
+
+  // Edición y desactivación
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null)
+  const [isDeactivating, setIsDeactivating] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -86,6 +93,46 @@ function UsersPage() {
     }
   }
 
+  const replaceUser = (updated: User) => {
+    setUsers(users.map(u => (u._id === updated._id ? updated : u)))
+  }
+
+  const changeEstado = async (user: User, estado: User['estado']) => {
+    try {
+      const updated = await updateUser(user._id, { estado })
+      replaceUser(updated)
+      toast.success(`Usuario "${user.nombre}" ${estado === 'activo' ? 'reactivado' : 'desactivado'}`)
+    } catch (err) {
+      const apiMsg = axios.isAxiosError(err) ? err.response?.data?.message : undefined
+      toast.error(apiMsg || 'No se pudo cambiar el estado del usuario')
+    }
+  }
+
+  // Desactivar pide confirmación; reactivar es directo
+  const handleToggleEstado = (user: User) => {
+    if (user.estado === 'activo') {
+      setUserToDeactivate(user)
+    } else {
+      changeEstado(user, 'activo')
+    }
+  }
+
+  const handleConfirmDeactivate = async () => {
+    if (!userToDeactivate) return
+    setIsDeactivating(true)
+    try {
+      await changeEstado(userToDeactivate, 'inactivo')
+    } finally {
+      setIsDeactivating(false)
+      setUserToDeactivate(null)
+    }
+  }
+
+  const handleSaved = (updated: User) => {
+    replaceUser(updated)
+    setEditingUser(null)
+  }
+
   const handleCloseModal = () => {
     setIsModalOpen(false)
     setFormData({ nombre: '', email: '', password: '', rol: 'admin', marcaId: '' })
@@ -142,7 +189,7 @@ function UsersPage() {
             ) : (
               users.map((user) => (
                 <div key={user._id} className="p-6 flex items-center justify-between">
-                  <div>
+                  <div className={user.estado === 'inactivo' ? 'opacity-50' : ''}>
                     <p className="font-medium text-gray-800 dark:text-white">
                       {user.nombre}
                     </p>
@@ -166,6 +213,26 @@ function UsersPage() {
                     }`}>
                       {user.estado}
                     </span>
+                    {user.rol !== 'superadmin' && (
+                      <>
+                        <button
+                          onClick={() => setEditingUser(user)}
+                          className="text-xs px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleToggleEstado(user)}
+                          className={`text-xs px-3 py-1 rounded transition-colors ${
+                            user.estado === 'activo'
+                              ? 'border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20'
+                              : 'border border-green-300 text-green-600 hover:bg-green-50 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-900/20'
+                          }`}
+                        >
+                          {user.estado === 'activo' ? 'Desactivar' : 'Reactivar'}
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               ))
@@ -284,6 +351,30 @@ function UsersPage() {
           </div>
         </form>
       </Modal>
+
+      <EditUserModal
+        user={editingUser}
+        rolesPermitidos={['admin', 'soporte', 'usuario']}
+        brands={brands}
+        onClose={() => setEditingUser(null)}
+        onSaved={handleSaved}
+      />
+
+      <ConfirmDialog
+        isOpen={userToDeactivate !== null}
+        title="Desactivar usuario"
+        message={
+          <>
+            <span className="font-medium">{userToDeactivate?.nombre}</span> perderá el acceso de inmediato.
+            {userToDeactivate?.rol === 'soporte' && ' Sus tickets abiertos quedarán sin asignar.'}
+            {' '}Podrás reactivarlo después.
+          </>
+        }
+        confirmLabel="Desactivar"
+        isLoading={isDeactivating}
+        onConfirm={handleConfirmDeactivate}
+        onCancel={() => setUserToDeactivate(null)}
+      />
     </Layout>
   )
 }
