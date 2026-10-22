@@ -2,6 +2,8 @@ import { Response, NextFunction } from 'express'
 import mongoose from 'mongoose'
 import Ticket from '../models/Ticket'
 import TicketCategory from '../models/TicketCategory'
+import User from '../models/User'
+import { esEstadoValido, puedeTransicionar, aplicarEstado } from '../utils/ticketStatus'
 import { AuthRequest } from '../middlewares/auth'
 import { PopulatedTicket } from '../types/ticket.types'
 
@@ -154,6 +156,7 @@ export const getTicketById = async (req: AuthRequest, res: Response, next: NextF
 }
 
 // PUT /api/tickets/:id/assign — asignar ticket a un soporter (admin)
+// La asignación no cambia el estado: el soporte lo pasa a en_progreso cuando empieza
 export const assignTicket = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { soporterId } = req.body || {}
@@ -173,8 +176,24 @@ export const assignTicket = async (req: AuthRequest, res: Response, next: NextFu
       return
     }
 
-    ticket.asignadoA = soporterId
-    ticket.estado = 'en_progreso'
+    if (ticket.estado === 'cerrado') {
+      res.status(400).json({ message: 'No se puede asignar un ticket cerrado' })
+      return
+    }
+
+    // El soporte debe ser de la misma marca y estar activo
+    const soporte = await User.findOne({
+      _id: soporterId,
+      rol: 'soporte',
+      marca: req.user?.marca,
+      estado: 'activo'
+    })
+    if (!soporte) {
+      res.status(400).json({ message: 'El soporte no existe, no es de tu marca o está inactivo' })
+      return
+    }
+
+    ticket.asignadoA = soporte._id
     await ticket.save()
 
     const ticketActualizado = await Ticket.findById(ticket._id)
@@ -193,68 +212,47 @@ export const assignTicket = async (req: AuthRequest, res: Response, next: NextFu
   }
 }
 
-// PUT /api/tickets/:id/status — actualizar estado (soporte)
+// PUT /api/tickets/:id/status — cambiar estado
+// soporte: solo el asignado, siguiendo el flujo · usuario: solo reabrir sus tickets cerrados
 export const updateTicketStatus = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { estado } = req.body || {}
     const { rol, id } = req.user!
 
-    // El usuario solo puede reabrir — el soporte puede cambiar a cualquier estado válido
-    if (rol === 'usuario') {
-      if (estado !== 'reabierto') {
-        res.status(403).json({ message: 'Solo puedes reabrir un ticket' })
-        return
-      }
-      // Busca el ticket donde el usuario es el creador
-      const ticket = await Ticket.findOne({
-        _id: req.params.id,
-        creadoPor: id,
-        estado: 'cerrado' // solo puede reabrir tickets cerrados
-      })
-
-      if (!ticket) {
-        res.status(404).json({ message: 'Ticket no encontrado o no puedes reabrirlo' })
-        return
-      }
-
-      ticket.estado = 'reabierto'
-      ticket.fechaCierre = undefined
-      await ticket.save()
-
-      const ticketActualizado = await Ticket.findById(ticket._id)
-        .populate('asignadoA', 'nombre email')
-        .populate('categoria', 'nombre')
-        .populate('creadoPor', 'nombre email')
-        .populate('marca', 'nombre')
-
-      res.status(200).json({
-        message: 'Ticket reabierto exitosamente',
-        ticket: ticketActualizado
-      })
+    if (!esEstadoValido(estado)) {
+      res.status(400).json({ message: 'Estado inválido' })
       return
     }
 
-    // Lógica del soporte — igual que antes
-    const estadosValidos = ['en_progreso', 'en_revision', 'cerrado', 'reabierto']
-    if (!estado || !estadosValidos.includes(estado)) {
-      res.status(400).json({ message: `Estado inválido. Debe ser: ${estadosValidos.join(', ')}` })
+    if (rol === 'usuario' && estado !== 'reabierto') {
+      res.status(403).json({ message: 'Solo puedes reabrir un ticket' })
       return
     }
 
-    const ticket = await Ticket.findOne({
-      _id: req.params.id,
-      asignadoA: id
-    })
+    if (rol === 'soporte' && estado === 'reabierto') {
+      res.status(403).json({ message: 'Solo el usuario creador puede reabrir un ticket' })
+      return
+    }
+
+    // El usuario busca entre los que creó; el soporte entre los asignados a él
+    const ticket = await Ticket.findOne(
+      rol === 'usuario'
+        ? { _id: req.params.id, creadoPor: id }
+        : { _id: req.params.id, asignadoA: id }
+    )
 
     if (!ticket) {
-      res.status(404).json({ message: 'Ticket no encontrado o no asignado a ti' })
+      res.status(404).json({ message: 'Ticket no encontrado o sin permiso para cambiar su estado' })
       return
     }
 
-    ticket.estado = estado
-    if (estado === 'cerrado') {
-      ticket.fechaCierre = new Date()
+    if (!puedeTransicionar(ticket.estado, estado)) {
+      res.status(400).json({ message: `Transición no permitida: ${ticket.estado} → ${estado}` })
+      return
     }
+
+    // Al reabrir se conserva asignadoA: vuelve al soporte que lo cerró
+    aplicarEstado(ticket, estado)
     await ticket.save()
 
     const ticketActualizado = await Ticket.findById(ticket._id)
@@ -264,7 +262,7 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
       .populate('marca', 'nombre')
 
     res.status(200).json({
-      message: 'Estado actualizado exitosamente',
+      message: estado === 'reabierto' ? 'Ticket reabierto exitosamente' : 'Estado actualizado exitosamente',
       ticket: ticketActualizado
     })
 

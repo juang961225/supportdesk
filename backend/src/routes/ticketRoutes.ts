@@ -19,10 +19,10 @@ router.get('/', authenticate, authorize('superadmin', 'admin', 'soporte', 'usuar
 // Ver un ticket — todos los roles
 router.get('/:id', authenticate, authorize('superadmin', 'admin', 'soporte', 'usuario'), getTicketById)
 
-// Asignar ticket — solo admin y superadmin
-router.put('/:id/assign', authenticate, authorize('admin', 'superadmin'), assignTicket)
+// Asignar ticket — solo admin (superadmin es solo lectura)
+router.put('/:id/assign', authenticate, authorize('admin'), assignTicket)
 
-// Actualizar estado — solo soporte
+// Actualizar estado — soporte (flujo) y usuario (reabrir)
 router.put('/:id/status', authenticate, authorize('soporte', 'usuario'), updateTicketStatus)
 
 export default router
