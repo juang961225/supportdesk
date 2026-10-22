@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
+import CommentThread from '../../components/CommentThread'
 import { getTicketById, updateTicketStatus } from '../../services/ticketService'
-import { getComments, createComment } from '../../services/commentService'
-import type { Comment } from '../../services/commentService'
 import { useToast } from '../../hooks/useToast'
 import { estadoColor } from '../../utils/ticketColors'
 import type { Ticket } from '../../types'
@@ -28,10 +27,7 @@ function SoporteTicketDetail() {
   const { toast } = useToast()
 
   const [ticket, setTicket] = useState<Ticket | null>(null)
-  const [comments, setComments] = useState<Comment[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [contenido, setContenido] = useState('')
-  const [isSending, setIsSending] = useState(false)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [isConfirmingClose, setIsConfirmingClose] = useState(false)
 
@@ -41,33 +37,11 @@ function SoporteTicketDetail() {
 
   const fetchData = async (ticketId: string) => {
     try {
-      const [ticketData, commentsData] = await Promise.all([
-        getTicketById(ticketId),
-        getComments(ticketId)
-      ])
-      setTicket(ticketData)
-      setComments(commentsData)
+      setTicket(await getTicketById(ticketId))
     } catch {
       toast.error('No se pudo cargar el ticket')
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const handleSendComment = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!contenido.trim() || !id) return
-
-    setIsSending(true)
-    try {
-      const newComment = await createComment(id, contenido)
-      setComments([...comments, newComment])
-      setContenido('')
-      toast.success('Comentario enviado')
-    } catch {
-      toast.error('No se pudo enviar el comentario')
-    } finally {
-      setIsSending(false)
     }
   }
 
@@ -192,76 +166,7 @@ function SoporteTicketDetail() {
           )}
         </div>
 
-        {/* Historial de comentarios */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-4">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-            Historial ({comments.length})
-          </h3>
-
-          {comments.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
-              No hay comentarios todavía
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {comments.map((comment) => (
-                <div key={comment._id} className="flex gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
-                      {comment.autor.nombre.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="text-sm font-medium text-gray-800 dark:text-white">
-                        {comment.autor.nombre}
-                      </p>
-                      <span className="text-xs text-gray-400 dark:text-gray-500">
-                        {new Date(comment.createdAt).toLocaleString('es-CO', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {comment.contenido}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Agregar comentario */}
-        {ticket.estado !== 'cerrado' && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-              Agregar comentario
-            </h3>
-            <form onSubmit={handleSendComment}>
-              <textarea
-                value={contenido}
-                onChange={(e) => setContenido(e.target.value)}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                rows={3}
-                placeholder="Escribe tu comentario..."
-              />
-              <div className="flex justify-end mt-3">
-                <button
-                  type="submit"
-                  disabled={isSending || !contenido.trim()}
-                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                >
-                  {isSending ? 'Enviando...' : 'Enviar'}
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
+        <CommentThread ticketId={ticket._id} canComment={ticket.estado !== 'cerrado'} />
       </div>
 
       <ConfirmDialog
