@@ -13,6 +13,7 @@ const menuItems = {
   admin: [
     { label: 'Dashboard', path: '/admin/dashboard' },
     { label: 'Tickets', path: '/admin/tickets' },
+    { label: 'Áreas', path: '/admin/areas' },
     { label: 'Categorías', path: '/admin/categories' },
     { label: 'Usuarios', path: '/admin/users' },
   ],

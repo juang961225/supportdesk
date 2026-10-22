@@ -4,9 +4,11 @@ import Layout from '../../components/Layout'
 import Modal from '../../components/Modal'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import EditUserModal from '../../components/EditUserModal'
+import AreaSelector from '../../components/AreaSelector'
+import { getAreas } from '../../services/areaService'
 import { getUsers, createUser, updateUser } from '../../services/userService'
 import { useToast } from '../../hooks/useToast'
-import type { User } from '../../types'
+import type { User, Area } from '../../types'
 
 const rolColor: Record<string, string> = {
   admin: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
@@ -17,6 +19,8 @@ const rolColor: Record<string, string> = {
 function AdminUsersPage() {
   const { toast } = useToast()
   const [users, setUsers] = useState<User[]>([])
+  const [areas, setAreas] = useState<Area[]>([])
+  const [newAreaIds, setNewAreaIds] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -41,9 +45,10 @@ function AdminUsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const data = await getUsers()
+      const [data, areasData] = await Promise.all([getUsers(), getAreas()])
       // Filtra el superadmin — el admin no debe verlo
       setUsers(data.filter(u => u.rol !== 'superadmin'))
+      setAreas(areasData)
     } catch {
       setError('Error al cargar los usuarios')
       toast.error('No se pudieron cargar los usuarios')
@@ -69,7 +74,10 @@ function AdminUsersPage() {
     setFormError('')
 
     try {
-      const newUser = await createUser(formData)
+      const newUser = await createUser({
+        ...formData,
+        areaIds: formData.rol === 'soporte' ? newAreaIds : undefined
+      })
       setUsers([newUser, ...users])
       toast.success(`Usuario "${newUser.nombre}" creado`)
       handleCloseModal()
@@ -131,6 +139,7 @@ function AdminUsersPage() {
     setIsModalOpen(false)
     setFormData({ nombre: '', email: '', password: '', rol: 'soporte' })
     setFormError('')
+    setNewAreaIds([])
   }
 
   if (isLoading) {
@@ -180,6 +189,11 @@ function AdminUsersPage() {
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       {user.email}
                     </p>
+                    {user.rol === 'soporte' && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                        Áreas: {user.areas?.length ? user.areas.map(a => a.nombre).join(', ') : 'sin áreas'}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`text-xs px-2 py-1 rounded-full ${rolColor[user.rol]}`}>
@@ -286,6 +300,9 @@ function AdminUsersPage() {
                 <option value="usuario">Usuario</option>
               </select>
             </div>
+            {formData.rol === 'soporte' && (
+              <AreaSelector areas={areas} selected={newAreaIds} onChange={setNewAreaIds} />
+            )}
           </div>
 
           <div className="flex gap-3 justify-end mt-6">
@@ -310,6 +327,7 @@ function AdminUsersPage() {
       <EditUserModal
         user={editingUser}
         rolesPermitidos={['soporte', 'usuario']}
+        areas={areas}
         onClose={() => setEditingUser(null)}
         onSaved={handleSaved}
       />

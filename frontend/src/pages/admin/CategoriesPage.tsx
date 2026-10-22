@@ -4,12 +4,14 @@ import Layout from '../../components/Layout'
 import Modal from '../../components/Modal'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { getCategories, createCategory, updateCategory } from '../../services/categoryService'
+import { getAreas } from '../../services/areaService'
 import { useToast } from '../../hooks/useToast'
-import type { Category } from '../../types'
+import type { Category, Area } from '../../types'
 
 function CategoriesPage() {
   const { toast } = useToast()
   const [categories, setCategories] = useState<Category[]>([])
+  const [areas, setAreas] = useState<Area[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -18,7 +20,7 @@ function CategoriesPage() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
 
   // Estado del formulario
-  const [formData, setFormData] = useState({ nombre: '', descripcion: '' })
+  const [formData, setFormData] = useState({ nombre: '', descripcion: '', areaId: '' })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
 
@@ -32,8 +34,9 @@ function CategoriesPage() {
 
   const fetchCategories = async () => {
     try {
-      const data = await getCategories()
-      setCategories(data)
+      const [categoriesData, areasData] = await Promise.all([getCategories(), getAreas()])
+      setCategories(categoriesData)
+      setAreas(areasData)
     } catch {
       setError('Error al cargar las categorías')
       toast.error('No se pudieron cargar las categorías')
@@ -44,7 +47,7 @@ function CategoriesPage() {
 
   const handleOpenCreate = () => {
     setEditingCategory(null)
-    setFormData({ nombre: '', descripcion: '' })
+    setFormData({ nombre: '', descripcion: '', areaId: '' })
     setFormError('')
     setIsModalOpen(true)
   }
@@ -53,7 +56,8 @@ function CategoriesPage() {
     setEditingCategory(category)
     setFormData({
       nombre: category.nombre,
-      descripcion: category.descripcion || ''
+      descripcion: category.descripcion || '',
+      areaId: category.area?._id || ''
     })
     setFormError('')
     setIsModalOpen(true)
@@ -62,9 +66,9 @@ function CategoriesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.nombre.trim()) {
-      setFormError('El nombre es obligatorio')
-      toast.warning('El nombre es obligatorio')
+    if (!formData.nombre.trim() || !formData.areaId) {
+      setFormError('El nombre y el área son obligatorios')
+      toast.warning('El nombre y el área son obligatorios')
       return
     }
 
@@ -135,7 +139,7 @@ function CategoriesPage() {
   const handleCloseModal = () => {
     setIsModalOpen(false)
     setEditingCategory(null)
-    setFormData({ nombre: '', descripcion: '' })
+    setFormData({ nombre: '', descripcion: '', areaId: '' })
     setFormError('')
   }
 
@@ -190,6 +194,9 @@ function CategoriesPage() {
                         {category.descripcion}
                       </p>
                     )}
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      Área: {category.area?.nombre ?? 'Sin área'}
+                    </p>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`text-xs px-2 py-1 rounded-full ${
@@ -261,6 +268,24 @@ function CategoriesPage() {
                 className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Descripción de la categoría"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Área
+              </label>
+              <select
+                value={formData.areaId}
+                onChange={(e) => setFormData({ ...formData, areaId: e.target.value })}
+                className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Selecciona un área</option>
+                {areas.filter(a => a.activo || a._id === formData.areaId).map((area) => (
+                  <option key={area._id} value={area._id}>{area.nombre}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                Los tickets nuevos de esta categoría entran a la cola de esta área.
+              </p>
             </div>
           </div>
 

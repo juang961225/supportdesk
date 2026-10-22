@@ -196,6 +196,11 @@ function UsersPage() {
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       {user.email}
                     </p>
+                    {user.rol === 'soporte' && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                        Áreas: {user.areas?.length ? user.areas.map(a => a.nombre).join(', ') : 'sin áreas'}
+                      </p>
+                    )}
                     {user.marca && (
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                         {user.marca.nombre}

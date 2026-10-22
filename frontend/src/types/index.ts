@@ -9,6 +9,21 @@ export interface User {
     _id: string
     nombre: string
   }
+  areas?: AreaRef[] // solo soporte
+}
+
+// Referencia poblada a un área (nombre para mostrar)
+export interface AreaRef {
+  _id: string
+  nombre: string
+}
+
+export interface Area {
+  _id: string
+  nombre: string
+  descripcion?: string
+  activo: boolean
+  marca: string
 }
 
 export interface Brand {
@@ -59,6 +74,7 @@ export interface Category {
   descripcion?: string
   activo: boolean
   marca: string
+  area?: AreaRef
 }
 export interface TicketEvent {
   _id: string
