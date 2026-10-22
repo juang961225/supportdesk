@@ -77,14 +77,29 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
       return
     }
 
-    // 4. Generar el JWT
+    // 4. Validar que el usuario y su marca estén activos
+    // (después del password, para no revelar el estado de cuentas ajenas)
+    if (user.estado === 'inactivo') {
+      res.status(403).json({ message: 'Tu cuenta está desactivada' })
+      return
+    }
+
+    if (user.marca) {
+      const brand = await Brand.findById(user.marca).select('estado')
+      if (!brand || brand.estado === 'inactivo') {
+        res.status(403).json({ message: 'Tu marca está desactivada' })
+        return
+      }
+    }
+
+    // 5. Generar el JWT
     const token = jwt.sign(
       { id: user._id, rol: user.rol, marca: user.marca },   // payload — datos que guarda el token
       process.env.JWT_SECRET as string,   // secret — clave para firmarlo
       { expiresIn: '24h' }               // expira en 24 horas
     )
 
-    // 5. Responder con el token
+    // 6. Responder con el token
     res.status(200).json({
       message: 'Login exitoso',
       token,
