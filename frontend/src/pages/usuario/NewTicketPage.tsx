@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import Layout from '../../components/Layout'
+import { PageSkeleton } from '../../components/Skeleton'
 import { createTicket } from '../../services/ticketService'
 import { getCategories } from '../../services/categoryService'
 import { useToast } from '../../hooks/useToast'
@@ -79,9 +80,7 @@ function NewTicketPage() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
-        </div>
+        <PageSkeleton variant="formulario" />
       </Layout>
     )
   }

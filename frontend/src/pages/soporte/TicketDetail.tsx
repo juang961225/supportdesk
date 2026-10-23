@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
+import { PageSkeleton } from '../../components/Skeleton'
 import CommentThread from '../../components/CommentThread'
 import AttachmentList from '../../components/AttachmentList'
 import ObserversPanel from '../../components/ObserversPanel'
@@ -122,9 +123,7 @@ function SoporteTicketDetail() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
-        </div>
+        <PageSkeleton variant="detalle" />
       </Layout>
     )
   }

@@ -5,6 +5,7 @@ import type { Comment } from '../services/commentService'
 import { useToast } from '../hooks/useToast'
 import AttachmentInput from './AttachmentInput'
 import AttachmentList from './AttachmentList'
+import { SkeletonLines } from './Skeleton'
 
 interface CommentThreadProps {
   ticketId: string
@@ -101,7 +102,7 @@ function CommentThread({
         </h3>
 
         {isLoading ? (
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Cargando comentarios...</p>
+          <SkeletonLines count={3} />
         ) : comments.length === 0 ? (
           <p className="text-gray-500 dark:text-gray-400 text-sm">No hay comentarios todavía</p>
         ) : (

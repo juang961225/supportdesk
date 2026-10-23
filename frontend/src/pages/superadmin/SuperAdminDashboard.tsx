@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import StatCard from '../../components/StatCard'
 import EmptyState from '../../components/EmptyState'
+import { PageSkeleton } from '../../components/Skeleton'
 import { getSuperadminSummary } from '../../services/dashboardService'
 import type { SuperadminSummary } from '../../services/dashboardService'
 import { useToast } from '../../hooks/useToast'
@@ -28,12 +29,18 @@ function SuperAdminDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  if (isLoading || !summary) {
+  if (isLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500 dark:text-gray-400">{isLoading ? 'Cargando...' : 'Sin datos'}</p>
-        </div>
+        <PageSkeleton variant="dashboard" />
+      </Layout>
+    )
+  }
+
+  if (!summary) {
+    return (
+      <Layout>
+        <EmptyState icon="⚠️" title="No se pudieron cargar los datos" description="Recarga la página para intentarlo de nuevo." />
       </Layout>
     )
   }
