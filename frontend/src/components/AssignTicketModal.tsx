@@ -5,6 +5,7 @@ import { assignTicket } from '../services/ticketService'
 import { getAreaSoportes } from '../services/areaService'
 import { useToast } from '../hooks/useToast'
 import type { Ticket, User } from '../types'
+import { Skeleton } from './Skeleton'
 
 interface AssignTicketModalProps {
   ticket: Ticket | null
@@ -78,7 +79,7 @@ function AssignTicketModal({ ticket, title, excludeUserId, onClose, onAssigned }
 
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Soporte del área</label>
         {isLoading ? (
-          <p className="text-sm text-gray-500 dark:text-gray-400">Cargando soportes...</p>
+          <Skeleton className="h-10 w-full" />
         ) : soportes.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">No hay otros soportes activos en esta área.</p>
         ) : (

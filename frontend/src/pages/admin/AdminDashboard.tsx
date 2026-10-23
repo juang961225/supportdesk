@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import StatCard from '../../components/StatCard'
-import { TicketTimeBadge } from '../../components/TicketTimeBadge'
+import EmptyState from '../../components/EmptyState'
+import TicketCard from '../../components/TicketCard'
+import { PageSkeleton } from '../../components/Skeleton'
 import { getAdminSummary } from '../../services/dashboardService'
 import type { AdminSummary } from '../../services/dashboardService'
 import { useToast } from '../../hooks/useToast'
-import { prioridadColor, estadoColor } from '../../utils/ticketColors'
-import { estadoLabel } from '../../utils/ticketLabels'
 
 const thClass = 'px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase'
 const tdClass = 'px-4 py-2 text-sm text-gray-700 dark:text-gray-300'
@@ -37,12 +37,18 @@ function AdminDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  if (isLoading || !summary) {
+  if (isLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500 dark:text-gray-400">{isLoading ? 'Cargando...' : 'Sin datos'}</p>
-        </div>
+        <PageSkeleton variant="dashboard" />
+      </Layout>
+    )
+  }
+
+  if (!summary) {
+    return (
+      <Layout>
+        <EmptyState icon="⚠️" title="No se pudieron cargar los datos" description="Recarga la página para intentarlo de nuevo." />
       </Layout>
     )
   }
@@ -127,30 +133,10 @@ function AdminDashboard() {
           <p className="text-xs text-gray-400 dark:text-gray-500 px-6 pb-4">Sin asignar o vencidos, los que vencen antes primero</p>
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {urgentes.length === 0 ? (
-              <p className="p-6 text-gray-500 dark:text-gray-400">Todo al día: no hay tickets sin asignar ni vencidos</p>
+              <EmptyState icon="✅" title="Todo al día" description="No hay tickets sin asignar ni vencidos." />
             ) : (
               urgentes.map((ticket) => (
-                <div
-                  key={ticket._id}
-                  onClick={() => navigate(`/admin/tickets/${ticket._id}`)}
-                  className="p-4 px-6 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
-                >
-                  <div>
-                    <p className="font-medium text-gray-800 dark:text-white">{ticket.titulo}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      {ticket.area?.nombre ?? 'Sin área'} · {ticket.asignadoA ? `Atiende: ${ticket.asignadoA.nombre}` : 'Sin asignar'}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
-                    <span className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}>
-                      {ticket.prioridad}
-                    </span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${estadoColor[ticket.estado]}`}>
-                      {estadoLabel[ticket.estado]}
-                    </span>
-                  </div>
-                </div>
+                <TicketCard key={ticket._id} ticket={ticket} onClick={() => navigate(`/admin/tickets/${ticket._id}`)} />
               ))
             )}
           </div>

@@ -5,6 +5,7 @@ import type { Comment } from '../services/commentService'
 import { useToast } from '../hooks/useToast'
 import AttachmentInput from './AttachmentInput'
 import AttachmentList from './AttachmentList'
+import { SkeletonLines } from './Skeleton'
 
 interface CommentThreadProps {
   ticketId: string
@@ -101,7 +102,7 @@ function CommentThread({
         </h3>
 
         {isLoading ? (
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Cargando comentarios...</p>
+          <SkeletonLines count={3} />
         ) : comments.length === 0 ? (
           <p className="text-gray-500 dark:text-gray-400 text-sm">No hay comentarios todavía</p>
         ) : (
@@ -114,7 +115,7 @@ function CommentThread({
                   </span>
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
                     <p className="text-sm font-medium text-gray-800 dark:text-white">
                       {comment.autor.nombre}
                     </p>
@@ -154,7 +155,7 @@ function CommentThread({
               rows={3}
               placeholder={placeholder}
             />
-            <div className="flex items-start justify-between gap-3 mt-3">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-3">
               <AttachmentInput files={archivos} onChange={setArchivos} disabled={isSending} />
               <button
                 type="submit"

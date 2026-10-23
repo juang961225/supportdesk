@@ -12,3 +12,11 @@ export const estadoLabel: Record<Ticket['estado'], string> = {
 // Para valores que llegan como string sin tipar (ej. eventos del historial)
 export const labelDeEstado = (estado: string | undefined): string =>
   estado && estado in estadoLabel ? estadoLabel[estado as Ticket['estado']] : estado ?? ''
+
+// Etiquetas legibles para las prioridades (critica → "Crítica")
+export const prioridadLabel: Record<Ticket['prioridad'], string> = {
+  baja: 'Baja',
+  media: 'Media',
+  alta: 'Alta',
+  critica: 'Crítica',
+}

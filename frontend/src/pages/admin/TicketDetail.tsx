@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
+import { PageSkeleton } from '../../components/Skeleton'
 import CommentThread from '../../components/CommentThread'
 import AttachmentList from '../../components/AttachmentList'
 import ObserversPanel from '../../components/ObserversPanel'
@@ -52,9 +53,7 @@ function AdminTicketDetail() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
-        </div>
+        <PageSkeleton variant="detalle" />
       </Layout>
     )
   }
@@ -80,11 +79,11 @@ function AdminTicketDetail() {
 
         {/* Header del ticket */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-4">
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
             <h2 className="text-xl font-bold text-gray-800 dark:text-white">
               {ticket.titulo}
             </h2>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
               <span
                 className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}
@@ -108,7 +107,7 @@ function AdminTicketDetail() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-gray-500 dark:text-gray-400">Creado por</p>
               <p className="text-gray-800 dark:text-white font-medium">

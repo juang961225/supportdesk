@@ -3,6 +3,7 @@ import { getTicketHistory } from '../services/historyService'
 import { useToast } from '../hooks/useToast'
 import { labelDeEstado } from '../utils/ticketLabels'
 import type { TicketEvent } from '../types'
+import { SkeletonLines } from './Skeleton'
 
 interface TicketTimelineProps {
   ticketId: string
@@ -99,7 +100,7 @@ function TicketTimeline({ ticketId, refreshKey }: TicketTimelineProps) {
       </p>
 
       {isLoading ? (
-        <p className="text-gray-500 dark:text-gray-400 text-sm">Cargando historial...</p>
+        <SkeletonLines count={3} />
       ) : eventos.length === 0 ? (
         <p className="text-gray-500 dark:text-gray-400 text-sm">Sin historial</p>
       ) : (

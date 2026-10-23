@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
+import { PageSkeleton } from '../../components/Skeleton'
+import EmptyState from '../../components/EmptyState'
 import Modal from '../../components/Modal'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import EditUserModal from '../../components/EditUserModal'
@@ -145,9 +147,7 @@ function AdminUsersPage() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
-        </div>
+        <PageSkeleton variant="lista" />
       </Layout>
     )
   }
@@ -155,7 +155,7 @@ function AdminUsersPage() {
   return (
     <Layout>
       <div>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
             Usuarios
           </h2>
@@ -176,12 +176,15 @@ function AdminUsersPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {users.length === 0 ? (
-              <p className="p-6 text-gray-500 dark:text-gray-400">
-                No hay usuarios en tu marca
-              </p>
+              <EmptyState
+                icon="👥"
+                title="No hay usuarios en tu marca"
+                description="Crea soportes para atender las áreas y usuarios para que reporten tickets."
+                action={{ label: '+ Nuevo Usuario', onClick: () => setIsModalOpen(true) }}
+              />
             ) : (
               users.map((user) => (
-                <div key={user._id} className="p-6 flex items-center justify-between">
+                <div key={user._id} className="p-4 md:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className={user.estado === 'inactivo' ? 'opacity-50' : ''}>
                     <p className="font-medium text-gray-800 dark:text-white">
                       {user.nombre}

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
+import { PageSkeleton } from '../../components/Skeleton'
+import EmptyState from '../../components/EmptyState'
+import TicketCard from '../../components/TicketCard'
+import TicketList from '../../components/TicketList'
 import AssignTicketModal from '../../components/AssignTicketModal'
 import { getTickets } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
 import { useAuth } from '../../hooks/useAuth'
-import { prioridadColor, estadoColor } from '../../utils/ticketColors'
-import { TicketTimeBadge } from '../../components/TicketTimeBadge'
 import type { Ticket } from '../../types'
 import { useNavigate } from 'react-router-dom'
 
@@ -46,9 +48,7 @@ function TicketsPage() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
-        </div>
+        <PageSkeleton variant="lista" />
       </Layout>
     )
   }
@@ -57,7 +57,7 @@ function TicketsPage() {
     <Layout>
       <div>
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
             Tickets
           </h2>
@@ -73,60 +73,30 @@ function TicketsPage() {
         )}
 
         {/* Lista de tickets */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {tickets.length === 0 ? (
-              <p className="p-6 text-gray-500 dark:text-gray-400">
-                No hay tickets todavía
-              </p>
-            ) : (
-                tickets.map((ticket) => (
-                  <div
-                    key={ticket._id}
-                    onClick={() => navigate(`/admin/tickets/${ticket._id}`)}
-                    className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer transition-colors"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-800 dark:text-white">
-                          {ticket.titulo}
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                          {ticket.creadoPor.nombre} · {ticket.categoria.nombre} · Área: {ticket.area?.nombre ?? 'Sin área'}
-                        </p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                          {ticket.asignadoA
-                            ? `Asignado a: ${ticket.asignadoA.nombre}`
-                            : 'Sin asignar'
-                          }
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 ml-4">
-                        <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
-                        <span className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}>
-                          {ticket.prioridad}
-                        </span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${estadoColor[ticket.estado]}`}>
-                          {ticket.estado}
-                        </span>
-                        {canAssign && ticket.estado !== 'cerrado' && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setSelectedTicket(ticket)
-                            }}
-                            className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                          >
-                            {ticket.asignadoA ? 'Reasignar' : 'Asignar'}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))
-            )}
-          </div>
-        </div>
+        <TicketList
+          tickets={tickets}
+          vacio={
+            <EmptyState
+              icon="🎫"
+              title="No hay tickets todavía"
+              description="Cuando los usuarios de tu marca creen tickets, aparecerán aquí."
+            />
+          }
+          renderTicket={(ticket) => (
+            <TicketCard
+              ticket={ticket}
+              onClick={() => navigate(`/admin/tickets/${ticket._id}`)}
+              acciones={canAssign && ticket.estado !== 'cerrado' && (
+                <button
+                  onClick={() => setSelectedTicket(ticket)}
+                  className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                >
+                  {ticket.asignadoA ? 'Reasignar' : 'Asignar'}
+                </button>
+              )}
+            />
+          )}
+        />
       </div>
 
       {/* Modal de asignación */}
