@@ -9,6 +9,8 @@ import ticketRoutes from './routes/ticketRoutes'
 import { errorHandler } from './middlewares/errorHandler'
 import commentRoutes from './routes/commentRoutes'
 import userRoutes from './routes/userRoutes'
+import areaRoutes from './routes/areaRoutes'
+import dashboardRoutes from './routes/dashboardRoutes'
 
 dotenv.config()
 
@@ -22,6 +24,8 @@ app.use(express.json())
 
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
+app.use('/api/areas', areaRoutes)
+app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/brands', brandRoutes)
 app.use('/api/categories', categoryRoutes)
 app.use('/api/tickets', ticketRoutes)

@@ -9,6 +9,37 @@ export interface User {
     _id: string
     nombre: string
   }
+  areas?: AreaRef[] // solo soporte
+}
+
+// Archivo adjunto (ticket o comentario). `url` es temporal: la firma el backend en cada respuesta
+export interface Attachment {
+  key: string
+  nombre: string
+  mime: string
+  tamano: number
+  url: string
+}
+
+// Referencia poblada a un usuario
+export interface UserRef {
+  _id: string
+  nombre: string
+  email: string
+}
+
+// Referencia poblada a un área (nombre para mostrar)
+export interface AreaRef {
+  _id: string
+  nombre: string
+}
+
+export interface Area {
+  _id: string
+  nombre: string
+  descripcion?: string
+  activo: boolean
+  marca: string
 }
 
 export interface Brand {
@@ -47,7 +78,9 @@ export interface Ticket {
     _id: string
     nombre: string
   }
-  archivos: string[]
+  area?: AreaRef // área actual (cola donde está)
+  observadores?: UserRef[] // usuarios que siguen el ticket
+  archivos: Attachment[]
   fechaLimite?: string
   fechaCierre?: string
   createdAt: string
@@ -59,4 +92,30 @@ export interface Category {
   descripcion?: string
   activo: boolean
   marca: string
+  area?: AreaRef
+}
+export interface TicketEvent {
+  _id: string
+  tipo:
+    | 'creado' | 'asignado' | 'reasignado' | 'estado' | 'desasignado'
+    | 'tomado' | 'soltado' | 'pasado' | 'movido'
+    | 'observador_agregado' | 'observador_quitado'
+  autor?: {
+    _id: string
+    nombre: string
+    rol: User['rol']
+  }
+  de?: string
+  a?: string
+  deNombre?: string
+  aNombre?: string
+  motivo?: string
+  createdAt: string | null
+  sintetico?: boolean
+}
+
+// Paso del ticket por un área (visible para todos, sin autores)
+export interface TramoRecorrido {
+  area: string
+  desde: string
 }

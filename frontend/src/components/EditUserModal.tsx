@@ -4,12 +4,14 @@ import Modal from './Modal'
 import { updateUser } from '../services/userService'
 import type { UpdateUserData } from '../services/userService'
 import { useToast } from '../hooks/useToast'
-import type { User, Brand } from '../types'
+import AreaSelector from './AreaSelector'
+import type { User, Brand, Area } from '../types'
 
 interface EditUserModalProps {
   user: User | null
   rolesPermitidos: User['rol'][]
   brands?: Brand[] // si viene, se muestra el selector de marca (solo superadmin)
+  areas?: Area[]   // si viene, se muestra el selector de áreas para soportes (admin)
   onClose: () => void
   onSaved: (user: User) => void
 }
@@ -26,9 +28,10 @@ const inputClass =
 
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'
 
-function EditUserModal({ user, rolesPermitidos, brands, onClose, onSaved }: EditUserModalProps) {
+function EditUserModal({ user, rolesPermitidos, brands, areas, onClose, onSaved }: EditUserModalProps) {
   const { toast } = useToast()
   const [formData, setFormData] = useState({ nombre: '', email: '', password: '', rol: '', marcaId: '' })
+  const [areaIds, setAreaIds] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
 
@@ -42,6 +45,7 @@ function EditUserModal({ user, rolesPermitidos, brands, onClose, onSaved }: Edit
       rol: user.rol,
       marcaId: user.marca?._id ?? '',
     })
+    setAreaIds(user.areas?.map((a) => a._id) ?? [])
     setFormError('')
   }, [user])
 
@@ -57,6 +61,10 @@ function EditUserModal({ user, rolesPermitidos, brands, onClose, onSaved }: Edit
     if (formData.password) changes.password = formData.password
     if (formData.rol !== original.rol) changes.rol = formData.rol as User['rol']
     if (brands && formData.marcaId && formData.marcaId !== original.marca?._id) changes.marcaId = formData.marcaId
+    if (areas && formData.rol === 'soporte') {
+      const originales = original.areas?.map((a) => a._id).sort().join() ?? ''
+      if ([...areaIds].sort().join() !== originales) changes.areaIds = areaIds
+    }
     return changes
   }
 
@@ -148,7 +156,9 @@ function EditUserModal({ user, rolesPermitidos, brands, onClose, onSaved }: Edit
             </div>
           )}
 
-          {/* B2: aquí se agrega el selector de áreas para soportes */}
+          {areas && formData.rol === 'soporte' && (
+            <AreaSelector areas={areas} selected={areaIds} onChange={setAreaIds} />
+          )}
         </div>
 
         <div className="flex gap-3 justify-end mt-6">

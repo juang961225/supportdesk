@@ -1,5 +1,5 @@
 import api from './api'
-import type { User } from '../types'
+import type { User, UserRef } from '../types'
 
 export type { User }
 
@@ -10,6 +10,7 @@ export interface UpdateUserData {
   estado?: User['estado']
   rol?: User['rol']
   marcaId?: string
+  areaIds?: string[]
 }
 
 export const getUsers = async (): Promise<User[]> => {
@@ -23,6 +24,7 @@ export const createUser = async (data: {
   password: string
   rol: string
   marcaId?: string
+  areaIds?: string[]
 }): Promise<User> => {
   const response = await api.post('/users', data)
   return response.data.user
@@ -31,4 +33,10 @@ export const createUser = async (data: {
 export const updateUser = async (id: string, data: UpdateUserData): Promise<User> => {
   const response = await api.patch(`/users/${id}`, data)
   return response.data.user
+}
+
+// Autocompletado: usuarios activos de la marca cuyo nombre o email contiene el texto (mín. 2 letras)
+export const searchUsers = async (q: string): Promise<UserRef[]> => {
+  const response = await api.get('/users/search', { params: { q } })
+  return response.data.users
 }

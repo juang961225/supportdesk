@@ -1,114 +1,96 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
-import { getBrands } from '../../services/brandService'
-import { getUsers } from '../../services/userService'
-import type { Brand } from '../../services/brandService'
-import type { User } from '../../services/userService'
+import StatCard from '../../components/StatCard'
+import { getSuperadminSummary } from '../../services/dashboardService'
+import type { SuperadminSummary } from '../../services/dashboardService'
+import { useToast } from '../../hooks/useToast'
+
+const thClass = 'px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase'
+const tdClass = 'px-4 py-2 text-sm text-gray-700 dark:text-gray-300'
 
 function SuperAdminDashboard() {
-  const [brands, setBrands] = useState<Brand[]>([])
-  const [users, setUsers] = useState<User[]>([])
+  const { toast } = useToast()
+  const [summary, setSummary] = useState<SuperadminSummary | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchSummary = async () => {
       try {
-        // Llama las dos APIs al mismo tiempo
-        const [brandsData, usersData] = await Promise.all([
-          getBrands(),
-          getUsers()
-        ])
-        setBrands(brandsData)
-        setUsers(usersData)
+        setSummary(await getSuperadminSummary())
       } catch {
-        setError('Error al cargar los datos')
+        toast.error('No se pudieron cargar los datos del dashboard')
       } finally {
         setIsLoading(false)
       }
     }
+    fetchSummary()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-    fetchData()
-  }, []) // ← array vacío = solo se ejecuta al montar
-
-  if (isLoading) {
+  if (isLoading || !summary) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
+          <p className="text-gray-500 dark:text-gray-400">{isLoading ? 'Cargando...' : 'Sin datos'}</p>
         </div>
       </Layout>
     )
   }
 
-  if (error) {
-    return (
-      <Layout>
-        <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded">
-          {error}
-        </div>
-      </Layout>
-    )
-  }
+  const { totales, porMarca } = summary
 
   return (
     <Layout>
       <div>
-        {/* Título */}
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
-          Dashboard
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Dashboard</h2>
 
-        {/* Tarjetas de resumen */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Marcas</p>
-            <p className="text-3xl font-bold text-gray-800 dark:text-white mt-1">
-              {brands.length}
-            </p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Usuarios</p>
-            <p className="text-3xl font-bold text-gray-800 dark:text-white mt-1">
-              {users.length}
-            </p>
-          </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <StatCard label="Marcas activas" value={totales.marcasActivas} color="text-blue-600 dark:text-blue-400" />
+          <StatCard label="Tickets abiertos" value={totales.abiertos} color="text-yellow-600 dark:text-yellow-400" />
+          <StatCard label="Vencidos" value={totales.vencidos} color="text-red-600 dark:text-red-400" />
+          <StatCard label="Usuarios activos" value={totales.usuariosActivos} color="text-green-600 dark:text-green-400" />
         </div>
 
-        {/* Lista de marcas */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-              Marcas
-            </h3>
-          </div>
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {brands.length === 0 ? (
-              <p className="p-6 text-gray-500 dark:text-gray-400">
-                No hay marcas creadas
-              </p>
-            ) : (
-              brands.map((brand) => (
-                <div key={brand._id} className="p-6 flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-800 dark:text-white">
-                      {brand.nombre}
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {brand.admin ? brand.admin.nombre : 'Sin admin asignado'}
-                    </p>
-                  </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    brand.estado === 'activo'
-                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                      : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                  }`}>
-                    {brand.estado}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-x-auto">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white p-4 pb-2">Por marca</h3>
+          {porMarca.length === 0 ? (
+            <p className="p-4 text-sm text-gray-500 dark:text-gray-400">No hay marcas creadas</p>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th className={thClass}>Marca</th>
+                  <th className={thClass}>Estado</th>
+                  <th className={thClass}>Abiertos</th>
+                  <th className={thClass}>Vencidos</th>
+                  <th className={thClass}>Cerrados</th>
+                  <th className={thClass}>Usuarios activos</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {porMarca.map((fila) => (
+                  <tr key={fila.marca._id} className={fila.marca.estado === 'activo' ? '' : 'opacity-50'}>
+                    <td className={`${tdClass} font-medium`}>{fila.marca.nombre}</td>
+                    <td className={tdClass}>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        fila.marca.estado === 'activo'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                          : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                      }`}>
+                        {fila.marca.estado}
+                      </span>
+                    </td>
+                    <td className={tdClass}>{fila.abiertos}</td>
+                    <td className={tdClass}>
+                      <span className={fila.vencidos > 0 ? 'text-red-600 dark:text-red-400 font-medium' : ''}>{fila.vencidos}</span>
+                    </td>
+                    <td className={tdClass}>{fila.cerrados}</td>
+                    <td className={tdClass}>{fila.usuariosActivos}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </Layout>

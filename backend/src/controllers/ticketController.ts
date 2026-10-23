@@ -2,26 +2,22 @@ import { Response, NextFunction } from 'express'
 import mongoose from 'mongoose'
 import Ticket from '../models/Ticket'
 import TicketCategory from '../models/TicketCategory'
+import User from '../models/User'
+import TicketEvent, { TipoEvento } from '../models/TicketEvent'
+import { esEstadoValido, puedeTransicionar, aplicarEstado } from '../utils/ticketStatus'
 import { AuthRequest } from '../middlewares/auth'
-import { PopulatedTicket } from '../types/ticket.types'
+import { puedeVerTicket } from '../utils/ticketAccess'
+import { registrarEvento } from '../services/ticketEvents'
+import { findTicketResponse } from '../services/ticketQueries'
+import { calcularFechaLimite } from '../utils/fechaLimite'
+import { buscarObservadorValido } from './ticketObserverController'
+import { guardarAdjuntos } from '../services/attachments'
+import { storageConfigurado } from '../services/storage'
 
-// Calcula la fecha límite según la prioridad
-const calcularFechaLimite = (prioridad: string): Date => {
-  const ahora = new Date()
-  const horas: Record<string, number> = {
-    critica: 4,
-    alta: 24,
-    media: 72,
-    baja: 168
-  }
-  ahora.setHours(ahora.getHours() + (horas[prioridad] || 72))
-  return ahora
-}
-
-// POST /api/tickets — crear ticket (usuario)
+// POST /api/tickets — crear ticket (usuario). multipart/form-data: campos + archivos opcionales
 export const createTicket = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { titulo, descripcion, prioridad, categoriaId } = req.body || {}
+    const { titulo, descripcion, prioridad, categoriaId, observadorIds } = req.body || {}
 
     if (!titulo || !descripcion || !prioridad || !categoriaId) {
       res.status(400).json({ message: 'Título, descripción, prioridad y categoría son obligatorios' })
@@ -51,6 +47,26 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       return
     }
 
+    const files = (req.files as Express.Multer.File[] | undefined) ?? []
+    if (files.length > 0 && !storageConfigurado()) {
+      res.status(503).json({ message: 'El almacenamiento de archivos no está configurado' })
+      return
+    }
+
+    // Observadores opcionales: usuarios activos de la marca, distintos del creador
+    // (en multipart un solo valor llega como string y varios como array)
+    const idsRecibidos: unknown[] = observadorIds === undefined ? [] : [].concat(observadorIds)
+    const idsPedidos: string[] = [...new Set(idsRecibidos.map(String))]
+    const observadores = []
+    for (const observadorId of idsPedidos) {
+      const observador = await buscarObservadorValido(observadorId, marcaId, req.user!.id)
+      if (!observador) {
+        res.status(400).json({ message: 'Alguno de los observadores no es un usuario activo de tu marca' })
+        return
+      }
+      observadores.push(observador)
+    }
+
     const fechaLimite = calcularFechaLimite(prioridad)
 
     const ticket = await Ticket.create({
@@ -59,16 +75,37 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       prioridad,
       categoria: categoriaId,
       marca: marcaId,
+      area: categoria.area, // el ticket entra a la cola del área de su categoría
       creadoPor: req.user?.id,
+      observadores: observadores.map((o) => o._id),
       fechaLimite
     })
 
+    // Los adjuntos se guardan bajo el id del ticket, por eso se suben después de crearlo
+    if (files.length > 0) {
+      ticket.archivos = await guardarAdjuntos(files, ticket._id)
+      await ticket.save()
+    }
+
+    await registrarEvento({
+      ticket: ticket._id,
+      marca: ticket.marca,
+      tipo: 'creado',
+      autor: req.user!.id
+    })
+    for (const observador of observadores) {
+      await registrarEvento({
+        ticket: ticket._id,
+        marca: ticket.marca,
+        tipo: 'observador_agregado',
+        autor: req.user!.id,
+        a: String(observador._id),
+        aNombre: observador.nombre
+      })
+    }
+
     // Populate para devolver datos completos
-    const ticketPopulado = await Ticket.findById(ticket._id)
-      .populate('asignadoA', 'nombre email')
-      .populate('categoria', 'nombre')
-      .populate('creadoPor', 'nombre email')
-      .populate('marca', 'nombre')
+    const ticketPopulado = await findTicketResponse(ticket._id)
 
     res.status(201).json({
       message: 'Ticket creado exitosamente',
@@ -94,11 +131,11 @@ export const getTickets = async (req: AuthRequest, res: Response, next: NextFunc
       // admin ve todos los tickets de su marca
       filtro = { marca }
     } else if (rol === 'soporte') {
-      // soporte solo ve los tickets asignados a él
-      filtro = { asignadoA: id, marca }
+      // soporte ve los tickets de sus áreas (cola, suyos y de compañeros) y los asignados a él
+      filtro = { marca, $or: [{ area: { $in: req.user!.areas } }, { asignadoA: id }] }
     } else if (rol === 'usuario') {
-      // usuario solo ve sus propios tickets
-      filtro = { creadoPor: id, marca }
+      // usuario ve los que creó y los que sigue como observador
+      filtro = { marca, $or: [{ creadoPor: id }, { observadores: id }] }
     }
 
     const tickets = await Ticket.find(filtro)
@@ -106,6 +143,7 @@ export const getTickets = async (req: AuthRequest, res: Response, next: NextFunc
       .populate('creadoPor', 'nombre email')
       .populate('asignadoA', 'nombre email')
       .populate('marca', 'nombre')
+      .populate('area', 'nombre')
       .sort({ createdAt: -1 })
 
     res.status(200).json({ tickets })
@@ -118,11 +156,7 @@ export const getTickets = async (req: AuthRequest, res: Response, next: NextFunc
 // GET /api/tickets/:id — ver un ticket
 export const getTicketById = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const ticket = await Ticket.findById(req.params.id)
-      .populate('categoria', 'nombre descripcion')
-      .populate('creadoPor', 'nombre email')
-      .populate('asignadoA', 'nombre email')
-      .populate('marca', 'nombre')
+    const ticket = await findTicketResponse(req.params.id as string)
 
     if (!ticket) {
       res.status(404).json({ message: 'Ticket no encontrado' })
@@ -130,18 +164,7 @@ export const getTicketById = async (req: AuthRequest, res: Response, next: NextF
     }
 
     // Verificar que el usuario tiene acceso a este ticket
-    const { rol, id, marca } = req.user!
-
-    // ← CAMBIO: cast limpio sin any
-    const populated = ticket as unknown as PopulatedTicket
-
-    const tieneAcceso =
-      rol === 'superadmin' ||
-      (rol === 'admin' && String(populated.marca._id) === String(marca)) ||
-      (rol === 'soporte' && String(populated.asignadoA?._id) === String(id)) ||
-      (rol === 'usuario' && String(populated.creadoPor._id) === String(id))
-
-    if (!tieneAcceso) {
+    if (!puedeVerTicket(req.user!, ticket)) {
       res.status(403).json({ message: 'No tienes acceso a este ticket' })
       return
     }
@@ -153,7 +176,8 @@ export const getTicketById = async (req: AuthRequest, res: Response, next: NextF
   }
 }
 
-// PUT /api/tickets/:id/assign — asignar ticket a un soporter (admin)
+// PUT /api/tickets/:id/assign — admin asigna/reasigna; el soporte asignado lo pasa a un compañero
+// El destino debe ser un soporte activo del área del ticket. No cambia el estado.
 export const assignTicket = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { soporterId } = req.body || {}
@@ -173,15 +197,53 @@ export const assignTicket = async (req: AuthRequest, res: Response, next: NextFu
       return
     }
 
-    ticket.asignadoA = soporterId
-    ticket.estado = 'en_progreso'
+    if (ticket.estado === 'cerrado') {
+      res.status(400).json({ message: 'No se puede asignar un ticket cerrado' })
+      return
+    }
+
+    // Un soporte solo puede pasar a un compañero los tickets que tiene asignados
+    const esPase = req.user!.rol === 'soporte'
+    if (esPase && String(ticket.asignadoA) !== req.user!.id) {
+      res.status(403).json({ message: 'Solo puedes pasar tickets que tienes asignados' })
+      return
+    }
+
+    // El destino: soporte activo, de la marca y del área del ticket
+    const soporte = await User.findOne({
+      _id: soporterId,
+      rol: 'soporte',
+      marca: req.user?.marca,
+      estado: 'activo',
+      areas: ticket.area
+    })
+    if (!soporte) {
+      res.status(400).json({ message: 'El soporte no existe, está inactivo o no pertenece al área del ticket' })
+      return
+    }
+
+    const anteriorId = ticket.asignadoA
+    if (anteriorId && String(anteriorId) === String(soporte._id)) {
+      res.status(400).json({ message: 'El ticket ya está asignado a ese soporte' })
+      return
+    }
+    const anterior = anteriorId ? await User.findById(anteriorId).select('nombre') : null
+
+    ticket.asignadoA = soporte._id
     await ticket.save()
 
-    const ticketActualizado = await Ticket.findById(ticket._id)
-      .populate('asignadoA', 'nombre email')
-      .populate('categoria', 'nombre')
-      .populate('creadoPor', 'nombre email')
-      .populate('marca', 'nombre')
+    await registrarEvento({
+      ticket: ticket._id,
+      marca: ticket.marca,
+      tipo: esPase ? 'pasado' : anteriorId ? 'reasignado' : 'asignado',
+      autor: req.user!.id,
+      de: anteriorId ? String(anteriorId) : undefined,
+      deNombre: anterior?.nombre,
+      a: String(soporte._id),
+      aNombre: soporte.nombre
+    })
+
+    const ticketActualizado = await findTicketResponse(ticket._id)
 
     res.status(200).json({
       message: 'Ticket asignado exitosamente',
@@ -193,80 +255,146 @@ export const assignTicket = async (req: AuthRequest, res: Response, next: NextFu
   }
 }
 
-// PUT /api/tickets/:id/status — actualizar estado (soporte)
+// PUT /api/tickets/:id/status — cambiar estado
+// soporte: solo el asignado, siguiendo el flujo · usuario: solo reabrir sus tickets cerrados
 export const updateTicketStatus = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { estado } = req.body || {}
     const { rol, id } = req.user!
 
-    // El usuario solo puede reabrir — el soporte puede cambiar a cualquier estado válido
-    if (rol === 'usuario') {
-      if (estado !== 'reabierto') {
-        res.status(403).json({ message: 'Solo puedes reabrir un ticket' })
-        return
-      }
-      // Busca el ticket donde el usuario es el creador
-      const ticket = await Ticket.findOne({
-        _id: req.params.id,
-        creadoPor: id,
-        estado: 'cerrado' // solo puede reabrir tickets cerrados
-      })
-
-      if (!ticket) {
-        res.status(404).json({ message: 'Ticket no encontrado o no puedes reabrirlo' })
-        return
-      }
-
-      ticket.estado = 'reabierto'
-      ticket.fechaCierre = undefined
-      await ticket.save()
-
-      const ticketActualizado = await Ticket.findById(ticket._id)
-        .populate('asignadoA', 'nombre email')
-        .populate('categoria', 'nombre')
-        .populate('creadoPor', 'nombre email')
-        .populate('marca', 'nombre')
-
-      res.status(200).json({
-        message: 'Ticket reabierto exitosamente',
-        ticket: ticketActualizado
-      })
+    if (!esEstadoValido(estado)) {
+      res.status(400).json({ message: 'Estado inválido' })
       return
     }
 
-    // Lógica del soporte — igual que antes
-    const estadosValidos = ['en_progreso', 'en_revision', 'cerrado', 'reabierto']
-    if (!estado || !estadosValidos.includes(estado)) {
-      res.status(400).json({ message: `Estado inválido. Debe ser: ${estadosValidos.join(', ')}` })
+    if (rol === 'usuario' && estado !== 'reabierto') {
+      res.status(403).json({ message: 'Solo puedes reabrir un ticket' })
       return
     }
 
-    const ticket = await Ticket.findOne({
-      _id: req.params.id,
-      asignadoA: id
-    })
+    if (rol === 'soporte' && estado === 'reabierto') {
+      res.status(403).json({ message: 'Solo el usuario creador puede reabrir un ticket' })
+      return
+    }
+
+    // El usuario busca entre los que creó; el soporte entre los asignados a él
+    const ticket = await Ticket.findOne(
+      rol === 'usuario'
+        ? { _id: req.params.id, creadoPor: id }
+        : { _id: req.params.id, asignadoA: id }
+    )
 
     if (!ticket) {
-      res.status(404).json({ message: 'Ticket no encontrado o no asignado a ti' })
+      res.status(404).json({ message: 'Ticket no encontrado o sin permiso para cambiar su estado' })
       return
     }
 
-    ticket.estado = estado
-    if (estado === 'cerrado') {
-      ticket.fechaCierre = new Date()
+    if (!puedeTransicionar(ticket.estado, estado)) {
+      res.status(400).json({ message: `Transición no permitida: ${ticket.estado} → ${estado}` })
+      return
     }
+
+    // Al reabrir se conserva asignadoA: vuelve al soporte que lo cerró
+    const estadoAnterior = ticket.estado
+    aplicarEstado(ticket, estado)
     await ticket.save()
 
-    const ticketActualizado = await Ticket.findById(ticket._id)
-      .populate('asignadoA', 'nombre email')
-      .populate('categoria', 'nombre')
-      .populate('creadoPor', 'nombre email')
-      .populate('marca', 'nombre')
+    await registrarEvento({
+      ticket: ticket._id,
+      marca: ticket.marca,
+      tipo: 'estado',
+      autor: id,
+      de: estadoAnterior,
+      a: estado
+    })
+
+    const ticketActualizado = await findTicketResponse(ticket._id)
 
     res.status(200).json({
-      message: 'Estado actualizado exitosamente',
+      message: estado === 'reabierto' ? 'Ticket reabierto exitosamente' : 'Estado actualizado exitosamente',
       ticket: ticketActualizado
     })
+
+  } catch (error) {
+    next(error)
+  }
+}
+
+// Forma de cada entrada del historial que recibe el frontend
+interface EventoHistorial {
+  _id: string
+  tipo: TipoEvento
+  autor?: unknown
+  de?: string
+  a?: string
+  deNombre?: string
+  aNombre?: string
+  motivo?: string
+  createdAt: Date | null
+  sintetico?: boolean
+}
+
+// GET /api/tickets/:id/history — historial interno (admin, soporte y superadmin)
+// Los tickets anteriores al historial reciben eventos sintéticos calculados aquí (no se guardan)
+export const getTicketHistory = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const ticket = await Ticket.findById(req.params.id)
+      .populate('creadoPor', 'nombre rol')
+      .populate('asignadoA', 'nombre')
+
+    if (!ticket) {
+      res.status(404).json({ message: 'Ticket no encontrado' })
+      return
+    }
+
+    if (!puedeVerTicket(req.user!, ticket)) {
+      res.status(403).json({ message: 'No tienes acceso a este ticket' })
+      return
+    }
+
+    const eventos = await TicketEvent.find({ ticket: ticket._id })
+      .populate('autor', 'nombre rol')
+      .sort({ createdAt: 1 })
+      .lean()
+
+    const historial: EventoHistorial[] = eventos.map((e) => ({
+      _id: String(e._id),
+      tipo: e.tipo,
+      autor: e.autor,
+      de: e.de,
+      a: e.a,
+      deNombre: e.deNombre,
+      aNombre: e.aNombre,
+      motivo: e.motivo,
+      createdAt: e.createdAt
+    }))
+    const creadoPor = ticket.creadoPor as unknown as { _id: mongoose.Types.ObjectId; nombre: string; rol: string }
+    const asignado = ticket.asignadoA as unknown as { _id: mongoose.Types.ObjectId; nombre: string } | undefined
+
+    if (!eventos.some((e) => e.tipo === 'creado')) {
+      historial.unshift({
+        _id: `sintetico-creado-${ticket._id}`,
+        tipo: 'creado',
+        autor: creadoPor,
+        createdAt: ticket.createdAt,
+        sintetico: true
+      })
+    }
+
+    const tieneAsignaciones = eventos.some((e) => e.tipo === 'asignado' || e.tipo === 'reasignado')
+    if (asignado && !tieneAsignaciones) {
+      // Sin autor ni fecha exacta: solo sabemos a quién está asignado hoy
+      historial.splice(1, 0, {
+        _id: `sintetico-asignado-${ticket._id}`,
+        tipo: 'asignado',
+        a: String(asignado._id),
+        aNombre: asignado.nombre,
+        createdAt: null,
+        sintetico: true
+      })
+    }
+
+    res.status(200).json({ eventos: historial })
 
   } catch (error) {
     next(error)

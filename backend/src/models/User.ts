@@ -8,6 +8,7 @@ export interface IUser extends Document {
   rol: 'superadmin' | 'admin' | 'soporte' | 'usuario'
   estado: 'activo' | 'inactivo'
   marca?: mongoose.Types.ObjectId  // ← opcional, SuperAdmin no la tiene
+  areas: mongoose.Types.ObjectId[] // solo soporte: áreas a las que pertenece
   createdAt: Date
 }
 
@@ -45,6 +46,10 @@ const UserSchema = new Schema<IUser>(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Brand',  // referencia al modelo Brand
       required: false // opcional — superadmin no tiene marca
+    },
+    areas: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Area' }],
+      default: []
     }
   },
   {

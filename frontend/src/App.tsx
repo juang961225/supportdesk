@@ -10,6 +10,7 @@ import BrandsPage from './pages/superadmin/BrandsPage'
 import UsersPage from './pages/superadmin/UsersPage'
 import TicketsPage from './pages/admin/TicketsPage'
 import CategoriesPage from './pages/admin/CategoriesPage'
+import AreasPage from './pages/admin/AreasPage'
 import AdminUsersPage from './pages/admin/UsersPage'
 import SoporteTicketDetail from './pages/soporte/TicketDetail'
 import NewTicketPage from './pages/usuario/NewTicketPage'
@@ -89,9 +90,18 @@ function App() {
         />
 
         <Route
+          path="/admin/areas"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AreasPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/admin/categories"
           element={
-            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+            <ProtectedRoute allowedRoles={['admin']}>
               <CategoriesPage />
             </ProtectedRoute>
           }
@@ -102,15 +112,6 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminUsersPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/tickets"
-          element={
-            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
-              <TicketsPage />
             </ProtectedRoute>
           }
         />

@@ -3,21 +3,31 @@ import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { getTickets } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
+import { useAuth } from '../../hooks/useAuth'
 import { prioridadColor, estadoColor } from '../../utils/ticketColors'
 import type { Ticket } from '../../types'
 import { TicketTimeBadge } from '../../components/TicketTimeBadge'
 
+type Vista = 'cola' | 'mios' | 'equipo'
+
+const vistas: { id: Vista; label: string; vacio: string }[] = [
+  { id: 'cola', label: 'Cola de mis áreas', vacio: 'No hay tickets esperando en la cola de tus áreas' },
+  { id: 'mios', label: 'Mis tickets', vacio: 'No tienes tickets asignados' },
+  { id: 'equipo', label: 'Del equipo', vacio: 'Tus compañeros no tienen tickets abiertos en tus áreas' },
+]
+
 function SoporteDashboard() {
   const { toast } = useToast()
+  const { user } = useAuth()
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [vista, setVista] = useState<Vista>('cola')
   const navigate = useNavigate()
 
   useEffect(() => {
     const fetchTickets = async () => {
       try {
-        const data = await getTickets()
-        setTickets(data)
+        setTickets(await getTickets())
       } catch {
         toast.error('No se pudieron cargar tus tickets')
       } finally {
@@ -28,8 +38,15 @@ function SoporteDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const pendientes = tickets.filter(t => t.estado !== 'cerrado').length
-  const cerrados = tickets.filter(t => t.estado === 'cerrado').length
+  // El backend devuelve los tickets de mis áreas + los asignados a mí; aquí se reparten por vista
+  const abiertos = tickets.filter(t => t.estado !== 'cerrado')
+  const porVista: Record<Vista, Ticket[]> = {
+    cola: abiertos.filter(t => !t.asignadoA),
+    mios: tickets.filter(t => t.asignadoA?._id === user?._id),
+    equipo: abiertos.filter(t => t.asignadoA && t.asignadoA._id !== user?._id),
+  }
+  const misActivos = porVista.mios.filter(t => t.estado !== 'cerrado').length
+  const listaActual = porVista[vista]
 
   if (isLoading) {
     return (
@@ -45,34 +62,51 @@ function SoporteDashboard() {
     <Layout>
       <div>
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
-          Mis Tickets
+          Tickets
         </h2>
 
         {/* Métricas */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-3 gap-4 mb-8">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Pendientes</p>
-            <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">
-              {pendientes}
-            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">En cola</p>
+            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">{porVista.cola.length}</p>
           </div>
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Cerrados</p>
-            <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">
-              {cerrados}
-            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Mis activos</p>
+            <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{misActivos}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Del equipo</p>
+            <p className="text-3xl font-bold text-gray-600 dark:text-gray-300 mt-1">{porVista.equipo.length}</p>
           </div>
         </div>
 
-        {/* Lista de tickets */}
+        {/* Pestañas */}
+        <div className="flex gap-2 mb-4">
+          {vistas.map((v) => (
+            <button
+              key={v.id}
+              onClick={() => setVista(v.id)}
+              className={`text-sm px-4 py-2 rounded-lg transition-colors ${
+                vista === v.id
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              {v.label} ({porVista[v.id].length})
+            </button>
+          ))}
+        </div>
+
+        {/* Lista de la vista actual */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {tickets.length === 0 ? (
+            {listaActual.length === 0 ? (
               <p className="p-6 text-gray-500 dark:text-gray-400">
-                No tienes tickets asignados
+                {vistas.find(v => v.id === vista)?.vacio}
               </p>
             ) : (
-              tickets.map((ticket) => (
+              listaActual.map((ticket) => (
                 <div
                   key={ticket._id}
                   className="p-6 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
@@ -83,16 +117,15 @@ function SoporteDashboard() {
                       {ticket.titulo}
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      {ticket.creadoPor.nombre} · {ticket.categoria.nombre}
+                      {ticket.creadoPor.nombre} · {ticket.categoria.nombre} · Área: {ticket.area?.nombre ?? 'Sin área'}
                     </p>
-                    {ticket.fechaLimite && (
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                        Límite: {new Date(ticket.fechaLimite).toLocaleDateString()}
-                      </p>
-                    )}
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      {ticket.asignadoA ? `Atiende: ${ticket.asignadoA.nombre}` : 'Sin asignar'}
+                      {ticket.fechaLimite && ` · Límite: ${new Date(ticket.fechaLimite).toLocaleDateString()}`}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <TicketTimeBadge fechaLimite={ticket.fechaLimite} />
+                    <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
                     <span className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}>
                       {ticket.prioridad}
                     </span>

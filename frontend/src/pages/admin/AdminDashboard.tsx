@@ -1,124 +1,153 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
-import { getTickets } from '../../services/ticketService'
-import { getUsers } from '../../services/userService'
+import StatCard from '../../components/StatCard'
+import { TicketTimeBadge } from '../../components/TicketTimeBadge'
+import { getAdminSummary } from '../../services/dashboardService'
+import type { AdminSummary } from '../../services/dashboardService'
 import { useToast } from '../../hooks/useToast'
 import { prioridadColor, estadoColor } from '../../utils/ticketColors'
-import type { Ticket } from '../../types'
-import { TicketTimeBadge } from '../../components/TicketTimeBadge'
+import { estadoLabel } from '../../utils/ticketLabels'
+
+const thClass = 'px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase'
+const tdClass = 'px-4 py-2 text-sm text-gray-700 dark:text-gray-300'
+
+// Número destacado en rojo cuando hay vencidos
+const Vencidos = ({ n }: { n: number }) => (
+  <span className={n > 0 ? 'text-red-600 dark:text-red-400 font-medium' : ''}>{n}</span>
+)
 
 function AdminDashboard() {
   const { toast } = useToast()
-  const [tickets, setTickets] = useState<Ticket[]>([])
-  const [totalUsers, setTotalUsers] = useState(0)
+  const navigate = useNavigate()
+  const [summary, setSummary] = useState<AdminSummary | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchSummary = async () => {
       try {
-        const [ticketsData, usersData] = await Promise.all([
-          getTickets(),
-          getUsers()
-        ])
-        setTickets(ticketsData)
-        setTotalUsers(usersData.length)
+        setSummary(await getAdminSummary())
       } catch {
         toast.error('No se pudieron cargar los datos del dashboard')
       } finally {
         setIsLoading(false)
       }
     }
-    fetchData()
+    fetchSummary()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Métricas calculadas del lado del cliente
-  const abiertos = tickets.filter(t => t.estado === 'abierto').length
-  const enProgreso = tickets.filter(t => t.estado === 'en_progreso').length
-  const cerrados = tickets.filter(t => t.estado === 'cerrado').length
-  const criticos = tickets.filter(t => t.prioridad === 'critica').length
-
-  if (isLoading) {
+  if (isLoading || !summary) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
+          <p className="text-gray-500 dark:text-gray-400">{isLoading ? 'Cargando...' : 'Sin datos'}</p>
         </div>
       </Layout>
     )
   }
 
+  const { totales, porArea, cargaPorSoporte, urgentes } = summary
+
   return (
     <Layout>
       <div>
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
-          Dashboard
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Dashboard</h2>
 
-        {/* Tarjetas de métricas */}
+        {/* Contadores */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Abiertos</p>
-            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-              {abiertos}
-            </p>
+          <StatCard label="Abiertos" value={totales.abiertos} color="text-blue-600 dark:text-blue-400" />
+          <StatCard label="En progreso" value={totales.enProgreso} color="text-yellow-600 dark:text-yellow-400" />
+          <StatCard label="Vencidos" value={totales.vencidos} color="text-red-600 dark:text-red-400" />
+          <StatCard label="Críticos abiertos" value={totales.criticos} color="text-orange-600 dark:text-orange-400" />
+          <StatCard label="Cerrados" value={totales.cerrados} color="text-green-600 dark:text-green-400" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Por área */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-x-auto">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white p-4 pb-2">Por área</h3>
+            {porArea.length === 0 ? (
+              <p className="p-4 text-sm text-gray-500 dark:text-gray-400">No hay áreas. Créalas en "Áreas".</p>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr>
+                    <th className={thClass}>Área</th>
+                    <th className={thClass}>En cola</th>
+                    <th className={thClass}>En progreso</th>
+                    <th className={thClass}>Vencidos</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {porArea.map((fila) => (
+                    <tr key={fila.area._id} className={fila.activo ? '' : 'opacity-50'}>
+                      <td className={tdClass}>{fila.area.nombre}{!fila.activo && ' (inactiva)'}</td>
+                      <td className={tdClass}>{fila.enCola}</td>
+                      <td className={tdClass}>{fila.enProgreso}</td>
+                      <td className={tdClass}><Vencidos n={fila.vencidos} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-gray-400">En progreso</p>
-            <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">
-              {enProgreso}
-            </p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Cerrados</p>
-            <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">
-              {cerrados}
-            </p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Críticos</p>
-            <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-1">
-              {criticos}
-            </p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Usuarios</p>
-            <p className="text-3xl font-bold text-purple-600 dark:text-purple-400 mt-1">
-              {totalUsers}
-            </p>
+
+          {/* Carga por soporte */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-x-auto">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white p-4 pb-2">Carga por soporte</h3>
+            {cargaPorSoporte.length === 0 ? (
+              <p className="p-4 text-sm text-gray-500 dark:text-gray-400">No hay soportes activos.</p>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr>
+                    <th className={thClass}>Soporte</th>
+                    <th className={thClass}>Activos</th>
+                    <th className={thClass}>Vencidos</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {cargaPorSoporte.map((fila) => (
+                    <tr key={fila.soporte._id}>
+                      <td className={tdClass}>{fila.soporte.nombre}</td>
+                      <td className={tdClass}>{fila.activos}</td>
+                      <td className={tdClass}><Vencidos n={fila.vencidos} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
-        {/* Tickets recientes */}
+        {/* Urgentes */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-              Tickets recientes
-            </h3>
-          </div>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white p-6 pb-2">Requieren atención</h3>
+          <p className="text-xs text-gray-400 dark:text-gray-500 px-6 pb-4">Sin asignar o vencidos, los que vencen antes primero</p>
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {tickets.length === 0 ? (
-              <p className="p-6 text-gray-500 dark:text-gray-400">
-                No hay tickets todavía
-              </p>
+            {urgentes.length === 0 ? (
+              <p className="p-6 text-gray-500 dark:text-gray-400">Todo al día: no hay tickets sin asignar ni vencidos</p>
             ) : (
-              tickets.slice(0, 5).map((ticket) => (
-                <div key={ticket._id} className="p-6 flex items-center justify-between">
+              urgentes.map((ticket) => (
+                <div
+                  key={ticket._id}
+                  onClick={() => navigate(`/admin/tickets/${ticket._id}`)}
+                  className="p-4 px-6 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                >
                   <div>
-                    <p className="font-medium text-gray-800 dark:text-white">
-                      {ticket.titulo}
-                    </p>
+                    <p className="font-medium text-gray-800 dark:text-white">{ticket.titulo}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      {ticket.creadoPor.nombre} · {ticket.categoria.nombre}
+                      {ticket.area?.nombre ?? 'Sin área'} · {ticket.asignadoA ? `Atiende: ${ticket.asignadoA.nombre}` : 'Sin asignar'}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <TicketTimeBadge fechaLimite={ticket.fechaLimite} />
+                    <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
                     <span className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}>
                       {ticket.prioridad}
                     </span>
                     <span className={`text-xs px-2 py-1 rounded-full ${estadoColor[ticket.estado]}`}>
-                      {ticket.estado}
+                      {estadoLabel[ticket.estado]}
                     </span>
                   </div>
                 </div>

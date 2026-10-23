@@ -1,25 +1,48 @@
 import { useState, useEffect } from 'react'
+import axios from 'axios'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
-import { getTicketById, updateTicketStatus } from '../../services/ticketService'
-import { getComments, createComment } from '../../services/commentService'
-import type { Comment } from '../../services/commentService'
+import CommentThread from '../../components/CommentThread'
+import AttachmentList from '../../components/AttachmentList'
+import ObserversPanel from '../../components/ObserversPanel'
+import TicketTimeline from '../../components/TicketTimeline'
+import AssignTicketModal from '../../components/AssignTicketModal'
+import MoveAreaModal from '../../components/MoveAreaModal'
+import { getTicketById, updateTicketStatus, takeTicket, releaseTicket } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
+import { useAuth } from '../../hooks/useAuth'
 import { estadoColor } from '../../utils/ticketColors'
 import type { Ticket } from '../../types'
 import { TicketTimeBadge } from '../../components/TicketTimeBadge'
+import ConfirmDialog from '../../components/ConfirmDialog'
+import { transicionesSoporte } from '../../utils/ticketStatus'
+import type { EstadoTicket } from '../../utils/ticketStatus'
+
+// Texto y color del botón según el estado destino
+const accionEstado: Record<EstadoTicket, { label: string; className: string }> = {
+  en_progreso: { label: 'En progreso', className: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' },
+  en_revision: { label: 'En revisión', className: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' },
+  cerrado: { label: 'Cerrar ticket', className: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' },
+  abierto: { label: 'Abierto', className: '' },
+  reabierto: { label: 'Reabrir', className: '' },
+}
 
 function SoporteTicketDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { user } = useAuth()
 
   const [ticket, setTicket] = useState<Ticket | null>(null)
-  const [comments, setComments] = useState<Comment[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [contenido, setContenido] = useState('')
-  const [isSending, setIsSending] = useState(false)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [isConfirmingClose, setIsConfirmingClose] = useState(false)
+
+  // Acciones de la cola: tomar, soltar, pasar y mover
+  const [isActing, setIsActing] = useState(false)
+  const [isConfirmingRelease, setIsConfirmingRelease] = useState(false)
+  const [isPassOpen, setIsPassOpen] = useState(false)
+  const [isMoveOpen, setIsMoveOpen] = useState(false)
 
   useEffect(() => {
     if (id) fetchData(id)
@@ -27,12 +50,7 @@ function SoporteTicketDetail() {
 
   const fetchData = async (ticketId: string) => {
     try {
-      const [ticketData, commentsData] = await Promise.all([
-        getTicketById(ticketId),
-        getComments(ticketId)
-      ])
-      setTicket(ticketData)
-      setComments(commentsData)
+      setTicket(await getTicketById(ticketId))
     } catch {
       toast.error('No se pudo cargar el ticket')
     } finally {
@@ -40,35 +58,65 @@ function SoporteTicketDetail() {
     }
   }
 
-  const handleSendComment = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!contenido.trim() || !id) return
-
-    setIsSending(true)
-    try {
-      const newComment = await createComment(id, contenido)
-      setComments([...comments, newComment])
-      setContenido('')
-      toast.success('Comentario enviado')
-    } catch {
-      toast.error('No se pudo enviar el comentario')
-    } finally {
-      setIsSending(false)
-    }
-  }
-
-  const handleUpdateStatus = async (estado: string) => {
+  const handleUpdateStatus = async (estado: EstadoTicket) => {
     if (!id) return
     setIsUpdatingStatus(true)
     try {
       const updated = await updateTicketStatus(id, estado)
       setTicket(updated)
-      toast.success(`Ticket marcado como ${estado.replace('_', ' ')}`)
-    } catch {
-      toast.error('No se pudo actualizar el estado del ticket')
+      toast.success(`Ticket marcado como ${accionEstado[estado].label.toLowerCase()}`)
+    } catch (err) {
+      const apiMsg = axios.isAxiosError(err) ? err.response?.data?.message : undefined
+      toast.error(apiMsg || 'No se pudo actualizar el estado del ticket')
     } finally {
       setIsUpdatingStatus(false)
+      setIsConfirmingClose(false)
     }
+  }
+
+  // Cerrar pide confirmación; el resto de transiciones es directo
+  const handleClickEstado = (estado: EstadoTicket) => {
+    if (estado === 'cerrado') {
+      setIsConfirmingClose(true)
+    } else {
+      handleUpdateStatus(estado)
+    }
+  }
+
+  const apiError = (err: unknown, fallback: string) =>
+    (axios.isAxiosError(err) ? err.response?.data?.message : undefined) || fallback
+
+  const handleTake = async () => {
+    if (!id) return
+    setIsActing(true)
+    try {
+      setTicket(await takeTicket(id))
+      toast.success('Tomaste el ticket')
+    } catch (err) {
+      toast.error(apiError(err, 'No se pudo tomar el ticket'))
+    } finally {
+      setIsActing(false)
+    }
+  }
+
+  const handleRelease = async () => {
+    if (!id) return
+    setIsActing(true)
+    try {
+      setTicket(await releaseTicket(id))
+      toast.success('El ticket volvió a la cola')
+    } catch (err) {
+      toast.error(apiError(err, 'No se pudo soltar el ticket'))
+    } finally {
+      setIsActing(false)
+      setIsConfirmingRelease(false)
+    }
+  }
+
+  const handleUpdated = (updated: Ticket) => {
+    setTicket(updated)
+    setIsPassOpen(false)
+    setIsMoveOpen(false)
   }
 
   if (isLoading) {
@@ -88,6 +136,9 @@ function SoporteTicketDetail() {
       </Layout>
     )
   }
+
+  const enCola = !ticket.asignadoA
+  const esMio = ticket.asignadoA?._id === user?._id
 
   return (
     <Layout>
@@ -114,6 +165,11 @@ function SoporteTicketDetail() {
           <p className="text-gray-600 dark:text-gray-300 mb-4">
             {ticket.descripcion}
           </p>
+          {ticket.archivos.length > 0 && (
+            <div className="mb-4">
+              <AttachmentList archivos={ticket.archivos} />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
@@ -129,10 +185,22 @@ function SoporteTicketDetail() {
               </p>
             </div>
             <div>
+              <p className="text-gray-500 dark:text-gray-400">Área</p>
+              <p className="text-gray-800 dark:text-white font-medium">
+                {ticket.area?.nombre ?? 'Sin área'}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-500 dark:text-gray-400">Asignado a</p>
+              <p className="text-gray-800 dark:text-white font-medium">
+                {ticket.asignadoA?.nombre ?? 'En cola (sin asignar)'}
+              </p>
+            </div>
+            <div>
               <p className="text-gray-500 dark:text-gray-400">Prioridad</p>
               <p className="text-gray-800 dark:text-white font-medium capitalize">
                 {ticket.prioridad}&nbsp;&nbsp;&nbsp;
-                <TicketTimeBadge fechaLimite={ticket.fechaLimite} />
+                <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
               </p>
             </div>
             {ticket.fechaLimite && (
@@ -145,114 +213,127 @@ function SoporteTicketDetail() {
             )}
           </div>
 
-          {/* Acciones de estado */}
-          {ticket.estado !== 'cerrado' && (
+          {/* Acciones según la relación del soporte con el ticket */}
+          {ticket.estado !== 'cerrado' && enCola && (
             <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                Cambiar estado:
+                Este ticket está en la cola de {ticket.area?.nombre ?? 'tu área'}.
               </p>
               <div className="flex gap-2 flex-wrap">
-                {ticket.estado !== 'en_progreso' && (
-                  <button
-                    onClick={() => handleUpdateStatus('en_progreso')}
-                    disabled={isUpdatingStatus}
-                    className="text-xs px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded hover:opacity-80 transition-opacity disabled:opacity-50"
-                  >
-                    En progreso
-                  </button>
-                )}
-                {ticket.estado !== 'en_revision' && (
-                  <button
-                    onClick={() => handleUpdateStatus('en_revision')}
-                    disabled={isUpdatingStatus}
-                    className="text-xs px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded hover:opacity-80 transition-opacity disabled:opacity-50"
-                  >
-                    En revisión
-                  </button>
-                )}
                 <button
-                  onClick={() => handleUpdateStatus('cerrado')}
-                  disabled={isUpdatingStatus}
-                  className="text-xs px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded hover:opacity-80 transition-opacity disabled:opacity-50"
+                  onClick={handleTake}
+                  disabled={isActing}
+                  className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
                 >
-                  Cerrar ticket
+                  {isActing ? 'Tomando...' : 'Tomar ticket'}
+                </button>
+                <button
+                  onClick={() => setIsMoveOpen(true)}
+                  className="text-xs px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Mover de área
                 </button>
               </div>
             </div>
           )}
-        </div>
 
-        {/* Historial de comentarios */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-4">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-            Historial ({comments.length})
-          </h3>
-
-          {comments.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
-              No hay comentarios todavía
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {comments.map((comment) => (
-                <div key={comment._id} className="flex gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
-                      {comment.autor.nombre.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="text-sm font-medium text-gray-800 dark:text-white">
-                        {comment.autor.nombre}
-                      </p>
-                      <span className="text-xs text-gray-400 dark:text-gray-500">
-                        {new Date(comment.createdAt).toLocaleString('es-CO', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {comment.contenido}
-                    </p>
-                  </div>
+          {ticket.estado !== 'cerrado' && esMio && (
+            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-4">
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Cambiar estado:</p>
+                <div className="flex gap-2 flex-wrap">
+                  {transicionesSoporte(ticket.estado).map((estado) => (
+                    <button
+                      key={estado}
+                      onClick={() => handleClickEstado(estado)}
+                      disabled={isUpdatingStatus}
+                      className={`text-xs px-3 py-1 rounded hover:opacity-80 transition-opacity disabled:opacity-50 ${accionEstado[estado].className}`}
+                    >
+                      {accionEstado[estado].label}
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Agregar comentario */}
-        {ticket.estado !== 'cerrado' && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-              Agregar comentario
-            </h3>
-            <form onSubmit={handleSendComment}>
-              <textarea
-                value={contenido}
-                onChange={(e) => setContenido(e.target.value)}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                rows={3}
-                placeholder="Escribe tu comentario..."
-              />
-              <div className="flex justify-end mt-3">
+              </div>
+              <div className="flex gap-2 flex-wrap">
                 <button
-                  type="submit"
-                  disabled={isSending || !contenido.trim()}
-                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  onClick={() => setIsPassOpen(true)}
+                  className="text-xs px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
-                  {isSending ? 'Enviando...' : 'Enviar'}
+                  Pasar a compañero
+                </button>
+                <button
+                  onClick={() => setIsMoveOpen(true)}
+                  className="text-xs px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Mover de área
+                </button>
+                <button
+                  onClick={() => setIsConfirmingRelease(true)}
+                  className="text-xs px-3 py-1 border border-red-300 text-red-600 dark:border-red-700 dark:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                >
+                  Soltar
                 </button>
               </div>
-            </form>
-          </div>
-        )}
+            </div>
+          )}
+
+          {ticket.estado !== 'cerrado' && !enCola && !esMio && (
+            <p className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
+              Lo atiende {ticket.asignadoA?.nombre}. Puedes ver y comentar; las acciones son de quien lo atiende.
+            </p>
+          )}
+
+          <ObserversPanel
+            ticket={ticket}
+            currentUserId={user?._id}
+            canManage={false}
+            onUpdated={(updated) => updated && setTicket(updated)}
+          />
+        </div>
+
+        <TicketTimeline ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.asignadoA?._id ?? ''}-${ticket.area?._id ?? ''}-${ticket.observadores?.length ?? 0}`} />
+
+        <CommentThread
+          ticketId={ticket._id}
+          canComment={ticket.estado !== 'cerrado'}
+          creadorId={ticket.creadoPor._id}
+          observadorIds={ticket.observadores?.map((o) => o._id)}
+        />
       </div>
+
+      <ConfirmDialog
+        isOpen={isConfirmingClose}
+        title="Cerrar ticket"
+        message="El ticket quedará cerrado. Solo el usuario que lo creó podrá reabrirlo."
+        confirmLabel="Cerrar ticket"
+        isLoading={isUpdatingStatus}
+        onConfirm={() => handleUpdateStatus('cerrado')}
+        onCancel={() => setIsConfirmingClose(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={isConfirmingRelease}
+        title="Soltar ticket"
+        message="El ticket vuelve a la cola de su área, sin asignar y en estado Abierto."
+        confirmLabel="Soltar"
+        isLoading={isActing}
+        onConfirm={handleRelease}
+        onCancel={() => setIsConfirmingRelease(false)}
+      />
+
+      <AssignTicketModal
+        ticket={isPassOpen ? ticket : null}
+        title="Pasar a un compañero"
+        excludeUserId={user?._id}
+        onClose={() => setIsPassOpen(false)}
+        onAssigned={handleUpdated}
+      />
+
+      <MoveAreaModal
+        ticket={isMoveOpen ? ticket : null}
+        onClose={() => setIsMoveOpen(false)}
+        onMoved={handleUpdated}
+      />
     </Layout>
   )
 }

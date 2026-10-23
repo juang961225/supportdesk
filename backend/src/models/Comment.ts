@@ -1,18 +1,20 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import { Adjunto, AdjuntoSchema } from '../services/attachments'
 
 export interface IComment extends Document {
   contenido: string
   ticket: mongoose.Types.ObjectId
   autor: mongoose.Types.ObjectId
-  archivos: string[]
+  archivos: Adjunto[]
 }
 
 const CommentSchema = new Schema<IComment>(
   {
     contenido: {
       type: String,
-      required: [true, 'El contenido es obligatorio'],
-      trim: true
+      // Puede ir vacío si el comentario trae adjuntos (lo valida el controller)
+      trim: true,
+      default: ''
     },
     ticket: {
       type: mongoose.Schema.Types.ObjectId,
@@ -25,7 +27,7 @@ const CommentSchema = new Schema<IComment>(
       required: true
     },
     archivos: {
-      type: [String],
+      type: [AdjuntoSchema],
       default: []
     }
   },

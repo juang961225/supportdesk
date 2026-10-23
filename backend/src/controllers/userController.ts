@@ -4,14 +4,48 @@ import mongoose from 'mongoose'
 import User, { IUser } from '../models/User'
 import Brand from '../models/Brand'
 import Ticket from '../models/Ticket'
+import Area from '../models/Area'
 import { AuthRequest } from '../middlewares/auth'
+import { registrarEvento } from '../services/ticketEvents'
 
 const ROLES_EDITABLES: IUser['rol'][] = ['admin', 'soporte', 'usuario']
 const ESTADOS_VALIDOS: IUser['estado'][] = ['activo', 'inactivo']
 
-// Devuelve el usuario con el mismo formato que el listado: _id, sin password y marca poblada
+// Devuelve el usuario con el mismo formato que el listado: _id, sin password, marca y áreas pobladas
 const findUserResponse = (id: mongoose.Types.ObjectId | string) =>
-  User.findById(id).select('-password').populate('marca', 'nombre')
+  User.findById(id).select('-password').populate('marca', 'nombre').populate('areas', 'nombre')
+
+// Todas las áreas deben existir, ser de la marca y estar activas
+const areasValidas = async (areaIds: string[], marca: mongoose.Types.ObjectId | string | undefined): Promise<boolean> => {
+  if (areaIds.length === 0) return true
+  const count = await Area.countDocuments({ _id: { $in: areaIds }, marca, activo: true })
+  return count === new Set(areaIds).size
+}
+
+// Los tickets abiertos del soporte vuelven a la cola de su área (sin asignar, abierto)
+const liberarTickets = async (
+  soporteId: mongoose.Types.ObjectId,
+  soporteNombre: string,
+  filtroExtra: Record<string, unknown>,
+  motivo: string,
+  autorId: string
+): Promise<void> => {
+  const tickets = await Ticket.find({ asignadoA: soporteId, estado: { $ne: 'cerrado' }, ...filtroExtra })
+  for (const ticket of tickets) {
+    ticket.asignadoA = undefined
+    ticket.estado = 'abierto'
+    await ticket.save()
+    await registrarEvento({
+      ticket: ticket._id,
+      marca: ticket.marca,
+      tipo: 'desasignado',
+      autor: autorId,
+      de: String(soporteId),
+      deNombre: soporteNombre,
+      motivo
+    })
+  }
+}
 
 const hashPassword = async (password: string): Promise<string> => {
   const salt = await bcrypt.genSalt(10)
@@ -28,6 +62,7 @@ export const getUsers = async (req: AuthRequest, res: Response, next: NextFuncti
     const users = await User.find(filtro)
       .select('-password') // excluye el password de la respuesta
       .populate('marca', 'nombre')
+      .populate('areas', 'nombre')
       .sort({ createdAt: -1 })
 
     res.status(200).json({ users })
@@ -41,7 +76,7 @@ export const getUsers = async (req: AuthRequest, res: Response, next: NextFuncti
 // admin crea soportes y usuarios de su marca
 export const createUser = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { nombre, email, password, rol, marcaId } = req.body || {}
+    const { nombre, email, password, rol, marcaId, areaIds } = req.body || {}
 
     if (!nombre || !email || !password || !rol) {
       res.status(400).json({ message: 'Nombre, email, password y rol son obligatorios' })
@@ -75,12 +110,20 @@ export const createUser = async (req: AuthRequest, res: Response, next: NextFunc
       }
     }
 
+    // Áreas: solo para soporte
+    const areasFinales: string[] = rol === 'soporte' && Array.isArray(areaIds) ? areaIds : []
+    if (!(await areasValidas(areasFinales, marcaFinal))) {
+      res.status(400).json({ message: 'Alguna de las áreas no existe, no es de la marca o está inactiva' })
+      return
+    }
+
     const user = await User.create({
       nombre,
       email,
       password: await hashPassword(password),
       rol,
-      marca: marcaFinal || undefined
+      marca: marcaFinal || undefined,
+      areas: areasFinales
     })
 
     if (rol === 'admin' && marcaFinal) {
@@ -102,7 +145,7 @@ export const createUser = async (req: AuthRequest, res: Response, next: NextFunc
 export const updateUser = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id: actorId, rol: actorRol, marca: actorMarca } = req.user!
-    const { nombre, email, password, estado, rol, marcaId } = req.body || {}
+    const { nombre, email, password, estado, rol, marcaId, areaIds } = req.body || {}
 
     const target = await User.findById(req.params.id)
     if (!target) {
@@ -175,12 +218,28 @@ export const updateUser = async (req: AuthRequest, res: Response, next: NextFunc
 
     const seDesactiva = estado === 'inactivo' && target.estado === 'activo'
 
+    // Áreas finales: solo un soporte tiene áreas; cambiar de marca las vacía (eran de la otra marca)
+    const rolFinal = cambiaRol ? rol : target.rol
+    const marcaFinal = cambiaMarca ? marcaId : target.marca
+    const areasAnteriores = target.areas.map(String)
+    let areasFinales = areasAnteriores
+    if (rolFinal !== 'soporte' || cambiaMarca) areasFinales = []
+    if (rolFinal === 'soporte' && Array.isArray(areaIds)) {
+      if (!(await areasValidas(areaIds, marcaFinal))) {
+        res.status(400).json({ message: 'Alguna de las áreas no existe, no es de la marca o está inactiva' })
+        return
+      }
+      areasFinales = areaIds.map(String)
+    }
+    const areasQuitadas = areasAnteriores.filter((a) => !areasFinales.includes(a))
+
     if (nombre) target.nombre = nombre
     if (email) target.email = email
     if (password) target.password = await hashPassword(password)
     if (estado) target.estado = estado
     if (cambiaRol) target.rol = rol
     if (cambiaMarca) target.marca = marcaId
+    target.areas = areasFinales.map((a) => new mongoose.Types.ObjectId(a))
 
     await target.save()
 
@@ -188,18 +247,54 @@ export const updateUser = async (req: AuthRequest, res: Response, next: NextFunc
       await Brand.findByIdAndUpdate(target.marca, { admin: target._id })
     }
 
-    // Un soporte desactivado suelta sus tickets abiertos (en B2: vuelven a la cola de su área)
-    if (seDesactiva && target.rol === 'soporte') {
-      await Ticket.updateMany(
-        { asignadoA: target._id, estado: { $ne: 'cerrado' } },
-        { $unset: { asignadoA: 1 }, $set: { estado: 'abierto' } }
-      )
+    // Un soporte desactivado devuelve todos sus tickets abiertos a la cola;
+    // si solo pierde áreas, devuelve los de esas áreas
+    if (target.rol === 'soporte' || areasQuitadas.length > 0) {
+      if (seDesactiva) {
+        await liberarTickets(target._id, target.nombre, {}, 'Soporte desactivado', actorId)
+      } else if (cambiaMarca) {
+        await liberarTickets(target._id, target.nombre, {}, 'Soporte cambiado de marca', actorId)
+      } else if (areasQuitadas.length > 0) {
+        await liberarTickets(target._id, target.nombre, { area: { $in: areasQuitadas } }, 'Área quitada al soporte', actorId)
+      }
     }
 
     res.status(200).json({
       message: 'Usuario actualizado exitosamente',
       user: await findUserResponse(target._id)
     })
+
+  } catch (error) {
+    next(error)
+  }
+}
+
+// Escapa caracteres especiales para usar el texto del usuario dentro de una RegExp
+const escapeRegex = (texto: string): string => texto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+// GET /api/users/search?q= — autocompletado de usuarios activos de la marca por nombre o email
+// (para agregarlos como observadores). Mínimo 2 caracteres, máximo 8 resultados.
+export const searchUsers = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const q = String(req.query.q || '').trim()
+    if (q.length < 2) {
+      res.status(200).json({ users: [] })
+      return
+    }
+
+    const patron = new RegExp(escapeRegex(q), 'i')
+    const users = await User.find({
+      _id: { $ne: req.user!.id },
+      rol: 'usuario',
+      estado: 'activo',
+      marca: req.user!.marca,
+      $or: [{ nombre: patron }, { email: patron }]
+    })
+      .select('nombre email')
+      .sort({ nombre: 1 })
+      .limit(8)
+
+    res.status(200).json({ users })
 
   } catch (error) {
     next(error)
