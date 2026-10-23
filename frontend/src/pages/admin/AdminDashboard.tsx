@@ -3,13 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import StatCard from '../../components/StatCard'
 import EmptyState from '../../components/EmptyState'
+import TicketCard from '../../components/TicketCard'
 import { PageSkeleton } from '../../components/Skeleton'
-import { TicketTimeBadge } from '../../components/TicketTimeBadge'
 import { getAdminSummary } from '../../services/dashboardService'
 import type { AdminSummary } from '../../services/dashboardService'
 import { useToast } from '../../hooks/useToast'
-import { prioridadColor, estadoColor } from '../../utils/ticketColors'
-import { estadoLabel } from '../../utils/ticketLabels'
 
 const thClass = 'px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase'
 const tdClass = 'px-4 py-2 text-sm text-gray-700 dark:text-gray-300'
@@ -138,27 +136,7 @@ function AdminDashboard() {
               <EmptyState icon="✅" title="Todo al día" description="No hay tickets sin asignar ni vencidos." />
             ) : (
               urgentes.map((ticket) => (
-                <div
-                  key={ticket._id}
-                  onClick={() => navigate(`/admin/tickets/${ticket._id}`)}
-                  className="p-4 md:px-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
-                >
-                  <div>
-                    <p className="font-medium text-gray-800 dark:text-white">{ticket.titulo}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      {ticket.area?.nombre ?? 'Sin área'} · {ticket.asignadoA ? `Atiende: ${ticket.asignadoA.nombre}` : 'Sin asignar'}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
-                    <span className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}>
-                      {ticket.prioridad}
-                    </span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${estadoColor[ticket.estado]}`}>
-                      {estadoLabel[ticket.estado]}
-                    </span>
-                  </div>
-                </div>
+                <TicketCard key={ticket._id} ticket={ticket} onClick={() => navigate(`/admin/tickets/${ticket._id}`)} />
               ))
             )}
           </div>
