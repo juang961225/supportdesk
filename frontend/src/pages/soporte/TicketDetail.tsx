@@ -3,6 +3,7 @@ import axios from 'axios'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import CommentThread from '../../components/CommentThread'
+import AttachmentList from '../../components/AttachmentList'
 import ObserversPanel from '../../components/ObserversPanel'
 import TicketTimeline from '../../components/TicketTimeline'
 import AssignTicketModal from '../../components/AssignTicketModal'
@@ -164,6 +165,11 @@ function SoporteTicketDetail() {
           <p className="text-gray-600 dark:text-gray-300 mb-4">
             {ticket.descripcion}
           </p>
+          {ticket.archivos.length > 0 && (
+            <div className="mb-4">
+              <AttachmentList archivos={ticket.archivos} />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>

@@ -12,6 +12,15 @@ export interface User {
   areas?: AreaRef[] // solo soporte
 }
 
+// Archivo adjunto (ticket o comentario). `url` es temporal: la firma el backend en cada respuesta
+export interface Attachment {
+  key: string
+  nombre: string
+  mime: string
+  tamano: number
+  url: string
+}
+
 // Referencia poblada a un usuario
 export interface UserRef {
   _id: string
@@ -71,7 +80,7 @@ export interface Ticket {
   }
   area?: AreaRef // área actual (cola donde está)
   observadores?: UserRef[] // usuarios que siguen el ticket
-  archivos: string[]
+  archivos: Attachment[]
   fechaLimite?: string
   fechaCierre?: string
   createdAt: string

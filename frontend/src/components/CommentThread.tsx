@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
+import axios from 'axios'
 import { getComments, createComment } from '../services/commentService'
 import type { Comment } from '../services/commentService'
 import { useToast } from '../hooks/useToast'
+import AttachmentInput from './AttachmentInput'
+import AttachmentList from './AttachmentList'
 
 interface CommentThreadProps {
   ticketId: string
@@ -40,6 +43,7 @@ function CommentThread({
   const [comments, setComments] = useState<Comment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [contenido, setContenido] = useState('')
+  const [archivos, setArchivos] = useState<File[]>([])
   const [isSending, setIsSending] = useState(false)
 
   useEffect(() => {
@@ -66,18 +70,23 @@ function CommentThread({
     return null
   }
 
+  // Se puede enviar solo texto, solo archivos o ambos
+  const puedeEnviar = contenido.trim().length > 0 || archivos.length > 0
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!contenido.trim()) return
+    if (!puedeEnviar) return
 
     setIsSending(true)
     try {
-      const newComment = await createComment(ticketId, contenido)
+      const newComment = await createComment(ticketId, contenido, archivos)
       setComments([...comments, newComment])
       setContenido('')
+      setArchivos([])
       toast.success('Comentario enviado')
-    } catch {
-      toast.error('No se pudo enviar el comentario')
+    } catch (err) {
+      const apiMsg = axios.isAxiosError(err) ? err.response?.data?.message : undefined
+      toast.error(apiMsg || 'No se pudo enviar el comentario')
     } finally {
       setIsSending(false)
     }
@@ -118,9 +127,12 @@ function CommentThread({
                       {formatFecha(comment.createdAt)}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    {comment.contenido}
-                  </p>
+                  {comment.contenido && (
+                    <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">
+                      {comment.contenido}
+                    </p>
+                  )}
+                  <AttachmentList archivos={comment.archivos ?? []} />
                 </div>
               </div>
             ))}
@@ -142,10 +154,11 @@ function CommentThread({
               rows={3}
               placeholder={placeholder}
             />
-            <div className="flex justify-end mt-3">
+            <div className="flex items-start justify-between gap-3 mt-3">
+              <AttachmentInput files={archivos} onChange={setArchivos} disabled={isSending} />
               <button
                 type="submit"
-                disabled={isSending || !contenido.trim()}
+                disabled={isSending || !puedeEnviar}
                 className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
               >
                 {isSending ? 'Enviando...' : 'Enviar'}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import CommentThread from '../../components/CommentThread'
+import AttachmentList from '../../components/AttachmentList'
 import ObserversPanel from '../../components/ObserversPanel'
 import AreaRecorrido from '../../components/AreaRecorrido'
 import { getTicketById, updateTicketStatus } from '../../services/ticketService'
@@ -105,6 +106,11 @@ function UsuarioTicketDetail() {
           <p className="text-gray-600 dark:text-gray-300 mb-4">
             {ticket.descripcion}
           </p>
+          {ticket.archivos.length > 0 && (
+            <div className="mb-4">
+              <AttachmentList archivos={ticket.archivos} />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>

@@ -13,14 +13,23 @@ export const getTicketById = async (id: string): Promise<Ticket> => {
   return response.data.ticket
 }
 
+// multipart/form-data: campos del ticket, observadores y hasta 5 archivos
 export const createTicket = async (data: {
   titulo: string
   descripcion: string
   prioridad: string
   categoriaId: string
   observadorIds?: string[]
+  archivos?: File[]
 }): Promise<Ticket> => {
-  const response = await api.post('/tickets', data)
+  const form = new FormData()
+  form.append('titulo', data.titulo)
+  form.append('descripcion', data.descripcion)
+  form.append('prioridad', data.prioridad)
+  form.append('categoriaId', data.categoriaId)
+  data.observadorIds?.forEach((id) => form.append('observadorIds', id))
+  data.archivos?.forEach((archivo) => form.append('archivos', archivo))
+  const response = await api.post('/tickets', form)
   return response.data.ticket
 }
 

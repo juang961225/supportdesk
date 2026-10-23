@@ -7,6 +7,7 @@ import { getCategories } from '../../services/categoryService'
 import { useToast } from '../../hooks/useToast'
 import { useAuth } from '../../hooks/useAuth'
 import ObserverSearchInput from '../../components/ObserverSearchInput'
+import AttachmentInput from '../../components/AttachmentInput'
 import type { Category, UserRef } from '../../types'
 
 function NewTicketPage() {
@@ -17,6 +18,7 @@ function NewTicketPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [observadores, setObservadores] = useState<UserRef[]>([])
+  const [archivos, setArchivos] = useState<File[]>([])
 
   const [formData, setFormData] = useState({
     titulo: '',
@@ -60,7 +62,7 @@ function NewTicketPage() {
     setIsSubmitting(true)
 
     try {
-      await createTicket({ ...formData, observadorIds: observadores.map(o => o._id) })
+      await createTicket({ ...formData, observadorIds: observadores.map(o => o._id), archivos })
       toast.success(`Ticket "${formData.titulo}" creado correctamente`)
       navigate('/usuario/dashboard')
     } catch (err) {
@@ -164,6 +166,13 @@ function NewTicketPage() {
                     <option value="critica">Crítica</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Archivos (opcional)
+                </label>
+                <AttachmentInput files={archivos} onChange={setArchivos} disabled={isSubmitting} />
               </div>
 
               <div>
