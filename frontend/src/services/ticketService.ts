@@ -18,6 +18,7 @@ export const createTicket = async (data: {
   descripcion: string
   prioridad: string
   categoriaId: string
+  observadorIds?: string[]
 }): Promise<Ticket> => {
   const response = await api.post('/tickets', data)
   return response.data.ticket
@@ -50,4 +51,15 @@ export const moveTicket = async (ticketId: string, areaId: string): Promise<Tick
 export const getTicketRecorrido = async (ticketId: string): Promise<TramoRecorrido[]> => {
   const response = await api.get(`/tickets/${ticketId}/recorrido`)
   return response.data.recorrido
+}
+
+export const addObserver = async (ticketId: string, userId: string): Promise<Ticket> => {
+  const response = await api.post(`/tickets/${ticketId}/observers`, { userId })
+  return response.data.ticket
+}
+
+// Devuelve null cuando el propio usuario se sale (ya no puede ver el ticket)
+export const removeObserver = async (ticketId: string, userId: string): Promise<Ticket | null> => {
+  const response = await api.delete(`/tickets/${ticketId}/observers/${userId}`)
+  return response.data.ticket
 }

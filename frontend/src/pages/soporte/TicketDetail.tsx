@@ -3,6 +3,7 @@ import axios from 'axios'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import CommentThread from '../../components/CommentThread'
+import ObserversPanel from '../../components/ObserversPanel'
 import TicketTimeline from '../../components/TicketTimeline'
 import AssignTicketModal from '../../components/AssignTicketModal'
 import MoveAreaModal from '../../components/MoveAreaModal'
@@ -275,11 +276,23 @@ function SoporteTicketDetail() {
               Lo atiende {ticket.asignadoA?.nombre}. Puedes ver y comentar; las acciones son de quien lo atiende.
             </p>
           )}
+
+          <ObserversPanel
+            ticket={ticket}
+            currentUserId={user?._id}
+            canManage={false}
+            onUpdated={(updated) => updated && setTicket(updated)}
+          />
         </div>
 
-        <TicketTimeline ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.asignadoA?._id ?? ''}-${ticket.area?._id ?? ''}`} />
+        <TicketTimeline ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.asignadoA?._id ?? ''}-${ticket.area?._id ?? ''}-${ticket.observadores?.length ?? 0}`} />
 
-        <CommentThread ticketId={ticket._id} canComment={ticket.estado !== 'cerrado'} />
+        <CommentThread
+          ticketId={ticket._id}
+          canComment={ticket.estado !== 'cerrado'}
+          creadorId={ticket.creadoPor._id}
+          observadorIds={ticket.observadores?.map((o) => o._id)}
+        />
       </div>
 
       <ConfirmDialog

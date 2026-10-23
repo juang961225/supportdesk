@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import CommentThread from '../../components/CommentThread'
+import ObserversPanel from '../../components/ObserversPanel'
 import AreaRecorrido from '../../components/AreaRecorrido'
 import { getTicketById, updateTicketStatus } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
+import { useAuth } from '../../hooks/useAuth'
 import { estadoColor } from '../../utils/ticketColors'
 import type { Ticket } from '../../types'
 import { TicketTimeBadge } from '../../components/TicketTimeBadge'
@@ -15,6 +17,7 @@ function UsuarioTicketDetail() {
   const navigate = useNavigate()
   const { toast } = useToast()
 
+  const { user } = useAuth()
   const [ticket, setTicket] = useState<Ticket | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isReopening, setIsReopening] = useState(false)
@@ -65,6 +68,17 @@ function UsuarioTicketDetail() {
         <p className="text-gray-500 dark:text-gray-400">Ticket no encontrado</p>
       </Layout>
     )
+  }
+
+  const esCreador = ticket.creadoPor._id === user?._id
+
+  // Si el usuario deja de seguir el ticket ya no puede verlo: vuelve a su dashboard
+  const handleObserversUpdated = (updated: Ticket | null) => {
+    if (updated) {
+      setTicket(updated)
+    } else {
+      navigate('/usuario/dashboard')
+    }
   }
 
   return (
@@ -129,16 +143,26 @@ function UsuarioTicketDetail() {
           </div>
 
           <AreaRecorrido ticketId={ticket._id} refreshKey={ticket.area?._id} />
+
+          <ObserversPanel
+            ticket={ticket}
+            currentUserId={user?._id}
+            canManage={esCreador}
+            onUpdated={handleObserversUpdated}
+          />
         </div>
 
         <CommentThread
           ticketId={ticket._id}
           canComment={ticket.estado !== 'cerrado'}
           placeholder="Escribe tu comentario o agrega más información..."
+          creadorId={ticket.creadoPor._id}
+          observadorIds={ticket.observadores?.map((o) => o._id)}
         />
 
         {/* Ticket cerrado — opción de reabrir */}
-        {ticket.estado === 'cerrado' && (
+        {/* Solo el creador puede reabrir */}
+        {ticket.estado === 'cerrado' && esCreador && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
               Este ticket está cerrado. Si el problema no fue resuelto puedes reabrirlo.

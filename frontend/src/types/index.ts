@@ -12,6 +12,13 @@ export interface User {
   areas?: AreaRef[] // solo soporte
 }
 
+// Referencia poblada a un usuario
+export interface UserRef {
+  _id: string
+  nombre: string
+  email: string
+}
+
 // Referencia poblada a un área (nombre para mostrar)
 export interface AreaRef {
   _id: string
@@ -63,6 +70,7 @@ export interface Ticket {
     nombre: string
   }
   area?: AreaRef // área actual (cola donde está)
+  observadores?: UserRef[] // usuarios que siguen el ticket
   archivos: string[]
   fechaLimite?: string
   fechaCierre?: string
@@ -82,6 +90,7 @@ export interface TicketEvent {
   tipo:
     | 'creado' | 'asignado' | 'reasignado' | 'estado' | 'desasignado'
     | 'tomado' | 'soltado' | 'pasado' | 'movido'
+    | 'observador_agregado' | 'observador_quitado'
   autor?: {
     _id: string
     nombre: string

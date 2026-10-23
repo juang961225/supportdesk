@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import CommentThread from '../../components/CommentThread'
+import ObserversPanel from '../../components/ObserversPanel'
 import TicketTimeline from '../../components/TicketTimeline'
 import AssignTicketModal from '../../components/AssignTicketModal'
 import MoveAreaModal from '../../components/MoveAreaModal'
@@ -153,12 +154,24 @@ function AdminTicketDetail() {
               </button>
             </div>
           )}
+
+          <ObserversPanel
+            ticket={ticket}
+            currentUserId={user?._id}
+            canManage={canAssign}
+            onUpdated={(updated) => updated && setTicket(updated)}
+          />
         </div>
 
-        <TicketTimeline ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.asignadoA?._id ?? ''}-${ticket.area?._id ?? ''}`} />
+        <TicketTimeline ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.asignadoA?._id ?? ''}-${ticket.area?._id ?? ''}-${ticket.observadores?.length ?? 0}`} />
 
         {/* El admin puede comentar siempre (administrativo) — decisión de producto */}
-        <CommentThread ticketId={ticket._id} canComment />
+        <CommentThread
+          ticketId={ticket._id}
+          canComment
+          creadorId={ticket.creadoPor._id}
+          observadorIds={ticket.observadores?.map((o) => o._id)}
+        />
       </div>
 
       <AssignTicketModal

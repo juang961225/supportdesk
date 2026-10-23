@@ -46,6 +46,12 @@ const describirEvento = (evento: TicketEvent): string => {
       return `${autor} pasó el ticket a ${evento.aNombre}`
     case 'movido':
       return `${autor} movió el ticket de ${evento.deNombre ?? 'su área'} a ${evento.aNombre}; quedó sin asignar en la cola`
+    case 'observador_agregado':
+      return `${autor} agregó a ${evento.aNombre} como observador`
+    case 'observador_quitado':
+      return evento.motivo
+        ? `${evento.deNombre} dejó de seguir el ticket`
+        : `${autor} quitó a ${evento.deNombre} como observador`
   }
 }
 
@@ -59,6 +65,8 @@ const dotColor: Record<TicketEvent['tipo'], string> = {
   soltado: 'bg-red-500',
   pasado: 'bg-blue-500',
   movido: 'bg-purple-500',
+  observador_agregado: 'bg-gray-400',
+  observador_quitado: 'bg-gray-400',
 }
 
 // Historial interno del ticket — solo admin, soporte y superadmin

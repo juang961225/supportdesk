@@ -7,6 +7,8 @@ interface CommentThreadProps {
   ticketId: string
   canComment: boolean
   placeholder?: string
+  creadorId?: string       // para marcar al creador del ticket
+  observadorIds?: string[] // para marcar a los observadores
 }
 
 const formatFecha = (fecha: string) =>
@@ -18,8 +20,22 @@ const formatFecha = (fecha: string) =>
     minute: '2-digit',
   })
 
+const badgeClass: Record<string, string> = {
+  Creador: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+  Observador: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
+  Soporte: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
+  Admin: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
+  Superadmin: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
+}
+
 // Hilo de comentarios del ticket: carga, lista y envía por sí mismo
-function CommentThread({ ticketId, canComment, placeholder = 'Escribe tu comentario...' }: CommentThreadProps) {
+function CommentThread({
+  ticketId,
+  canComment,
+  placeholder = 'Escribe tu comentario...',
+  creadorId,
+  observadorIds = [],
+}: CommentThreadProps) {
   const { toast } = useToast()
   const [comments, setComments] = useState<Comment[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -39,6 +55,16 @@ function CommentThread({ ticketId, canComment, placeholder = 'Escribe tu comenta
     fetchComments()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticketId])
+
+  // Papel de quien comenta dentro del ticket
+  const papelDe = (autor: Comment['autor']): string | null => {
+    if (autor._id === creadorId) return 'Creador'
+    if (observadorIds.includes(autor._id)) return 'Observador'
+    if (autor.rol === 'soporte') return 'Soporte'
+    if (autor.rol === 'admin') return 'Admin'
+    if (autor.rol === 'superadmin') return 'Superadmin'
+    return null
+  }
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -83,6 +109,11 @@ function CommentThread({ ticketId, canComment, placeholder = 'Escribe tu comenta
                     <p className="text-sm font-medium text-gray-800 dark:text-white">
                       {comment.autor.nombre}
                     </p>
+                    {papelDe(comment.autor) && (
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${badgeClass[papelDe(comment.autor) ?? '']}`}>
+                        {papelDe(comment.autor)}
+                      </span>
+                    )}
                     <span className="text-xs text-gray-400 dark:text-gray-500">
                       {formatFecha(comment.createdAt)}
                     </span>

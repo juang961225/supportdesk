@@ -5,14 +5,18 @@ import Layout from '../../components/Layout'
 import { createTicket } from '../../services/ticketService'
 import { getCategories } from '../../services/categoryService'
 import { useToast } from '../../hooks/useToast'
-import type { Category } from '../../types'
+import { useAuth } from '../../hooks/useAuth'
+import ObserverSearchInput from '../../components/ObserverSearchInput'
+import type { Category, UserRef } from '../../types'
 
 function NewTicketPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { user } = useAuth()
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [observadores, setObservadores] = useState<UserRef[]>([])
 
   const [formData, setFormData] = useState({
     titulo: '',
@@ -56,7 +60,7 @@ function NewTicketPage() {
     setIsSubmitting(true)
 
     try {
-      await createTicket(formData)
+      await createTicket({ ...formData, observadorIds: observadores.map(o => o._id) })
       toast.success(`Ticket "${formData.titulo}" creado correctamente`)
       navigate('/usuario/dashboard')
     } catch (err) {
@@ -160,6 +164,38 @@ function NewTicketPage() {
                     <option value="critica">Crítica</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Observadores (opcional)
+                </label>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+                  Personas de tu marca que podrán ver el ticket y comentar, por ejemplo tu jefe. Búscalas por nombre o correo.
+                </p>
+                <ObserverSearchInput
+                  excludeIds={[...(user?._id ? [user._id] : []), ...observadores.map(o => o._id)]}
+                  onSelect={(found) => setObservadores([...observadores, found])}
+                />
+                {observadores.length > 0 && (
+                  <ul className="flex flex-wrap gap-2 mt-2">
+                    {observadores.map((o) => (
+                      <li
+                        key={o._id}
+                        className="flex items-center gap-2 text-sm px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                      >
+                        {o.nombre}
+                        <button
+                          type="button"
+                          onClick={() => setObservadores(observadores.filter(x => x._id !== o._id))}
+                          className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                        >
+                          Quitar
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
 
