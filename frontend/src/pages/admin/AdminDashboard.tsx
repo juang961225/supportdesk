@@ -141,7 +141,7 @@ function AdminDashboard() {
                 <div
                   key={ticket._id}
                   onClick={() => navigate(`/admin/tickets/${ticket._id}`)}
-                  className="p-4 px-6 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                  className="p-4 md:px-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
                 >
                   <div>
                     <p className="font-medium text-gray-800 dark:text-white">{ticket.titulo}</p>
@@ -149,7 +149,7 @@ function AdminDashboard() {
                       {ticket.area?.nombre ?? 'Sin área'} · {ticket.asignadoA ? `Atiende: ${ticket.asignadoA.nombre}` : 'Sin asignar'}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
                     <span className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}>
                       {ticket.prioridad}

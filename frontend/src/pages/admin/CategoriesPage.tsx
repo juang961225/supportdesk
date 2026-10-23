@@ -157,7 +157,7 @@ function CategoriesPage() {
     <Layout>
       <div>
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
             Categorías
           </h2>
@@ -187,7 +187,7 @@ function CategoriesPage() {
               />
             ) : (
               categories.map((category) => (
-                <div key={category._id} className="p-6 flex items-center justify-between">
+                <div key={category._id} className="p-4 md:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
                     <p className="font-medium text-gray-800 dark:text-white">
                       {category.nombre}

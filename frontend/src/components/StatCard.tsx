@@ -7,9 +7,9 @@ interface StatCardProps {
 // Tarjeta de contador para los dashboards
 function StatCard({ label, value, color }: StatCardProps) {
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+    <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow-sm">
       <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-      <p className={`text-3xl font-bold mt-1 ${color}`}>{value}</p>
+      <p className={`text-2xl md:text-3xl font-bold mt-1 ${color}`}>{value}</p>
     </div>
   )
 }

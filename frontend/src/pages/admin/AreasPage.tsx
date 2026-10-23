@@ -136,7 +136,7 @@ function AreasPage() {
   return (
     <Layout>
       <div>
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Áreas</h2>
           <button
             onClick={handleOpenCreate}
@@ -160,7 +160,7 @@ function AreasPage() {
               />
             ) : (
               areas.map((area) => (
-                <div key={area._id} className="p-6 flex items-center justify-between">
+                <div key={area._id} className="p-4 md:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className={area.activo ? '' : 'opacity-50'}>
                     <p className="font-medium text-gray-800 dark:text-white">{area.nombre}</p>
                     {area.descripcion && (

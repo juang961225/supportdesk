@@ -23,12 +23,12 @@ function Modal({ isOpen, onClose, title, children }: ModalProps) {
   return (
     // Fondo oscuro detrás del modal
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
       onClick={onClose} // click fuera cierra el modal
     >
       {/* Contenido del modal */}
       <div
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6 transition-colors"
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 transition-colors"
         onClick={(e) => e.stopPropagation()} // evita que el click dentro cierre el modal
       >
         {/* Header */}

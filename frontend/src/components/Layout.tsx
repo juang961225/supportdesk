@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import ThemeToggle from './ThemeToggle'
@@ -31,6 +32,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
   const location = useLocation()
   // location.pathname → la URL actual, para marcar el item activo
+  const [menuAbierto, setMenuAbierto] = useState(false) // solo aplica en móvil
 
   const handleLogout = () => {
     logout()
@@ -43,8 +45,21 @@ function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors">
 
-      {/* Sidebar */}
-      <aside className="w-64 bg-white dark:bg-gray-800 shadow-sm flex flex-col transition-colors">
+      {/* Fondo oscuro detrás del menú en móvil */}
+      {menuAbierto && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={() => setMenuAbierto(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar: fijo en escritorio, deslizable en móvil */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-800 shadow-sm flex flex-col transition-transform md:static md:translate-x-0 ${
+          menuAbierto ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
 
         {/* Logo */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
@@ -64,7 +79,10 @@ function Layout({ children }: { children: React.ReactNode }) {
               return (
                 <li key={item.path}>
                   <button
-                    onClick={() => navigate(item.path)}
+                    onClick={() => {
+                      setMenuAbierto(false)
+                      navigate(item.path)
+                    }}
                     className={`w-full text-left px-4 py-2 rounded-lg text-sm transition-colors ${
                       isActive
                         ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium'
@@ -102,10 +120,26 @@ function Layout({ children }: { children: React.ReactNode }) {
 
       </aside>
 
-      {/* Contenido principal */}
-      <main className="flex-1 p-8 overflow-auto">
-        {children}
-      </main>
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Barra superior en móvil */}
+        <header className="md:hidden sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 shadow-sm">
+          <button
+            onClick={() => setMenuAbierto(true)}
+            aria-label="Abrir menú"
+            className="p-2 -ml-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <span className="text-lg font-bold text-blue-600 dark:text-blue-400">SupportDesk</span>
+        </header>
+
+        {/* Contenido principal */}
+        <main className="flex-1 p-4 md:p-8 overflow-auto">
+          {children}
+        </main>
+      </div>
 
     </div>
   )

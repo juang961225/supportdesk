@@ -93,7 +93,7 @@ function UsuarioTicketDetail() {
 
         {/* Header del ticket */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-4">
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
             <h2 className="text-xl font-bold text-gray-800 dark:text-white">
               {ticket.titulo}
             </h2>
@@ -111,7 +111,7 @@ function UsuarioTicketDetail() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-gray-500 dark:text-gray-400">Categoría</p>
               <p className="text-gray-800 dark:text-white font-medium">

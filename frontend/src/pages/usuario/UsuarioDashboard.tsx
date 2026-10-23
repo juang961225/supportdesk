@@ -41,7 +41,7 @@ function UsuarioDashboard() {
   const renderTicket = (ticket: Ticket, mostrarCreador: boolean) => (
     <div
       key={ticket._id}
-      className="p-6 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+      className="p-4 md:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
       onClick={() => navigate(`/usuario/tickets/${ticket._id}`)}
     >
       <div>
@@ -57,7 +57,7 @@ function UsuarioDashboard() {
           </p>
         )}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
         <span className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}>
           {ticket.prioridad}
@@ -80,7 +80,7 @@ function UsuarioDashboard() {
   return (
     <Layout>
       <div>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
             Mis Tickets
           </h2>

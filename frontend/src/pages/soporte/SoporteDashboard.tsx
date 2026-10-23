@@ -78,28 +78,28 @@ function SoporteDashboard() {
         </h2>
 
         {/* Métricas */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-gray-400">En cola</p>
-            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">{porVista.cola.length}</p>
+        <div className="grid grid-cols-3 gap-2 md:gap-4 mb-8">
+          <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-lg shadow-sm">
+            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">En cola</p>
+            <p className="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">{porVista.cola.length}</p>
           </div>
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Mis activos</p>
-            <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{misActivos}</p>
+          <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-lg shadow-sm">
+            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">Mis activos</p>
+            <p className="text-2xl md:text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{misActivos}</p>
           </div>
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Del equipo</p>
-            <p className="text-3xl font-bold text-gray-600 dark:text-gray-300 mt-1">{porVista.equipo.length}</p>
+          <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-lg shadow-sm">
+            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">Del equipo</p>
+            <p className="text-2xl md:text-3xl font-bold text-gray-600 dark:text-gray-300 mt-1">{porVista.equipo.length}</p>
           </div>
         </div>
 
         {/* Pestañas */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-4 overflow-x-auto">
           {vistas.map((v) => (
             <button
               key={v.id}
               onClick={() => setVista(v.id)}
-              className={`text-sm px-4 py-2 rounded-lg transition-colors ${
+              className={`text-sm px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
                 vista === v.id
                   ? 'bg-blue-600 text-white'
                   : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -119,7 +119,7 @@ function SoporteDashboard() {
               listaActual.map((ticket) => (
                 <div
                   key={ticket._id}
-                  className="p-6 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="p-4 md:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   onClick={() => navigate(`/soporte/tickets/${ticket._id}`)}
                 >
                   <div>
@@ -134,7 +134,7 @@ function SoporteDashboard() {
                       {ticket.fechaLimite && ` · Límite: ${new Date(ticket.fechaLimite).toLocaleDateString()}`}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
                     <span className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}>
                       {ticket.prioridad}

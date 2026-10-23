@@ -57,7 +57,7 @@ function TicketsPage() {
     <Layout>
       <div>
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
             Tickets
           </h2>
@@ -86,9 +86,9 @@ function TicketsPage() {
                   <div
                     key={ticket._id}
                     onClick={() => navigate(`/admin/tickets/${ticket._id}`)}
-                    className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer transition-colors"
+                    className="p-4 md:p-6 hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer transition-colors"
                   >
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                       <div className="flex-1">
                         <p className="font-medium text-gray-800 dark:text-white">
                           {ticket.titulo}
@@ -103,7 +103,7 @@ function TicketsPage() {
                           }
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 ml-4">
+                      <div className="flex flex-wrap items-center gap-2 sm:ml-4">
                         <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
                         <span className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}>
                           {ticket.prioridad}

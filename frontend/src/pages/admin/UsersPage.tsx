@@ -155,7 +155,7 @@ function AdminUsersPage() {
   return (
     <Layout>
       <div>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
             Usuarios
           </h2>
@@ -184,7 +184,7 @@ function AdminUsersPage() {
               />
             ) : (
               users.map((user) => (
-                <div key={user._id} className="p-6 flex items-center justify-between">
+                <div key={user._id} className="p-4 md:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className={user.estado === 'inactivo' ? 'opacity-50' : ''}>
                     <p className="font-medium text-gray-800 dark:text-white">
                       {user.nombre}
