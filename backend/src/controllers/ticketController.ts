@@ -11,8 +11,10 @@ import { registrarEvento } from '../services/ticketEvents'
 import { findTicketResponse } from '../services/ticketQueries'
 import { calcularFechaLimite } from '../utils/fechaLimite'
 import { buscarObservadorValido } from './ticketObserverController'
+import { guardarAdjuntos } from '../services/attachments'
+import { storageConfigurado } from '../services/storage'
 
-// POST /api/tickets — crear ticket (usuario)
+// POST /api/tickets — crear ticket (usuario). multipart/form-data: campos + archivos opcionales
 export const createTicket = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { titulo, descripcion, prioridad, categoriaId, observadorIds } = req.body || {}
@@ -45,8 +47,16 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       return
     }
 
+    const files = (req.files as Express.Multer.File[] | undefined) ?? []
+    if (files.length > 0 && !storageConfigurado()) {
+      res.status(503).json({ message: 'El almacenamiento de archivos no está configurado' })
+      return
+    }
+
     // Observadores opcionales: usuarios activos de la marca, distintos del creador
-    const idsPedidos: string[] = Array.isArray(observadorIds) ? [...new Set(observadorIds.map(String))] : []
+    // (en multipart un solo valor llega como string y varios como array)
+    const idsRecibidos: unknown[] = observadorIds === undefined ? [] : [].concat(observadorIds)
+    const idsPedidos: string[] = [...new Set(idsRecibidos.map(String))]
     const observadores = []
     for (const observadorId of idsPedidos) {
       const observador = await buscarObservadorValido(observadorId, marcaId, req.user!.id)
@@ -70,6 +80,12 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       observadores: observadores.map((o) => o._id),
       fechaLimite
     })
+
+    // Los adjuntos se guardan bajo el id del ticket, por eso se suben después de crearlo
+    if (files.length > 0) {
+      ticket.archivos = await guardarAdjuntos(files, ticket._id)
+      await ticket.save()
+    }
 
     await registrarEvento({
       ticket: ticket._id,

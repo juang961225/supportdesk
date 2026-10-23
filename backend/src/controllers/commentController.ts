@@ -4,14 +4,28 @@ import Comment from '../models/Comment'
 import Ticket from '../models/Ticket'
 import { AuthRequest } from '../middlewares/auth'
 import { puedeVerTicket } from '../utils/ticketAccess'
+import { guardarAdjuntos, firmarAdjuntos } from '../services/attachments'
+import { storageConfigurado } from '../services/storage'
 
-// POST /api/tickets/:id/comments — agregar comentario
+// Comentario con sus adjuntos firmados (URL temporal)
+const conAdjuntosFirmados = async (comment: InstanceType<typeof Comment>) => ({
+  ...comment.toObject(),
+  archivos: await firmarAdjuntos(comment.archivos)
+})
+
+// POST /api/tickets/:id/comments — agregar comentario (multipart: contenido + archivos opcionales)
 export const createComment = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { contenido } = req.body || {}
+    const contenido = String(req.body?.contenido || '').trim()
+    const files = (req.files as Express.Multer.File[] | undefined) ?? []
 
-    if (!contenido) {
-      res.status(400).json({ message: 'El contenido es obligatorio' })
+    if (!contenido && files.length === 0) {
+      res.status(400).json({ message: 'Escribe un comentario o adjunta un archivo' })
+      return
+    }
+
+    if (files.length > 0 && !storageConfigurado()) {
+      res.status(503).json({ message: 'El almacenamiento de archivos no está configurado' })
       return
     }
 
@@ -27,8 +41,11 @@ export const createComment = async (req: AuthRequest, res: Response, next: NextF
       return
     }
 
+    const archivos = await guardarAdjuntos(files, ticket._id)
+
     const comment = await Comment.create({
       contenido,
+      archivos,
       ticket: new mongoose.Types.ObjectId(req.params.id as string),
       autor: new mongoose.Types.ObjectId(req.user!.id)
     })
@@ -39,7 +56,7 @@ export const createComment = async (req: AuthRequest, res: Response, next: NextF
 
     res.status(201).json({
       message: 'Comentario agregado exitosamente',
-      comment: commentPopulado
+      comment: commentPopulado ? await conAdjuntosFirmados(commentPopulado) : null
     })
 
   } catch (error) {
@@ -68,7 +85,7 @@ export const getComments = async (req: AuthRequest, res: Response, next: NextFun
       .populate('autor', 'nombre email rol')
       .sort({ createdAt: 1 }) // más antiguos primero — orden cronológico
 
-    res.status(200).json({ comments })
+    res.status(200).json({ comments: await Promise.all(comments.map(conAdjuntosFirmados)) })
 
   } catch (error) {
     next(error)

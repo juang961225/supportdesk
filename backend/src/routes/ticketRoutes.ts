@@ -10,11 +10,12 @@ import {
 import { takeTicket, releaseTicket, moveTicket, getTicketRecorrido } from '../controllers/ticketQueueController'
 import { addObserver, removeObserver } from '../controllers/ticketObserverController'
 import { authenticate, authorize } from '../middlewares/auth'
+import { uploadAdjuntos } from '../services/attachments'
 
 const router = Router()
 
 // Crear ticket — solo usuarios
-router.post('/', authenticate, authorize('usuario'), createTicket)
+router.post('/', authenticate, authorize('usuario'), uploadAdjuntos, createTicket)
 
 // Listar tickets — todos los roles
 router.get('/', authenticate, authorize('superadmin', 'admin', 'soporte', 'usuario'), getTickets)

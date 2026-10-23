@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import { Adjunto, AdjuntoSchema } from '../services/attachments'
 
 export interface ITicket extends Document {
   titulo: string
@@ -6,7 +7,7 @@ export interface ITicket extends Document {
   estado: 'abierto' | 'en_progreso' | 'en_revision' | 'cerrado' | 'reabierto'
   prioridad: 'baja' | 'media' | 'alta' | 'critica'
   categoria: mongoose.Types.ObjectId
-  archivos: string[]
+  archivos: Adjunto[]
   creadoPor: mongoose.Types.ObjectId
   asignadoA?: mongoose.Types.ObjectId
   marca: mongoose.Types.ObjectId
@@ -45,7 +46,7 @@ const TicketSchema = new Schema<ITicket>(
       required: [true, 'La categoría es obligatoria']
     },
     archivos: {
-      type: [String],
+      type: [AdjuntoSchema],
       default: []
     },
     creadoPor: {
