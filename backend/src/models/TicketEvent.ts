@@ -1,7 +1,9 @@
 import mongoose, { Document, Schema } from 'mongoose'
 
-// Tipos de evento del historial interno (B2 suma tomar/soltar/pasar/mover, B3 observadores)
-export type TipoEvento = 'creado' | 'asignado' | 'reasignado' | 'estado' | 'desasignado'
+// Tipos de evento del historial interno (B3 suma observadores)
+export type TipoEvento =
+  | 'creado' | 'asignado' | 'reasignado' | 'estado' | 'desasignado'
+  | 'tomado' | 'soltado' | 'pasado' | 'movido'
 
 export interface ITicketEvent extends Document {
   ticket: mongoose.Types.ObjectId
@@ -13,6 +15,7 @@ export interface ITicketEvent extends Document {
   deNombre?: string // nombres del momento: se conservan aunque luego cambien
   aNombre?: string
   motivo?: string
+  fechaLimiteAnterior?: Date // en 'movido': para calcular tramos por área (Fase 2)
   createdAt: Date
 }
 
@@ -22,7 +25,7 @@ const TicketEventSchema = new Schema<ITicketEvent>(
     marca: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand', required: true },
     tipo: {
       type: String,
-      enum: ['creado', 'asignado', 'reasignado', 'estado', 'desasignado'],
+      enum: ['creado', 'asignado', 'reasignado', 'estado', 'desasignado', 'tomado', 'soltado', 'pasado', 'movido'],
       required: true
     },
     autor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -30,7 +33,8 @@ const TicketEventSchema = new Schema<ITicketEvent>(
     a: { type: String },
     deNombre: { type: String },
     aNombre: { type: String },
-    motivo: { type: String }
+    motivo: { type: String },
+    fechaLimiteAnterior: { type: Date }
   },
   {
     // Historial append-only: solo fecha de creación

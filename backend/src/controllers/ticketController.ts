@@ -8,19 +8,8 @@ import { esEstadoValido, puedeTransicionar, aplicarEstado } from '../utils/ticke
 import { AuthRequest } from '../middlewares/auth'
 import { puedeVerTicket } from '../utils/ticketAccess'
 import { registrarEvento } from '../services/ticketEvents'
-
-// Calcula la fecha límite según la prioridad
-const calcularFechaLimite = (prioridad: string): Date => {
-  const ahora = new Date()
-  const horas: Record<string, number> = {
-    critica: 4,
-    alta: 24,
-    media: 72,
-    baja: 168
-  }
-  ahora.setHours(ahora.getHours() + (horas[prioridad] || 72))
-  return ahora
-}
+import { findTicketResponse } from '../services/ticketQueries'
+import { calcularFechaLimite } from '../utils/fechaLimite'
 
 // POST /api/tickets — crear ticket (usuario)
 export const createTicket = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -76,11 +65,7 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
     })
 
     // Populate para devolver datos completos
-    const ticketPopulado = await Ticket.findById(ticket._id)
-      .populate('asignadoA', 'nombre email')
-      .populate('categoria', 'nombre')
-      .populate('creadoPor', 'nombre email')
-      .populate('marca', 'nombre')
+    const ticketPopulado = await findTicketResponse(ticket._id)
 
     res.status(201).json({
       message: 'Ticket creado exitosamente',
@@ -106,8 +91,8 @@ export const getTickets = async (req: AuthRequest, res: Response, next: NextFunc
       // admin ve todos los tickets de su marca
       filtro = { marca }
     } else if (rol === 'soporte') {
-      // soporte solo ve los tickets asignados a él
-      filtro = { asignadoA: id, marca }
+      // soporte ve los tickets de sus áreas (cola, suyos y de compañeros) y los asignados a él
+      filtro = { marca, $or: [{ area: { $in: req.user!.areas } }, { asignadoA: id }] }
     } else if (rol === 'usuario') {
       // usuario solo ve sus propios tickets
       filtro = { creadoPor: id, marca }
@@ -118,6 +103,7 @@ export const getTickets = async (req: AuthRequest, res: Response, next: NextFunc
       .populate('creadoPor', 'nombre email')
       .populate('asignadoA', 'nombre email')
       .populate('marca', 'nombre')
+      .populate('area', 'nombre')
       .sort({ createdAt: -1 })
 
     res.status(200).json({ tickets })
@@ -130,11 +116,7 @@ export const getTickets = async (req: AuthRequest, res: Response, next: NextFunc
 // GET /api/tickets/:id — ver un ticket
 export const getTicketById = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const ticket = await Ticket.findById(req.params.id)
-      .populate('categoria', 'nombre descripcion')
-      .populate('creadoPor', 'nombre email')
-      .populate('asignadoA', 'nombre email')
-      .populate('marca', 'nombre')
+    const ticket = await findTicketResponse(req.params.id as string)
 
     if (!ticket) {
       res.status(404).json({ message: 'Ticket no encontrado' })
@@ -154,8 +136,8 @@ export const getTicketById = async (req: AuthRequest, res: Response, next: NextF
   }
 }
 
-// PUT /api/tickets/:id/assign — asignar ticket a un soporter (admin)
-// La asignación no cambia el estado: el soporte lo pasa a en_progreso cuando empieza
+// PUT /api/tickets/:id/assign — admin asigna/reasigna; el soporte asignado lo pasa a un compañero
+// El destino debe ser un soporte activo del área del ticket. No cambia el estado.
 export const assignTicket = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { soporterId } = req.body || {}
@@ -180,15 +162,23 @@ export const assignTicket = async (req: AuthRequest, res: Response, next: NextFu
       return
     }
 
-    // El soporte debe ser de la misma marca y estar activo
+    // Un soporte solo puede pasar a un compañero los tickets que tiene asignados
+    const esPase = req.user!.rol === 'soporte'
+    if (esPase && String(ticket.asignadoA) !== req.user!.id) {
+      res.status(403).json({ message: 'Solo puedes pasar tickets que tienes asignados' })
+      return
+    }
+
+    // El destino: soporte activo, de la marca y del área del ticket
     const soporte = await User.findOne({
       _id: soporterId,
       rol: 'soporte',
       marca: req.user?.marca,
-      estado: 'activo'
+      estado: 'activo',
+      areas: ticket.area
     })
     if (!soporte) {
-      res.status(400).json({ message: 'El soporte no existe, no es de tu marca o está inactivo' })
+      res.status(400).json({ message: 'El soporte no existe, está inactivo o no pertenece al área del ticket' })
       return
     }
 
@@ -205,7 +195,7 @@ export const assignTicket = async (req: AuthRequest, res: Response, next: NextFu
     await registrarEvento({
       ticket: ticket._id,
       marca: ticket.marca,
-      tipo: anteriorId ? 'reasignado' : 'asignado',
+      tipo: esPase ? 'pasado' : anteriorId ? 'reasignado' : 'asignado',
       autor: req.user!.id,
       de: anteriorId ? String(anteriorId) : undefined,
       deNombre: anterior?.nombre,
@@ -213,11 +203,7 @@ export const assignTicket = async (req: AuthRequest, res: Response, next: NextFu
       aNombre: soporte.nombre
     })
 
-    const ticketActualizado = await Ticket.findById(ticket._id)
-      .populate('asignadoA', 'nombre email')
-      .populate('categoria', 'nombre')
-      .populate('creadoPor', 'nombre email')
-      .populate('marca', 'nombre')
+    const ticketActualizado = await findTicketResponse(ticket._id)
 
     res.status(200).json({
       message: 'Ticket asignado exitosamente',
@@ -282,11 +268,7 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
       a: estado
     })
 
-    const ticketActualizado = await Ticket.findById(ticket._id)
-      .populate('asignadoA', 'nombre email')
-      .populate('categoria', 'nombre')
-      .populate('creadoPor', 'nombre email')
-      .populate('marca', 'nombre')
+    const ticketActualizado = await findTicketResponse(ticket._id)
 
     res.status(200).json({
       message: estado === 'reabierto' ? 'Ticket reabierto exitosamente' : 'Estado actualizado exitosamente',

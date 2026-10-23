@@ -10,6 +10,7 @@ interface TicketAccessFields {
   marca: Ref
   creadoPor: Ref
   asignadoA?: Ref
+  area?: Ref
 }
 
 const idDe = (ref: Ref): string | undefined => {
@@ -24,8 +25,11 @@ export const puedeVerTicket = (user: AuthUser, ticket: TicketAccessFields): bool
       return true
     case 'admin':
       return idDe(ticket.marca) === String(user.marca)
-    case 'soporte':
-      return idDe(ticket.asignadoA) === user.id
+    case 'soporte': {
+      // Ve los tickets de sus áreas (cola, suyos y de compañeros) y los asignados a él
+      const area = idDe(ticket.area)
+      return (area !== undefined && user.areas.includes(area)) || idDe(ticket.asignadoA) === user.id
+    }
     case 'usuario':
       return idDe(ticket.creadoPor) === user.id
     default:

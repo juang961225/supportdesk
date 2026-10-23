@@ -11,6 +11,7 @@ interface NuevoEvento {
   deNombre?: string
   aNombre?: string
   motivo?: string
+  fechaLimiteAnterior?: Date
 }
 
 // Registra una acción en el historial interno del ticket
