@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
+import EmptyState from '../../components/EmptyState'
 import Modal from '../../components/Modal'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { getBrands, createBrand, updateBrand } from '../../services/brandService'
@@ -146,9 +147,12 @@ function BrandsPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {brands.length === 0 ? (
-              <p className="p-6 text-gray-500 dark:text-gray-400">
-                No hay marcas creadas
-              </p>
+              <EmptyState
+                icon="🏢"
+                title="No hay marcas creadas"
+                description="Cada marca tiene sus propios usuarios, áreas y tickets."
+                action={{ label: '+ Nueva Marca', onClick: () => setIsModalOpen(true) }}
+              />
             ) : (
               brands.map((brand) => (
                 <div key={brand._id} className="p-6 flex items-center justify-between">

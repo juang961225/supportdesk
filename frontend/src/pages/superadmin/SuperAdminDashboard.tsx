@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import StatCard from '../../components/StatCard'
+import EmptyState from '../../components/EmptyState'
 import { getSuperadminSummary } from '../../services/dashboardService'
 import type { SuperadminSummary } from '../../services/dashboardService'
 import { useToast } from '../../hooks/useToast'
@@ -54,7 +55,7 @@ function SuperAdminDashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-x-auto">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white p-4 pb-2">Por marca</h3>
           {porMarca.length === 0 ? (
-            <p className="p-4 text-sm text-gray-500 dark:text-gray-400">No hay marcas creadas</p>
+            <EmptyState icon="🏢" title="No hay marcas creadas" description="Créalas desde la sección Marcas." />
           ) : (
             <table className="w-full">
               <thead>

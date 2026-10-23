@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
+import EmptyState from '../../components/EmptyState'
 import Modal from '../../components/Modal'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { getAreas, createArea, updateArea, updateAreaEstado } from '../../services/areaService'
@@ -152,7 +153,12 @@ function AreasPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {areas.length === 0 ? (
-              <p className="p-6 text-gray-500 dark:text-gray-400">No hay áreas creadas</p>
+              <EmptyState
+                icon="🗂️"
+                title="No hay áreas creadas"
+                description="Crea al menos un área para poder enrutar los tickets por categoría."
+                action={{ label: '+ Nueva Área', onClick: handleOpenCreate }}
+              />
             ) : (
               areas.map((area) => (
                 <div key={area._id} className="p-6 flex items-center justify-between">

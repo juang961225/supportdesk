@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import StatCard from '../../components/StatCard'
+import EmptyState from '../../components/EmptyState'
 import { TicketTimeBadge } from '../../components/TicketTimeBadge'
 import { getAdminSummary } from '../../services/dashboardService'
 import type { AdminSummary } from '../../services/dashboardService'
@@ -127,7 +128,7 @@ function AdminDashboard() {
           <p className="text-xs text-gray-400 dark:text-gray-500 px-6 pb-4">Sin asignar o vencidos, los que vencen antes primero</p>
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {urgentes.length === 0 ? (
-              <p className="p-6 text-gray-500 dark:text-gray-400">Todo al día: no hay tickets sin asignar ni vencidos</p>
+              <EmptyState icon="✅" title="Todo al día" description="No hay tickets sin asignar ni vencidos." />
             ) : (
               urgentes.map((ticket) => (
                 <div

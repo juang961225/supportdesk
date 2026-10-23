@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
+import EmptyState from '../../components/EmptyState'
 import { getTickets } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
 import { useAuth } from '../../hooks/useAuth'
@@ -10,10 +11,22 @@ import { TicketTimeBadge } from '../../components/TicketTimeBadge'
 
 type Vista = 'cola' | 'mios' | 'equipo'
 
-const vistas: { id: Vista; label: string; vacio: string }[] = [
-  { id: 'cola', label: 'Cola de mis áreas', vacio: 'No hay tickets esperando en la cola de tus áreas' },
-  { id: 'mios', label: 'Mis tickets', vacio: 'No tienes tickets asignados' },
-  { id: 'equipo', label: 'Del equipo', vacio: 'Tus compañeros no tienen tickets abiertos en tus áreas' },
+const vistas: { id: Vista; label: string; vacio: { icon: string; title: string; description: string } }[] = [
+  {
+    id: 'cola',
+    label: 'Cola de mis áreas',
+    vacio: { icon: '☕', title: 'La cola está vacía', description: 'No hay tickets esperando en tus áreas.' },
+  },
+  {
+    id: 'mios',
+    label: 'Mis tickets',
+    vacio: { icon: '🙌', title: 'No tienes tickets asignados', description: 'Toma uno de la cola de tus áreas para empezar.' },
+  },
+  {
+    id: 'equipo',
+    label: 'Del equipo',
+    vacio: { icon: '👥', title: 'Sin tickets del equipo', description: 'Tus compañeros no tienen tickets abiertos en tus áreas.' },
+  },
 ]
 
 function SoporteDashboard() {
@@ -102,9 +115,7 @@ function SoporteDashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {listaActual.length === 0 ? (
-              <p className="p-6 text-gray-500 dark:text-gray-400">
-                {vistas.find(v => v.id === vista)?.vacio}
-              </p>
+              <EmptyState {...(vistas.find(v => v.id === vista) ?? vistas[0]).vacio} />
             ) : (
               listaActual.map((ticket) => (
                 <div

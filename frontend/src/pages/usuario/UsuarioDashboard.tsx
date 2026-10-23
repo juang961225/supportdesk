@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
+import EmptyState from '../../components/EmptyState'
 import { getTickets } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
 import { useAuth } from '../../hooks/useAuth'
@@ -112,17 +113,12 @@ function UsuarioDashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {misTickets.length === 0 ? (
-              <div className="p-12 text-center">
-                <p className="text-gray-500 dark:text-gray-400 mb-4">
-                  No has creado ningún ticket todavía
-                </p>
-                <button
-                  onClick={() => navigate('/usuario/tickets/new')}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-                >
-                  Crear primer ticket
-                </button>
-              </div>
+              <EmptyState
+                icon="🎫"
+                title="No has creado ningún ticket todavía"
+                description="Cuéntanos qué necesitas y el equipo de soporte te responderá por aquí."
+                action={{ label: 'Crear primer ticket', onClick: () => navigate('/usuario/tickets/new') }}
+              />
             ) : (
               misTickets.map((ticket) => renderTicket(ticket, false))
             )}

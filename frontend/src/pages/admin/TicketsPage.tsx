@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
+import EmptyState from '../../components/EmptyState'
 import AssignTicketModal from '../../components/AssignTicketModal'
 import { getTickets } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
@@ -76,9 +77,11 @@ function TicketsPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {tickets.length === 0 ? (
-              <p className="p-6 text-gray-500 dark:text-gray-400">
-                No hay tickets todavía
-              </p>
+              <EmptyState
+                icon="🎫"
+                title="No hay tickets todavía"
+                description="Cuando los usuarios de tu marca creen tickets, aparecerán aquí."
+              />
             ) : (
                 tickets.map((ticket) => (
                   <div

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
+import EmptyState from '../../components/EmptyState'
 import Modal from '../../components/Modal'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { getCategories, createCategory, updateCategory } from '../../services/categoryService'
@@ -179,9 +180,12 @@ function CategoriesPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {categories.length === 0 ? (
-              <p className="p-6 text-gray-500 dark:text-gray-400">
-                No hay categorías creadas
-              </p>
+              <EmptyState
+                icon="🏷️"
+                title="No hay categorías creadas"
+                description="Los usuarios eligen una categoría al crear un ticket; cada una lo envía a un área."
+                action={{ label: '+ Nueva Categoría', onClick: handleOpenCreate }}
+              />
             ) : (
               categories.map((category) => (
                 <div key={category._id} className="p-6 flex items-center justify-between">

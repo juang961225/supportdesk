@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
+import EmptyState from '../../components/EmptyState'
 import Modal from '../../components/Modal'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import EditUserModal from '../../components/EditUserModal'
@@ -176,9 +177,12 @@ function AdminUsersPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {users.length === 0 ? (
-              <p className="p-6 text-gray-500 dark:text-gray-400">
-                No hay usuarios en tu marca
-              </p>
+              <EmptyState
+                icon="👥"
+                title="No hay usuarios en tu marca"
+                description="Crea soportes para atender las áreas y usuarios para que reporten tickets."
+                action={{ label: '+ Nuevo Usuario', onClick: () => setIsModalOpen(true) }}
+              />
             ) : (
               users.map((user) => (
                 <div key={user._id} className="p-6 flex items-center justify-between">
