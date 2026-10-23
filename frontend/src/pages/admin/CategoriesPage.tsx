@@ -169,16 +169,12 @@ function CategoriesPage() {
           </button>
         </div>
 
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded mb-4">
-            {error}
-          </div>
-        )}
-
         {/* Lista de categorías */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {categories.length === 0 ? (
+            {error ? (
+              <EmptyState icon="⚠️" title={error} description="Recarga la página para intentarlo de nuevo." />
+            ) : categories.length === 0 ? (
               <EmptyState
                 icon="🏷️"
                 title="No hay categorías creadas"

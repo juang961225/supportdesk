@@ -9,6 +9,7 @@ import EditUserModal from '../../components/EditUserModal'
 import { getUsers, createUser, updateUser } from '../../services/userService'
 import { getBrands } from '../../services/brandService'
 import { useToast } from '../../hooks/useToast'
+import { rolLabel, cuentaEstadoLabel } from '../../utils/userLabels'
 import type { User } from '../../types'
 import type { Brand } from '../../types'
 
@@ -173,16 +174,12 @@ function UsersPage() {
           </button>
         </div>
 
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded mb-4">
-            {error}
-          </div>
-        )}
-
         {/* Lista de usuarios */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {users.length === 0 ? (
+            {error ? (
+              <EmptyState icon="⚠️" title={error} description="Recarga la página para intentarlo de nuevo." />
+            ) : users.length === 0 ? (
               <EmptyState
                 icon="👥"
                 title="No hay usuarios creados"
@@ -212,14 +209,14 @@ function UsersPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`text-xs px-2 py-1 rounded-full ${rolColor[user.rol]}`}>
-                      {user.rol}
+                      {rolLabel[user.rol]}
                     </span>
                     <span className={`text-xs px-2 py-1 rounded-full ${
                       user.estado === 'activo'
                         ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                         : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                     }`}>
-                      {user.estado}
+                      {cuentaEstadoLabel[user.estado ?? 'activo']}
                     </span>
                     {user.rol !== 'superadmin' && (
                       <>

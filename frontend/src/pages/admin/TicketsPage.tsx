@@ -66,22 +66,18 @@ function TicketsPage() {
           </p>
         </div>
 
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded mb-4">
-            {error}
-          </div>
-        )}
-
         {/* Lista de tickets */}
         <TicketList
           tickets={tickets}
-          vacio={
+          vacio={error ? (
+            <EmptyState icon="⚠️" title={error} description="Recarga la página para intentarlo de nuevo." />
+          ) : (
             <EmptyState
               icon="🎫"
               title="No hay tickets todavía"
               description="Cuando los usuarios de tu marca creen tickets, aparecerán aquí."
             />
-          }
+          )}
           renderTicket={(ticket) => (
             <TicketCard
               ticket={ticket}

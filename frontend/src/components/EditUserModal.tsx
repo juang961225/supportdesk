@@ -5,6 +5,7 @@ import { updateUser } from '../services/userService'
 import type { UpdateUserData } from '../services/userService'
 import { useToast } from '../hooks/useToast'
 import AreaSelector from './AreaSelector'
+import { rolLabel } from '../utils/userLabels'
 import type { User, Brand, Area } from '../types'
 
 interface EditUserModalProps {
@@ -14,13 +15,6 @@ interface EditUserModalProps {
   areas?: Area[]   // si viene, se muestra el selector de áreas para soportes (admin)
   onClose: () => void
   onSaved: (user: User) => void
-}
-
-const rolLabel: Record<User['rol'], string> = {
-  superadmin: 'Superadmin',
-  admin: 'Admin',
-  soporte: 'Soporte',
-  usuario: 'Usuario',
 }
 
 const inputClass =

@@ -7,6 +7,7 @@ import Modal from '../../components/Modal'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { getBrands, createBrand, updateBrand } from '../../services/brandService'
 import { useToast } from '../../hooks/useToast'
+import { cuentaEstadoLabel } from '../../utils/userLabels'
 import type { Brand } from '../../types'
 
 function BrandsPage() {
@@ -136,16 +137,12 @@ function BrandsPage() {
           </button>
         </div>
 
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded mb-4">
-            {error}
-          </div>
-        )}
-
         {/* Lista de marcas */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {brands.length === 0 ? (
+            {error ? (
+              <EmptyState icon="⚠️" title={error} description="Recarga la página para intentarlo de nuevo." />
+            ) : brands.length === 0 ? (
               <EmptyState
                 icon="🏢"
                 title="No hay marcas creadas"
@@ -169,7 +166,7 @@ function BrandsPage() {
                         ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                         : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                     }`}>
-                      {brand.estado}
+                      {cuentaEstadoLabel[brand.estado]}
                     </span>
                     <button
                       onClick={() => handleToggleEstado(brand)}
