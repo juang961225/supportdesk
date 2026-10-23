@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import CommentThread from '../../components/CommentThread'
+import AreaRecorrido from '../../components/AreaRecorrido'
 import { getTicketById, updateTicketStatus } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
 import { estadoColor } from '../../utils/ticketColors'
@@ -106,6 +107,12 @@ function UsuarioTicketDetail() {
               </p>
             </div>
             <div>
+              <p className="text-gray-500 dark:text-gray-400">Está en</p>
+              <p className="text-gray-800 dark:text-white font-medium">
+                {ticket.area?.nombre ?? 'Sin área'}
+              </p>
+            </div>
+            <div>
               <p className="text-gray-500 dark:text-gray-400">Atendido por</p>
               <p className="text-gray-800 dark:text-white font-medium">
                 {ticket.asignadoA ? ticket.asignadoA.nombre : 'Pendiente de asignación'}
@@ -120,6 +127,8 @@ function UsuarioTicketDetail() {
               </div>
             )}
           </div>
+
+          <AreaRecorrido ticketId={ticket._id} refreshKey={ticket.area?._id} />
         </div>
 
         <CommentThread

@@ -38,6 +38,14 @@ const describirEvento = (evento: TicketEvent): string => {
         : `${autor} cambió el estado: ${labelDeEstado(evento.de)} → ${labelDeEstado(evento.a)}`
     case 'desasignado':
       return `${autor} quitó la asignación a ${evento.deNombre}${evento.motivo ? ` (${evento.motivo})` : ''}; el ticket volvió a Abierto`
+    case 'tomado':
+      return `${autor} tomó el ticket de la cola`
+    case 'soltado':
+      return `${autor} soltó el ticket; volvió a la cola`
+    case 'pasado':
+      return `${autor} pasó el ticket a ${evento.aNombre}`
+    case 'movido':
+      return `${autor} movió el ticket de ${evento.deNombre ?? 'su área'} a ${evento.aNombre}; quedó sin asignar en la cola`
   }
 }
 
@@ -47,6 +55,10 @@ const dotColor: Record<TicketEvent['tipo'], string> = {
   reasignado: 'bg-blue-500',
   estado: 'bg-yellow-500',
   desasignado: 'bg-red-500',
+  tomado: 'bg-blue-500',
+  soltado: 'bg-red-500',
+  pasado: 'bg-blue-500',
+  movido: 'bg-purple-500',
 }
 
 // Historial interno del ticket — solo admin, soporte y superadmin

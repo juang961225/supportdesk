@@ -18,7 +18,7 @@ const menuItems = {
     { label: 'Usuarios', path: '/admin/users' },
   ],
   soporte: [
-    { label: 'Mis Tickets', path: '/soporte/dashboard' },
+    { label: 'Tickets', path: '/soporte/dashboard' },
   ],
   usuario: [
     { label: 'Mis Tickets', path: '/usuario/dashboard' },

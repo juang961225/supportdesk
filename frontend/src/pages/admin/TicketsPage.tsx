@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
-import Modal from '../../components/Modal'
-import { getTickets, assignTicket } from '../../services/ticketService'
-import { getUsers } from '../../services/userService'
+import AssignTicketModal from '../../components/AssignTicketModal'
+import { getTickets } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
 import { useAuth } from '../../hooks/useAuth'
 import { prioridadColor, estadoColor } from '../../utils/ticketColors'
 import { TicketTimeBadge } from '../../components/TicketTimeBadge'
-import type { Ticket, User } from '../../types'
+import type { Ticket } from '../../types'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
 
 function TicketsPage() {
   const { toast } = useToast()
@@ -17,85 +15,32 @@ function TicketsPage() {
   // Superadmin es solo lectura en tickets
   const canAssign = user?.rol === 'admin'
   const [tickets, setTickets] = useState<Ticket[]>([])
-  const [soporters, setSoporters] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const navigate = useNavigate()
 
   // Estado del modal de asignación
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
-  const [selectedSoporter, setSelectedSoporter] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [formError, setFormError] = useState('')
 
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setTickets(await getTickets())
+      } catch {
+        setError('Error al cargar los datos')
+        toast.error('No se pudieron cargar los tickets')
+      } finally {
+        setIsLoading(false)
+      }
+    }
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const fetchData = async () => {
-    try {
-      const [ticketsData, usersData] = await Promise.all([
-        getTickets(),
-        getUsers()
-      ])
-      setTickets(ticketsData)
-      // Solo los soporters activos pueden atender tickets
-      setSoporters(usersData.filter(u => u.rol === 'soporte' && u.estado === 'activo'))
-    } catch {
-      setError('Error al cargar los datos')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleOpenAssign = (ticket: Ticket) => {
-    setSelectedTicket(ticket)
-    setSelectedSoporter(ticket.asignadoA?._id || '')
-    setIsModalOpen(true)
-  }
-
-  const handleAssign = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!selectedSoporter) {
-      setFormError('Debes seleccionar un soporter')
-      toast.warning('Debes seleccionar un soporter')
-      return
-    }
-
-    if (!selectedTicket) return
-
-    setIsSubmitting(true)
-    setFormError('')
-
-    try {
-      const updatedTicket = await assignTicket(selectedTicket._id, selectedSoporter)
-      // Actualiza el ticket en la lista sin recargar
-      setTickets(tickets.map(t =>
-        t._id === updatedTicket._id ? updatedTicket : t
-      ))
-      toast.success(`Ticket asignado a ${updatedTicket.asignadoA?.nombre ?? 'soporter'}`)
-      handleCloseModal()
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        const msg = err.response?.data?.message || 'Error al asignar el ticket'
-        setFormError(msg)
-        toast.error(msg)
-      } else {
-        setFormError('Error al asignar el ticket')
-        toast.error('Error al asignar el ticket')
-      }
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false)
+  // El modal solo lista soportes activos del área del ticket
+  const handleAssigned = (updated: Ticket) => {
+    setTickets(tickets.map(t => (t._id === updated._id ? updated : t)))
     setSelectedTicket(null)
-    setSelectedSoporter('')
-    setFormError('')
   }
 
   if (isLoading) {
@@ -147,7 +92,7 @@ function TicketsPage() {
                           {ticket.titulo}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                          {ticket.creadoPor.nombre} · {ticket.categoria.nombre}
+                          {ticket.creadoPor.nombre} · {ticket.categoria.nombre} · Área: {ticket.area?.nombre ?? 'Sin área'}
                         </p>
                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                           {ticket.asignadoA
@@ -168,7 +113,7 @@ function TicketsPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
-                              handleOpenAssign(ticket)
+                              setSelectedTicket(ticket)
                             }}
                             className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                           >
@@ -185,60 +130,12 @@ function TicketsPage() {
       </div>
 
       {/* Modal de asignación */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
+      <AssignTicketModal
+        ticket={selectedTicket}
         title={`${selectedTicket?.asignadoA ? 'Reasignar' : 'Asignar'} ticket`}
-      >
-        <div className="mb-4">
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            <span className="font-medium">Ticket:</span> {selectedTicket?.titulo}
-          </p>
-        </div>
-
-        <form onSubmit={handleAssign}>
-          {formError && (
-            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded mb-4 text-sm">
-              {formError}
-            </div>
-          )}
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Soporter
-            </label>
-            <select
-              value={selectedSoporter}
-              onChange={(e) => setSelectedSoporter(e.target.value)}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Selecciona un soporter</option>
-              {soporters.map((soporter) => (
-                <option key={soporter._id} value={soporter._id}>
-                  {soporter.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex gap-3 justify-end">
-            <button
-              type="button"
-              onClick={handleCloseModal}
-              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {isSubmitting ? 'Asignando...' : 'Asignar'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+        onClose={() => setSelectedTicket(null)}
+        onAssigned={handleAssigned}
+      />
     </Layout>
   )
 }

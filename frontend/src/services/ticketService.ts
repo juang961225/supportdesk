@@ -1,5 +1,5 @@
 import api from './api'
-import type { Ticket } from '../types'
+import type { Ticket, TramoRecorrido } from '../types'
 
 export type { Ticket }
 
@@ -31,4 +31,23 @@ export const assignTicket = async (ticketId: string, soporterId: string): Promis
 export const updateTicketStatus = async (ticketId: string, estado: string): Promise<Ticket> => {
   const response = await api.put(`/tickets/${ticketId}/status`, { estado })
   return response.data.ticket
+}
+export const takeTicket = async (ticketId: string): Promise<Ticket> => {
+  const response = await api.post(`/tickets/${ticketId}/take`)
+  return response.data.ticket
+}
+
+export const releaseTicket = async (ticketId: string): Promise<Ticket> => {
+  const response = await api.post(`/tickets/${ticketId}/release`)
+  return response.data.ticket
+}
+
+export const moveTicket = async (ticketId: string, areaId: string): Promise<Ticket> => {
+  const response = await api.put(`/tickets/${ticketId}/move`, { areaId })
+  return response.data.ticket
+}
+
+export const getTicketRecorrido = async (ticketId: string): Promise<TramoRecorrido[]> => {
+  const response = await api.get(`/tickets/${ticketId}/recorrido`)
+  return response.data.recorrido
 }

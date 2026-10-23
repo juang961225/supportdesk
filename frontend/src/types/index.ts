@@ -62,6 +62,7 @@ export interface Ticket {
     _id: string
     nombre: string
   }
+  area?: AreaRef // área actual (cola donde está)
   archivos: string[]
   fechaLimite?: string
   fechaCierre?: string
@@ -78,7 +79,9 @@ export interface Category {
 }
 export interface TicketEvent {
   _id: string
-  tipo: 'creado' | 'asignado' | 'reasignado' | 'estado' | 'desasignado'
+  tipo:
+    | 'creado' | 'asignado' | 'reasignado' | 'estado' | 'desasignado'
+    | 'tomado' | 'soltado' | 'pasado' | 'movido'
   autor?: {
     _id: string
     nombre: string
@@ -91,4 +94,10 @@ export interface TicketEvent {
   motivo?: string
   createdAt: string | null
   sintetico?: boolean
+}
+
+// Paso del ticket por un área (visible para todos, sin autores)
+export interface TramoRecorrido {
+  area: string
+  desde: string
 }

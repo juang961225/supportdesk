@@ -4,8 +4,11 @@ import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import CommentThread from '../../components/CommentThread'
 import TicketTimeline from '../../components/TicketTimeline'
-import { getTicketById, updateTicketStatus } from '../../services/ticketService'
+import AssignTicketModal from '../../components/AssignTicketModal'
+import MoveAreaModal from '../../components/MoveAreaModal'
+import { getTicketById, updateTicketStatus, takeTicket, releaseTicket } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
+import { useAuth } from '../../hooks/useAuth'
 import { estadoColor } from '../../utils/ticketColors'
 import type { Ticket } from '../../types'
 import { TicketTimeBadge } from '../../components/TicketTimeBadge'
@@ -26,11 +29,18 @@ function SoporteTicketDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { user } = useAuth()
 
   const [ticket, setTicket] = useState<Ticket | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [isConfirmingClose, setIsConfirmingClose] = useState(false)
+
+  // Acciones de la cola: tomar, soltar, pasar y mover
+  const [isActing, setIsActing] = useState(false)
+  const [isConfirmingRelease, setIsConfirmingRelease] = useState(false)
+  const [isPassOpen, setIsPassOpen] = useState(false)
+  const [isMoveOpen, setIsMoveOpen] = useState(false)
 
   useEffect(() => {
     if (id) fetchData(id)
@@ -71,6 +81,42 @@ function SoporteTicketDetail() {
     }
   }
 
+  const apiError = (err: unknown, fallback: string) =>
+    (axios.isAxiosError(err) ? err.response?.data?.message : undefined) || fallback
+
+  const handleTake = async () => {
+    if (!id) return
+    setIsActing(true)
+    try {
+      setTicket(await takeTicket(id))
+      toast.success('Tomaste el ticket')
+    } catch (err) {
+      toast.error(apiError(err, 'No se pudo tomar el ticket'))
+    } finally {
+      setIsActing(false)
+    }
+  }
+
+  const handleRelease = async () => {
+    if (!id) return
+    setIsActing(true)
+    try {
+      setTicket(await releaseTicket(id))
+      toast.success('El ticket volvió a la cola')
+    } catch (err) {
+      toast.error(apiError(err, 'No se pudo soltar el ticket'))
+    } finally {
+      setIsActing(false)
+      setIsConfirmingRelease(false)
+    }
+  }
+
+  const handleUpdated = (updated: Ticket) => {
+    setTicket(updated)
+    setIsPassOpen(false)
+    setIsMoveOpen(false)
+  }
+
   if (isLoading) {
     return (
       <Layout>
@@ -88,6 +134,9 @@ function SoporteTicketDetail() {
       </Layout>
     )
   }
+
+  const enCola = !ticket.asignadoA
+  const esMio = ticket.asignadoA?._id === user?._id
 
   return (
     <Layout>
@@ -129,6 +178,18 @@ function SoporteTicketDetail() {
               </p>
             </div>
             <div>
+              <p className="text-gray-500 dark:text-gray-400">Área</p>
+              <p className="text-gray-800 dark:text-white font-medium">
+                {ticket.area?.nombre ?? 'Sin área'}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-500 dark:text-gray-400">Asignado a</p>
+              <p className="text-gray-800 dark:text-white font-medium">
+                {ticket.asignadoA?.nombre ?? 'En cola (sin asignar)'}
+              </p>
+            </div>
+            <div>
               <p className="text-gray-500 dark:text-gray-400">Prioridad</p>
               <p className="text-gray-800 dark:text-white font-medium capitalize">
                 {ticket.prioridad}&nbsp;&nbsp;&nbsp;
@@ -145,29 +206,78 @@ function SoporteTicketDetail() {
             )}
           </div>
 
-          {/* Acciones de estado */}
-          {ticket.estado !== 'cerrado' && (
+          {/* Acciones según la relación del soporte con el ticket */}
+          {ticket.estado !== 'cerrado' && enCola && (
             <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                Cambiar estado:
+                Este ticket está en la cola de {ticket.area?.nombre ?? 'tu área'}.
               </p>
               <div className="flex gap-2 flex-wrap">
-                {transicionesSoporte(ticket.estado).map((estado) => (
-                  <button
-                    key={estado}
-                    onClick={() => handleClickEstado(estado)}
-                    disabled={isUpdatingStatus}
-                    className={`text-xs px-3 py-1 rounded hover:opacity-80 transition-opacity disabled:opacity-50 ${accionEstado[estado].className}`}
-                  >
-                    {accionEstado[estado].label}
-                  </button>
-                ))}
+                <button
+                  onClick={handleTake}
+                  disabled={isActing}
+                  className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  {isActing ? 'Tomando...' : 'Tomar ticket'}
+                </button>
+                <button
+                  onClick={() => setIsMoveOpen(true)}
+                  className="text-xs px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Mover de área
+                </button>
               </div>
             </div>
           )}
+
+          {ticket.estado !== 'cerrado' && esMio && (
+            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-4">
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Cambiar estado:</p>
+                <div className="flex gap-2 flex-wrap">
+                  {transicionesSoporte(ticket.estado).map((estado) => (
+                    <button
+                      key={estado}
+                      onClick={() => handleClickEstado(estado)}
+                      disabled={isUpdatingStatus}
+                      className={`text-xs px-3 py-1 rounded hover:opacity-80 transition-opacity disabled:opacity-50 ${accionEstado[estado].className}`}
+                    >
+                      {accionEstado[estado].label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => setIsPassOpen(true)}
+                  className="text-xs px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Pasar a compañero
+                </button>
+                <button
+                  onClick={() => setIsMoveOpen(true)}
+                  className="text-xs px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Mover de área
+                </button>
+                <button
+                  onClick={() => setIsConfirmingRelease(true)}
+                  className="text-xs px-3 py-1 border border-red-300 text-red-600 dark:border-red-700 dark:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                >
+                  Soltar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {ticket.estado !== 'cerrado' && !enCola && !esMio && (
+            <p className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
+              Lo atiende {ticket.asignadoA?.nombre}. Puedes ver y comentar; las acciones son de quien lo atiende.
+            </p>
+          )}
         </div>
 
-        <TicketTimeline ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.asignadoA?._id ?? ''}`} />
+        <TicketTimeline ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.asignadoA?._id ?? ''}-${ticket.area?._id ?? ''}`} />
 
         <CommentThread ticketId={ticket._id} canComment={ticket.estado !== 'cerrado'} />
       </div>
@@ -180,6 +290,30 @@ function SoporteTicketDetail() {
         isLoading={isUpdatingStatus}
         onConfirm={() => handleUpdateStatus('cerrado')}
         onCancel={() => setIsConfirmingClose(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={isConfirmingRelease}
+        title="Soltar ticket"
+        message="El ticket vuelve a la cola de su área, sin asignar y en estado Abierto."
+        confirmLabel="Soltar"
+        isLoading={isActing}
+        onConfirm={handleRelease}
+        onCancel={() => setIsConfirmingRelease(false)}
+      />
+
+      <AssignTicketModal
+        ticket={isPassOpen ? ticket : null}
+        title="Pasar a un compañero"
+        excludeUserId={user?._id}
+        onClose={() => setIsPassOpen(false)}
+        onAssigned={handleUpdated}
+      />
+
+      <MoveAreaModal
+        ticket={isMoveOpen ? ticket : null}
+        onClose={() => setIsMoveOpen(false)}
+        onMoved={handleUpdated}
       />
     </Layout>
   )
