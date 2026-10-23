@@ -8,6 +8,7 @@ import {
   getTicketHistory
 } from '../controllers/ticketController'
 import { takeTicket, releaseTicket, moveTicket, getTicketRecorrido } from '../controllers/ticketQueueController'
+import { addObserver, removeObserver } from '../controllers/ticketObserverController'
 import { authenticate, authorize } from '../middlewares/auth'
 
 const router = Router()
@@ -35,5 +36,9 @@ router.get('/:id/recorrido', authenticate, authorize('superadmin', 'admin', 'sop
 
 // Actualizar estado — soporte (flujo) y usuario (reabrir)
 router.put('/:id/status', authenticate, authorize('soporte', 'usuario'), updateTicketStatus)
+
+// Observadores — agregan el creador y el admin; el observador puede salirse (lo valida el controller)
+router.post('/:id/observers', authenticate, authorize('admin', 'usuario'), addObserver)
+router.delete('/:id/observers/:userId', authenticate, authorize('admin', 'usuario'), removeObserver)
 
 export default router

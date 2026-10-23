@@ -1,9 +1,10 @@
 import mongoose, { Document, Schema } from 'mongoose'
 
-// Tipos de evento del historial interno (B3 suma observadores)
+// Tipos de evento del historial interno
 export type TipoEvento =
   | 'creado' | 'asignado' | 'reasignado' | 'estado' | 'desasignado'
   | 'tomado' | 'soltado' | 'pasado' | 'movido'
+  | 'observador_agregado' | 'observador_quitado'
 
 export interface ITicketEvent extends Document {
   ticket: mongoose.Types.ObjectId
@@ -25,7 +26,7 @@ const TicketEventSchema = new Schema<ITicketEvent>(
     marca: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand', required: true },
     tipo: {
       type: String,
-      enum: ['creado', 'asignado', 'reasignado', 'estado', 'desasignado', 'tomado', 'soltado', 'pasado', 'movido'],
+      enum: ['creado', 'asignado', 'reasignado', 'estado', 'desasignado', 'tomado', 'soltado', 'pasado', 'movido', 'observador_agregado', 'observador_quitado'],
       required: true
     },
     autor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

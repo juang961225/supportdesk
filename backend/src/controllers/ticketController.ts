@@ -10,11 +10,12 @@ import { puedeVerTicket } from '../utils/ticketAccess'
 import { registrarEvento } from '../services/ticketEvents'
 import { findTicketResponse } from '../services/ticketQueries'
 import { calcularFechaLimite } from '../utils/fechaLimite'
+import { buscarObservadorValido } from './ticketObserverController'
 
 // POST /api/tickets — crear ticket (usuario)
 export const createTicket = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { titulo, descripcion, prioridad, categoriaId } = req.body || {}
+    const { titulo, descripcion, prioridad, categoriaId, observadorIds } = req.body || {}
 
     if (!titulo || !descripcion || !prioridad || !categoriaId) {
       res.status(400).json({ message: 'Título, descripción, prioridad y categoría son obligatorios' })
@@ -44,6 +45,18 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       return
     }
 
+    // Observadores opcionales: usuarios activos de la marca, distintos del creador
+    const idsPedidos: string[] = Array.isArray(observadorIds) ? [...new Set(observadorIds.map(String))] : []
+    const observadores = []
+    for (const observadorId of idsPedidos) {
+      const observador = await buscarObservadorValido(observadorId, marcaId, req.user!.id)
+      if (!observador) {
+        res.status(400).json({ message: 'Alguno de los observadores no es un usuario activo de tu marca' })
+        return
+      }
+      observadores.push(observador)
+    }
+
     const fechaLimite = calcularFechaLimite(prioridad)
 
     const ticket = await Ticket.create({
@@ -54,6 +67,7 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       marca: marcaId,
       area: categoria.area, // el ticket entra a la cola del área de su categoría
       creadoPor: req.user?.id,
+      observadores: observadores.map((o) => o._id),
       fechaLimite
     })
 
@@ -63,6 +77,16 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       tipo: 'creado',
       autor: req.user!.id
     })
+    for (const observador of observadores) {
+      await registrarEvento({
+        ticket: ticket._id,
+        marca: ticket.marca,
+        tipo: 'observador_agregado',
+        autor: req.user!.id,
+        a: String(observador._id),
+        aNombre: observador.nombre
+      })
+    }
 
     // Populate para devolver datos completos
     const ticketPopulado = await findTicketResponse(ticket._id)
@@ -94,8 +118,8 @@ export const getTickets = async (req: AuthRequest, res: Response, next: NextFunc
       // soporte ve los tickets de sus áreas (cola, suyos y de compañeros) y los asignados a él
       filtro = { marca, $or: [{ area: { $in: req.user!.areas } }, { asignadoA: id }] }
     } else if (rol === 'usuario') {
-      // usuario solo ve sus propios tickets
-      filtro = { creadoPor: id, marca }
+      // usuario ve los que creó y los que sigue como observador
+      filtro = { marca, $or: [{ creadoPor: id }, { observadores: id }] }
     }
 
     const tickets = await Ticket.find(filtro)

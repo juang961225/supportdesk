@@ -10,6 +10,7 @@ export interface ITicket extends Document {
   creadoPor: mongoose.Types.ObjectId
   asignadoA?: mongoose.Types.ObjectId
   marca: mongoose.Types.ObjectId
+  observadores: mongoose.Types.ObjectId[] // usuarios que siguen el ticket (ven y comentan)
   area?: mongoose.Types.ObjectId // área actual (puede diferir de la de su categoría tras moverlo)
   fechaLimite?: Date
   fechaCierre?: Date
@@ -61,6 +62,10 @@ const TicketSchema = new Schema<ITicket>(
       ref: 'Brand',
       required: true
     },
+    observadores: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+      default: []
+    },
     area: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Area'
@@ -76,6 +81,9 @@ const TicketSchema = new Schema<ITicket>(
     timestamps: true
   }
 )
+
+// Tickets que sigue un observador
+TicketSchema.index({ observadores: 1 })
 
 // Cola de cada área: tickets por marca, área y estado
 TicketSchema.index({ marca: 1, area: 1, estado: 1 })

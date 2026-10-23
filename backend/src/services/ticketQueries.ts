@@ -9,3 +9,4 @@ export const findTicketResponse = (id: mongoose.Types.ObjectId | string) =>
     .populate('creadoPor', 'nombre email')
     .populate('marca', 'nombre')
     .populate('area', 'nombre')
+    .populate('observadores', 'nombre email')

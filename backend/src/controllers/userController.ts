@@ -268,3 +268,35 @@ export const updateUser = async (req: AuthRequest, res: Response, next: NextFunc
     next(error)
   }
 }
+
+// Escapa caracteres especiales para usar el texto del usuario dentro de una RegExp
+const escapeRegex = (texto: string): string => texto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+// GET /api/users/search?q= — autocompletado de usuarios activos de la marca por nombre o email
+// (para agregarlos como observadores). Mínimo 2 caracteres, máximo 8 resultados.
+export const searchUsers = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const q = String(req.query.q || '').trim()
+    if (q.length < 2) {
+      res.status(200).json({ users: [] })
+      return
+    }
+
+    const patron = new RegExp(escapeRegex(q), 'i')
+    const users = await User.find({
+      _id: { $ne: req.user!.id },
+      rol: 'usuario',
+      estado: 'activo',
+      marca: req.user!.marca,
+      $or: [{ nombre: patron }, { email: patron }]
+    })
+      .select('nombre email')
+      .sort({ nombre: 1 })
+      .limit(8)
+
+    res.status(200).json({ users })
+
+  } catch (error) {
+    next(error)
+  }
+}

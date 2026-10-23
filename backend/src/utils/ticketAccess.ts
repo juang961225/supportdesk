@@ -11,6 +11,7 @@ interface TicketAccessFields {
   creadoPor: Ref
   asignadoA?: Ref
   area?: Ref
+  observadores?: Ref[]
 }
 
 const idDe = (ref: Ref): string | undefined => {
@@ -31,7 +32,9 @@ export const puedeVerTicket = (user: AuthUser, ticket: TicketAccessFields): bool
       return (area !== undefined && user.areas.includes(area)) || idDe(ticket.asignadoA) === user.id
     }
     case 'usuario':
-      return idDe(ticket.creadoPor) === user.id
+      // El creador y sus observadores
+      return idDe(ticket.creadoPor) === user.id ||
+        (ticket.observadores ?? []).some((o) => idDe(o) === user.id)
     default:
       return false
   }
