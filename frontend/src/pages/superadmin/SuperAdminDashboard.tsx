@@ -6,6 +6,7 @@ import { PageSkeleton } from '../../components/Skeleton'
 import { getSuperadminSummary } from '../../services/dashboardService'
 import type { SuperadminSummary } from '../../services/dashboardService'
 import { useToast } from '../../hooks/useToast'
+import { cuentaEstadoLabel } from '../../utils/userLabels'
 
 const thClass = 'px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase'
 const tdClass = 'px-4 py-2 text-sm text-gray-700 dark:text-gray-300'
@@ -85,7 +86,7 @@ function SuperAdminDashboard() {
                           ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                           : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                       }`}>
-                        {fila.marca.estado}
+                        {cuentaEstadoLabel[fila.marca.estado]}
                       </span>
                     </td>
                     <td className={tdClass}>{fila.abiertos}</td>

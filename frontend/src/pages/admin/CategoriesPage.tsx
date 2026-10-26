@@ -5,17 +5,19 @@ import { PageSkeleton } from '../../components/Skeleton'
 import EmptyState from '../../components/EmptyState'
 import Modal from '../../components/Modal'
 import ConfirmDialog from '../../components/ConfirmDialog'
-import { getCategories, createCategory, updateCategory } from '../../services/categoryService'
+import Pagination from '../../components/Pagination'
+import { getCategoriesPage, createCategory, updateCategory } from '../../services/categoryService'
 import { getAreas } from '../../services/areaService'
 import { useToast } from '../../hooks/useToast'
+import { usePaginatedList } from '../../hooks/usePaginatedList'
 import type { Category, Area } from '../../types'
 
 function CategoriesPage() {
   const { toast } = useToast()
-  const [categories, setCategories] = useState<Category[]>([])
+  const {
+    items: categories, setItems: setCategories, pagination, setPage, isLoading, isFetching, error, recargarDesdeInicio
+  } = usePaginatedList<Category>(getCategoriesPage, () => toast.error('No se pudieron cargar las categorías'))
   const [areas, setAreas] = useState<Area[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
 
   // Estado del modal
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -30,22 +32,18 @@ function CategoriesPage() {
   const [categoryToDeactivate, setCategoryToDeactivate] = useState<Category | null>(null)
   const [isDeactivating, setIsDeactivating] = useState(false)
 
+  // Áreas completas para el selector del formulario
   useEffect(() => {
-    fetchCategories()
-  }, [])
-
-  const fetchCategories = async () => {
-    try {
-      const [categoriesData, areasData] = await Promise.all([getCategories(), getAreas()])
-      setCategories(categoriesData)
-      setAreas(areasData)
-    } catch {
-      setError('Error al cargar las categorías')
-      toast.error('No se pudieron cargar las categorías')
-    } finally {
-      setIsLoading(false)
+    const fetchAreas = async () => {
+      try {
+        setAreas(await getAreas())
+      } catch {
+        toast.error('No se pudieron cargar las áreas')
+      }
     }
-  }
+    fetchAreas()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleOpenCreate = () => {
     setEditingCategory(null)
@@ -88,7 +86,7 @@ function CategoriesPage() {
       } else {
         // Crear nueva categoría
         const newCategory = await createCategory(formData)
-        setCategories([newCategory, ...categories])
+        recargarDesdeInicio()
         toast.success(`Categoría "${newCategory.nombre}" creada`)
       }
       handleCloseModal()
@@ -169,16 +167,12 @@ function CategoriesPage() {
           </button>
         </div>
 
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded mb-4">
-            {error}
-          </div>
-        )}
-
         {/* Lista de categorías */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {categories.length === 0 ? (
+            {error ? (
+              <EmptyState icon="⚠️" title="Error al cargar las categorías" description="Recarga la página para intentarlo de nuevo." />
+            ) : categories.length === 0 ? (
               <EmptyState
                 icon="🏷️"
                 title="No hay categorías creadas"
@@ -231,6 +225,8 @@ function CategoriesPage() {
             )}
           </div>
         </div>
+
+        {pagination && <Pagination pagination={pagination} onChange={setPage} disabled={isFetching} />}
       </div>
 
       {/* Modal crear/editar */}

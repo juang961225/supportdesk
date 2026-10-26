@@ -2,7 +2,7 @@ import crypto from 'crypto'
 import path from 'path'
 import mongoose, { Schema } from 'mongoose'
 import multer from 'multer'
-import { subirArchivo, urlFirmada, storageConfigurado } from './storage'
+import { subirArchivo, urlFirmada, storageConfigurado, prefijoStorage } from './storage'
 
 // Tipos permitidos: imágenes y documentos (decisión B4)
 const MIMES_PERMITIDOS: Record<string, string[]> = {
@@ -66,7 +66,7 @@ export const guardarAdjuntos = async (
   const adjuntos: Adjunto[] = []
   for (const file of files) {
     const nombre = nombreOriginal(file)
-    const key = `tickets/${ticketId}/${crypto.randomUUID()}${path.extname(nombre).toLowerCase()}`
+    const key = `${prefijoStorage()}tickets/${ticketId}/${crypto.randomUUID()}${path.extname(nombre).toLowerCase()}`
     await subirArchivo(key, file.buffer, file.mimetype)
     adjuntos.push({ key, nombre, mime: file.mimetype, tamano: file.size })
   }

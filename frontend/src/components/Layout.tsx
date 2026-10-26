@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import ThemeToggle from './ThemeToggle'
+import { rolLabel } from '../utils/userLabels'
 
 // Definimos los items del menú según el rol
 const menuItems = {
@@ -66,8 +67,8 @@ function Layout({ children }: { children: React.ReactNode }) {
           <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">
             SupportDesk
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 capitalize">
-            {user?.rol}
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {user ? rolLabel[user.rol] : ''}
           </p>
         </div>
 

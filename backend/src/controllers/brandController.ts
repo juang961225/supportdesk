@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express'
 import Brand from '../models/Brand'
 import { AuthRequest } from '../middlewares/auth'
+import { leerPaginacion, armarPaginacion } from '../utils/pagination'
 import User from '../models/User'
 
 // Función helper — convierte "BMW Colombia" en "bmw-colombia"
@@ -45,13 +46,23 @@ export const createBrand = async (req: AuthRequest, res: Response, next: NextFun
 }
 
 // GET /api/brands — listar todas las marcas (solo superadmin)
-export const getBrands = async (_req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+export const getBrands = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const brands = await Brand.find()
+    const consulta = Brand.find()
       .populate('admin', 'nombre email') // trae solo nombre y email del admin
-      .sort({ createdAt: -1 })           // más recientes primero
+      .sort({ createdAt: -1, _id: -1 })  // más recientes primero
 
-    res.status(200).json({ brands })
+    const pag = leerPaginacion(req.query)
+    if (pag) {
+      const [brands, total] = await Promise.all([
+        consulta.skip(pag.skip).limit(pag.limit),
+        Brand.countDocuments()
+      ])
+      res.status(200).json({ brands, pagination: armarPaginacion(pag, total) })
+      return
+    }
+
+    res.status(200).json({ brands: await consulta })
 
   } catch (error) {
     next(error)

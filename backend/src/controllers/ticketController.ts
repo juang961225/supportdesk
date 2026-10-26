@@ -6,6 +6,7 @@ import User from '../models/User'
 import TicketEvent, { TipoEvento } from '../models/TicketEvent'
 import { esEstadoValido, puedeTransicionar, aplicarEstado } from '../utils/ticketStatus'
 import { AuthRequest } from '../middlewares/auth'
+import { leerPaginacion, armarPaginacion } from '../utils/pagination'
 import { puedeVerTicket } from '../utils/ticketAccess'
 import { registrarEvento } from '../services/ticketEvents'
 import { findTicketResponse } from '../services/ticketQueries'
@@ -138,15 +139,25 @@ export const getTickets = async (req: AuthRequest, res: Response, next: NextFunc
       filtro = { marca, $or: [{ creadoPor: id }, { observadores: id }] }
     }
 
-    const tickets = await Ticket.find(filtro)
+    const consulta = Ticket.find(filtro)
       .populate('categoria', 'nombre')
       .populate('creadoPor', 'nombre email')
       .populate('asignadoA', 'nombre email')
       .populate('marca', 'nombre')
       .populate('area', 'nombre')
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1, _id: -1 }) // _id desempata para que las páginas no se solapen
 
-    res.status(200).json({ tickets })
+    const pag = leerPaginacion(req.query)
+    if (pag) {
+      const [tickets, total] = await Promise.all([
+        consulta.skip(pag.skip).limit(pag.limit),
+        Ticket.countDocuments(filtro)
+      ])
+      res.status(200).json({ tickets, pagination: armarPaginacion(pag, total) })
+      return
+    }
+
+    res.status(200).json({ tickets: await consulta })
 
   } catch (error) {
     next(error)

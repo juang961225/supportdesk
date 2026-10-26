@@ -6,18 +6,21 @@ import EmptyState from '../../components/EmptyState'
 import Modal from '../../components/Modal'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import EditUserModal from '../../components/EditUserModal'
-import { getUsers, createUser, updateUser } from '../../services/userService'
+import { getUsersPage, createUser, updateUser } from '../../services/userService'
 import { getBrands } from '../../services/brandService'
 import { useToast } from '../../hooks/useToast'
+import { usePaginatedList } from '../../hooks/usePaginatedList'
+import Pagination from '../../components/Pagination'
+import { rolLabel, cuentaEstadoLabel } from '../../utils/userLabels'
 import type { User } from '../../types'
 import type { Brand } from '../../types'
 
 function UsersPage() {
   const { toast } = useToast()
-  const [users, setUsers] = useState<User[]>([])
+  const {
+    items: users, setItems: setUsers, pagination, setPage, isLoading, isFetching, error, recargarDesdeInicio
+  } = usePaginatedList<User>(getUsersPage, () => toast.error('No se pudieron cargar los usuarios'))
   const [brands, setBrands] = useState<Brand[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
 
   // Estado del modal
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -38,25 +41,18 @@ function UsersPage() {
   const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null)
   const [isDeactivating, setIsDeactivating] = useState(false)
 
+  // Marcas completas para el selector del formulario
   useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
-    try {
-      const [usersData, brandsData] = await Promise.all([
-        getUsers(),
-        getBrands()
-      ])
-      setUsers(usersData)
-      setBrands(brandsData)
-    } catch {
-      setError('Error al cargar los datos')
-      toast.error('No se pudieron cargar los datos')
-    } finally {
-      setIsLoading(false)
+    const fetchBrands = async () => {
+      try {
+        setBrands(await getBrands())
+      } catch {
+        toast.error('No se pudieron cargar las marcas')
+      }
     }
-  }
+    fetchBrands()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -82,7 +78,7 @@ function UsersPage() {
 
     try {
       const newUser = await createUser(formData)
-      setUsers([newUser, ...users])
+      recargarDesdeInicio()
       toast.success(`Usuario "${newUser.nombre}" creado`)
       handleCloseModal()
     } catch (err) {
@@ -173,16 +169,12 @@ function UsersPage() {
           </button>
         </div>
 
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded mb-4">
-            {error}
-          </div>
-        )}
-
         {/* Lista de usuarios */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {users.length === 0 ? (
+            {error ? (
+              <EmptyState icon="⚠️" title="Error al cargar los usuarios" description="Recarga la página para intentarlo de nuevo." />
+            ) : users.length === 0 ? (
               <EmptyState
                 icon="👥"
                 title="No hay usuarios creados"
@@ -212,14 +204,14 @@ function UsersPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`text-xs px-2 py-1 rounded-full ${rolColor[user.rol]}`}>
-                      {user.rol}
+                      {rolLabel[user.rol]}
                     </span>
                     <span className={`text-xs px-2 py-1 rounded-full ${
                       user.estado === 'activo'
                         ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                         : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                     }`}>
-                      {user.estado}
+                      {cuentaEstadoLabel[user.estado ?? 'activo']}
                     </span>
                     {user.rol !== 'superadmin' && (
                       <>
@@ -247,6 +239,8 @@ function UsersPage() {
             )}
           </div>
         </div>
+
+        {pagination && <Pagination pagination={pagination} onChange={setPage} disabled={isFetching} />}
       </div>
 
       {/* Modal crear usuario */}

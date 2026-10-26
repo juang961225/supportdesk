@@ -1,5 +1,5 @@
 import api from './api'
-import type { User, UserRef } from '../types'
+import type { User, UserRef, Paginado } from '../types'
 
 export type { User }
 
@@ -16,6 +16,11 @@ export interface UpdateUserData {
 export const getUsers = async (): Promise<User[]> => {
   const response = await api.get('/users')
   return response.data.users
+}
+
+export const getUsersPage = async (page: number): Promise<Paginado<User>> => {
+  const response = await api.get('/users', { params: { page } })
+  return { items: response.data.users, pagination: response.data.pagination }
 }
 
 export const createUser = async (data: {

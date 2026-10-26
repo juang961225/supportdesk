@@ -1,11 +1,16 @@
 import api from './api'
-import type { Brand } from '../types'
+import type { Brand, Paginado } from '../types'
 
 export type { Brand }
 
 export const getBrands = async (): Promise<Brand[]> => {
   const response = await api.get('/brands')
   return response.data.brands
+}
+
+export const getBrandsPage = async (page: number): Promise<Paginado<Brand>> => {
+  const response = await api.get('/brands', { params: { page } })
+  return { items: response.data.brands, pagination: response.data.pagination }
 }
 
 export const createBrand = async (nombre: string): Promise<Brand> => {

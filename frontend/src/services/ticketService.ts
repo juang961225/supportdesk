@@ -1,11 +1,16 @@
 import api from './api'
-import type { Ticket, TramoRecorrido } from '../types'
+import type { Ticket, TramoRecorrido, Paginado } from '../types'
 
 export type { Ticket }
 
 export const getTickets = async (): Promise<Ticket[]> => {
   const response = await api.get('/tickets')
   return response.data.tickets
+}
+
+export const getTicketsPage = async (page: number): Promise<Paginado<Ticket>> => {
+  const response = await api.get('/tickets', { params: { page } })
+  return { items: response.data.tickets, pagination: response.data.pagination }
 }
 
 export const getTicketById = async (id: string): Promise<Ticket> => {

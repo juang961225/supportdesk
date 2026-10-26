@@ -14,6 +14,8 @@ import { useAuth } from '../../hooks/useAuth'
 import type { Ticket } from '../../types'
 import { TicketTimeBadge } from '../../components/TicketTimeBadge'
 import { prioridadColor, estadoColor } from '../../utils/ticketColors'
+import { estadoLabel, prioridadLabel } from '../../utils/ticketLabels'
+import { formatFechaLimite } from '../../utils/fechas'
 
 function AdminTicketDetail() {
   const { id } = useParams<{ id: string }>()
@@ -88,12 +90,12 @@ function AdminTicketDetail() {
               <span
                 className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}
               >
-                {ticket.prioridad}
+                {prioridadLabel[ticket.prioridad]}
               </span>
               <span
                 className={`text-xs px-2 py-1 rounded-full ${estadoColor[ticket.estado]}`}
               >
-                {ticket.estado}
+                {estadoLabel[ticket.estado]}
               </span>
             </div>
           </div>
@@ -136,7 +138,7 @@ function AdminTicketDetail() {
               <div>
                 <p className="text-gray-500 dark:text-gray-400">Fecha límite</p>
                 <p className="text-gray-800 dark:text-white font-medium">
-                  {new Date(ticket.fechaLimite).toLocaleDateString()}
+                  {formatFechaLimite(ticket.fechaLimite)}
                 </p>
               </div>
             )}

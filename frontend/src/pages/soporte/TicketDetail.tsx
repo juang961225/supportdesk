@@ -13,6 +13,8 @@ import { getTicketById, updateTicketStatus, takeTicket, releaseTicket } from '..
 import { useToast } from '../../hooks/useToast'
 import { useAuth } from '../../hooks/useAuth'
 import { estadoColor } from '../../utils/ticketColors'
+import { estadoLabel, prioridadLabel } from '../../utils/ticketLabels'
+import { formatFechaLimite } from '../../utils/fechas'
 import type { Ticket } from '../../types'
 import { TicketTimeBadge } from '../../components/TicketTimeBadge'
 import ConfirmDialog from '../../components/ConfirmDialog'
@@ -157,7 +159,7 @@ function SoporteTicketDetail() {
               {ticket.titulo}
             </h2>
             <span className={`text-xs px-2 py-1 rounded-full ${estadoColor[ticket.estado]}`}>
-              {ticket.estado}
+              {estadoLabel[ticket.estado]}
             </span>
           </div>
 
@@ -197,8 +199,8 @@ function SoporteTicketDetail() {
             </div>
             <div>
               <p className="text-gray-500 dark:text-gray-400">Prioridad</p>
-              <p className="text-gray-800 dark:text-white font-medium capitalize">
-                {ticket.prioridad}&nbsp;&nbsp;&nbsp;
+              <p className="text-gray-800 dark:text-white font-medium flex flex-wrap items-center gap-2">
+                {prioridadLabel[ticket.prioridad]}
                 <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
               </p>
             </div>
@@ -206,7 +208,7 @@ function SoporteTicketDetail() {
               <div>
                 <p className="text-gray-500 dark:text-gray-400">Fecha límite</p>
                 <p className="text-gray-800 dark:text-white font-medium">
-                  {new Date(ticket.fechaLimite).toLocaleDateString()}
+                  {formatFechaLimite(ticket.fechaLimite)}
                 </p>
               </div>
             )}

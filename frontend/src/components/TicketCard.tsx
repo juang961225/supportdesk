@@ -2,6 +2,7 @@ import type { Ticket } from '../types'
 import { TicketTimeBadge } from './TicketTimeBadge'
 import { prioridadColor, estadoColor } from '../utils/ticketColors'
 import { estadoLabel, prioridadLabel } from '../utils/ticketLabels'
+import { formatFechaLimite } from '../utils/fechas'
 
 // Lo mínimo para pintar una card; creador y categoría no llegan en todas las listas (ej. urgentes del dashboard)
 export type TicketCardData = Pick<Ticket, '_id' | 'titulo' | 'estado' | 'prioridad' | 'fechaLimite' | 'area' | 'asignadoA'> &
@@ -15,9 +16,6 @@ interface TicketCardProps {
   mostrarCreador?: boolean
   acciones?: React.ReactNode // botones a la derecha (ej. Asignar); sus clicks no abren el ticket
 }
-
-const formatLimite = (fecha: string) =>
-  new Date(fecha).toLocaleString('es-CO', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
 
 function TicketCard({ ticket, onClick, variante = 'equipo', mostrarCreador = true, acciones }: TicketCardProps) {
   const esEquipo = variante === 'equipo'
@@ -34,7 +32,7 @@ function TicketCard({ ticket, onClick, variante = 'equipo', mostrarCreador = tru
 
   const detalle = [
     atencion,
-    ticket.fechaLimite && ticket.estado !== 'cerrado' ? `Límite: ${formatLimite(ticket.fechaLimite)}` : '',
+    ticket.fechaLimite && ticket.estado !== 'cerrado' ? `Límite: ${formatFechaLimite(ticket.fechaLimite)}` : '',
   ].filter(Boolean).join(' · ')
 
   return (
