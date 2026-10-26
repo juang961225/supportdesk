@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express'
 import TicketCategory from '../models/TicketCategory'
 import Area from '../models/Area'
 import { AuthRequest } from '../middlewares/auth'
+import { leerPaginacion, armarPaginacion } from '../utils/pagination'
 
 // El área debe ser de la marca y estar activa
 const areaValida = (areaId: string, marcaId: string | undefined) =>
@@ -69,11 +70,21 @@ export const getCategories = async (req: AuthRequest, res: Response, next: NextF
       ? { marca: marcaId }
       : { marca: marcaId, activo: true }
 
-    const categories = await TicketCategory.find(filtro)
+    const consulta = TicketCategory.find(filtro)
       .populate('area', 'nombre')
-      .sort({ nombre: 1 }) // orden alfabético
+      .sort({ nombre: 1, _id: 1 }) // orden alfabético
 
-    res.status(200).json({ categories })
+    const pag = leerPaginacion(req.query)
+    if (pag) {
+      const [categories, total] = await Promise.all([
+        consulta.skip(pag.skip).limit(pag.limit),
+        TicketCategory.countDocuments(filtro)
+      ])
+      res.status(200).json({ categories, pagination: armarPaginacion(pag, total) })
+      return
+    }
+
+    res.status(200).json({ categories: await consulta })
 
   } catch (error) {
     next(error)

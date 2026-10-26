@@ -6,6 +6,7 @@ import Brand from '../models/Brand'
 import Ticket from '../models/Ticket'
 import Area from '../models/Area'
 import { AuthRequest } from '../middlewares/auth'
+import { leerPaginacion, armarPaginacion } from '../utils/pagination'
 import { registrarEvento } from '../services/ticketEvents'
 
 const ROLES_EDITABLES: IUser['rol'][] = ['admin', 'soporte', 'usuario']
@@ -59,13 +60,23 @@ export const getUsers = async (req: AuthRequest, res: Response, next: NextFuncti
 
     const filtro: Record<string, unknown> = rol === 'admin' ? { marca } : {}
 
-    const users = await User.find(filtro)
+    const consulta = User.find(filtro)
       .select('-password') // excluye el password de la respuesta
       .populate('marca', 'nombre')
       .populate('areas', 'nombre')
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1, _id: -1 })
 
-    res.status(200).json({ users })
+    const pag = leerPaginacion(req.query)
+    if (pag) {
+      const [users, total] = await Promise.all([
+        consulta.skip(pag.skip).limit(pag.limit),
+        User.countDocuments(filtro)
+      ])
+      res.status(200).json({ users, pagination: armarPaginacion(pag, total) })
+      return
+    }
+
+    res.status(200).json({ users: await consulta })
 
   } catch (error) {
     next(error)
