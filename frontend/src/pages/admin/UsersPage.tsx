@@ -8,8 +8,10 @@ import ConfirmDialog from '../../components/ConfirmDialog'
 import EditUserModal from '../../components/EditUserModal'
 import AreaSelector from '../../components/AreaSelector'
 import { getAreas } from '../../services/areaService'
-import { getUsers, createUser, updateUser } from '../../services/userService'
+import { getUsersPage, createUser, updateUser } from '../../services/userService'
 import { useToast } from '../../hooks/useToast'
+import { usePaginatedList } from '../../hooks/usePaginatedList'
+import Pagination from '../../components/Pagination'
 import { rolLabel, cuentaEstadoLabel } from '../../utils/userLabels'
 import type { User, Area } from '../../types'
 
@@ -21,11 +23,12 @@ const rolColor: Record<string, string> = {
 
 function AdminUsersPage() {
   const { toast } = useToast()
-  const [users, setUsers] = useState<User[]>([])
+  // El backend ya filtra por la marca del admin (el superadmin no tiene marca, no aparece)
+  const {
+    items: users, setItems: setUsers, pagination, setPage, isLoading, isFetching, error, recargarDesdeInicio
+  } = usePaginatedList<User>(getUsersPage, () => toast.error('No se pudieron cargar los usuarios'))
   const [areas, setAreas] = useState<Area[]>([])
   const [newAreaIds, setNewAreaIds] = useState<string[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [formData, setFormData] = useState({
@@ -42,23 +45,18 @@ function AdminUsersPage() {
   const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null)
   const [isDeactivating, setIsDeactivating] = useState(false)
 
+  // Áreas completas para el selector del formulario
   useEffect(() => {
-    fetchUsers()
-  }, [])
-
-  const fetchUsers = async () => {
-    try {
-      const [data, areasData] = await Promise.all([getUsers(), getAreas()])
-      // Filtra el superadmin — el admin no debe verlo
-      setUsers(data.filter(u => u.rol !== 'superadmin'))
-      setAreas(areasData)
-    } catch {
-      setError('Error al cargar los usuarios')
-      toast.error('No se pudieron cargar los usuarios')
-    } finally {
-      setIsLoading(false)
+    const fetchAreas = async () => {
+      try {
+        setAreas(await getAreas())
+      } catch {
+        toast.error('No se pudieron cargar las áreas')
+      }
     }
-  }
+    fetchAreas()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -81,7 +79,7 @@ function AdminUsersPage() {
         ...formData,
         areaIds: formData.rol === 'soporte' ? newAreaIds : undefined
       })
-      setUsers([newUser, ...users])
+      recargarDesdeInicio()
       toast.success(`Usuario "${newUser.nombre}" creado`)
       handleCloseModal()
     } catch (err) {
@@ -171,7 +169,7 @@ function AdminUsersPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {error ? (
-              <EmptyState icon="⚠️" title={error} description="Recarga la página para intentarlo de nuevo." />
+              <EmptyState icon="⚠️" title="Error al cargar los usuarios" description="Recarga la página para intentarlo de nuevo." />
             ) : users.length === 0 ? (
               <EmptyState
                 icon="👥"
@@ -232,6 +230,8 @@ function AdminUsersPage() {
             )}
           </div>
         </div>
+
+        {pagination && <Pagination pagination={pagination} onChange={setPage} disabled={isFetching} />}
       </div>
 
       <Modal

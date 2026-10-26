@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Layout from '../../components/Layout'
 import { PageSkeleton } from '../../components/Skeleton'
 import EmptyState from '../../components/EmptyState'
 import TicketCard from '../../components/TicketCard'
 import TicketList from '../../components/TicketList'
 import AssignTicketModal from '../../components/AssignTicketModal'
-import { getTickets } from '../../services/ticketService'
+import { getTicketsPage } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
+import { usePaginatedList } from '../../hooks/usePaginatedList'
+import Pagination from '../../components/Pagination'
 import { useAuth } from '../../hooks/useAuth'
 import type { Ticket } from '../../types'
 import { useNavigate } from 'react-router-dom'
@@ -16,28 +18,13 @@ function TicketsPage() {
   const { user } = useAuth()
   // Superadmin es solo lectura en tickets
   const canAssign = user?.rol === 'admin'
-  const [tickets, setTickets] = useState<Ticket[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
+  const {
+    items: tickets, setItems: setTickets, pagination, setPage, isLoading, isFetching, error
+  } = usePaginatedList<Ticket>(getTicketsPage, () => toast.error('No se pudieron cargar los tickets'))
   const navigate = useNavigate()
 
   // Estado del modal de asignación
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setTickets(await getTickets())
-      } catch {
-        setError('Error al cargar los datos')
-        toast.error('No se pudieron cargar los tickets')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    fetchData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   // El modal solo lista soportes activos del área del ticket
   const handleAssigned = (updated: Ticket) => {
@@ -62,7 +49,7 @@ function TicketsPage() {
             Tickets
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {tickets.length} tickets en total
+            {pagination?.total ?? tickets.length} tickets en total
           </p>
         </div>
 
@@ -70,7 +57,7 @@ function TicketsPage() {
         <TicketList
           tickets={tickets}
           vacio={error ? (
-            <EmptyState icon="⚠️" title={error} description="Recarga la página para intentarlo de nuevo." />
+            <EmptyState icon="⚠️" title="Error al cargar los tickets" description="Recarga la página para intentarlo de nuevo." />
           ) : (
             <EmptyState
               icon="🎫"
@@ -93,6 +80,8 @@ function TicketsPage() {
             />
           )}
         />
+
+        {pagination && <Pagination pagination={pagination} onChange={setPage} disabled={isFetching} />}
       </div>
 
       {/* Modal de asignación */}

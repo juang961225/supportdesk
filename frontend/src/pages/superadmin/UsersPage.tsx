@@ -6,19 +6,21 @@ import EmptyState from '../../components/EmptyState'
 import Modal from '../../components/Modal'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import EditUserModal from '../../components/EditUserModal'
-import { getUsers, createUser, updateUser } from '../../services/userService'
+import { getUsersPage, createUser, updateUser } from '../../services/userService'
 import { getBrands } from '../../services/brandService'
 import { useToast } from '../../hooks/useToast'
+import { usePaginatedList } from '../../hooks/usePaginatedList'
+import Pagination from '../../components/Pagination'
 import { rolLabel, cuentaEstadoLabel } from '../../utils/userLabels'
 import type { User } from '../../types'
 import type { Brand } from '../../types'
 
 function UsersPage() {
   const { toast } = useToast()
-  const [users, setUsers] = useState<User[]>([])
+  const {
+    items: users, setItems: setUsers, pagination, setPage, isLoading, isFetching, error, recargarDesdeInicio
+  } = usePaginatedList<User>(getUsersPage, () => toast.error('No se pudieron cargar los usuarios'))
   const [brands, setBrands] = useState<Brand[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
 
   // Estado del modal
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -39,25 +41,18 @@ function UsersPage() {
   const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null)
   const [isDeactivating, setIsDeactivating] = useState(false)
 
+  // Marcas completas para el selector del formulario
   useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
-    try {
-      const [usersData, brandsData] = await Promise.all([
-        getUsers(),
-        getBrands()
-      ])
-      setUsers(usersData)
-      setBrands(brandsData)
-    } catch {
-      setError('Error al cargar los datos')
-      toast.error('No se pudieron cargar los datos')
-    } finally {
-      setIsLoading(false)
+    const fetchBrands = async () => {
+      try {
+        setBrands(await getBrands())
+      } catch {
+        toast.error('No se pudieron cargar las marcas')
+      }
     }
-  }
+    fetchBrands()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -83,7 +78,7 @@ function UsersPage() {
 
     try {
       const newUser = await createUser(formData)
-      setUsers([newUser, ...users])
+      recargarDesdeInicio()
       toast.success(`Usuario "${newUser.nombre}" creado`)
       handleCloseModal()
     } catch (err) {
@@ -178,7 +173,7 @@ function UsersPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {error ? (
-              <EmptyState icon="⚠️" title={error} description="Recarga la página para intentarlo de nuevo." />
+              <EmptyState icon="⚠️" title="Error al cargar los usuarios" description="Recarga la página para intentarlo de nuevo." />
             ) : users.length === 0 ? (
               <EmptyState
                 icon="👥"
@@ -244,6 +239,8 @@ function UsersPage() {
             )}
           </div>
         </div>
+
+        {pagination && <Pagination pagination={pagination} onChange={setPage} disabled={isFetching} />}
       </div>
 
       {/* Modal crear usuario */}

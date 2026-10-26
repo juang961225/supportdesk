@@ -119,3 +119,16 @@ export interface TramoRecorrido {
   area: string
   desde: string
 }
+
+// Paginación de listas (?page=N); el backend la devuelve solo si se pide
+export interface Paginacion {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+export interface Paginado<T> {
+  items: T[]
+  pagination: Paginacion
+}

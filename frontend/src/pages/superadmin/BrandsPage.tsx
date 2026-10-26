@@ -1,20 +1,22 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
 import { PageSkeleton } from '../../components/Skeleton'
 import EmptyState from '../../components/EmptyState'
 import Modal from '../../components/Modal'
 import ConfirmDialog from '../../components/ConfirmDialog'
-import { getBrands, createBrand, updateBrand } from '../../services/brandService'
+import { getBrandsPage, createBrand, updateBrand } from '../../services/brandService'
 import { useToast } from '../../hooks/useToast'
+import { usePaginatedList } from '../../hooks/usePaginatedList'
+import Pagination from '../../components/Pagination'
 import { cuentaEstadoLabel } from '../../utils/userLabels'
 import type { Brand } from '../../types'
 
 function BrandsPage() {
   const { toast } = useToast()
-  const [brands, setBrands] = useState<Brand[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
+  const {
+    items: brands, setItems: setBrands, pagination, setPage, isLoading, isFetching, error, recargarDesdeInicio
+  } = usePaginatedList<Brand>(getBrandsPage, () => toast.error('No se pudieron cargar las marcas'))
 
   // Estado del modal
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -27,22 +29,6 @@ function BrandsPage() {
   // Estado de la confirmación de desactivar
   const [brandToDeactivate, setBrandToDeactivate] = useState<Brand | null>(null)
   const [isDeactivating, setIsDeactivating] = useState(false)
-
-  useEffect(() => {
-    fetchBrands()
-  }, [])
-
-  const fetchBrands = async () => {
-    try {
-      const data = await getBrands()
-      setBrands(data)
-    } catch {
-      setError('Error al cargar las marcas')
-      toast.error('No se pudieron cargar las marcas')
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   const handleCreateBrand = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,7 +43,7 @@ function BrandsPage() {
 
     try {
       const newBrand = await createBrand(nombre)
-      setBrands([newBrand, ...brands]) // agrega al inicio de la lista
+      recargarDesdeInicio() // la nueva queda al inicio de la página 1
       toast.success(`Marca "${newBrand.nombre}" creada`)
       setNombre('')
       setIsModalOpen(false)
@@ -141,7 +127,7 @@ function BrandsPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {error ? (
-              <EmptyState icon="⚠️" title={error} description="Recarga la página para intentarlo de nuevo." />
+              <EmptyState icon="⚠️" title="Error al cargar las marcas" description="Recarga la página para intentarlo de nuevo." />
             ) : brands.length === 0 ? (
               <EmptyState
                 icon="🏢"
@@ -184,6 +170,8 @@ function BrandsPage() {
             )}
           </div>
         </div>
+
+        {pagination && <Pagination pagination={pagination} onChange={setPage} disabled={isFetching} />}
       </div>
 
       {/* Modal para crear marca */}

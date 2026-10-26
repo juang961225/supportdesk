@@ -1,11 +1,16 @@
 import api from './api'
-import type { Category } from '../types'
+import type { Category, Paginado } from '../types'
 
 export type { Category }
 
 export const getCategories = async (): Promise<Category[]> => {
   const response = await api.get('/categories')
   return response.data.categories
+}
+
+export const getCategoriesPage = async (page: number): Promise<Paginado<Category>> => {
+  const response = await api.get('/categories', { params: { page } })
+  return { items: response.data.categories, pagination: response.data.pagination }
 }
 
 export const createCategory = async (data: {
