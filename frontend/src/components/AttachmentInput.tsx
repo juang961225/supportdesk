@@ -1,6 +1,6 @@
 import { useRef } from 'react'
-import { useToast } from '../hooks/useToast'
-import { MAX_ARCHIVOS, ACCEPT_ADJUNTOS, validarArchivo, formatTamano } from '../utils/attachments'
+import { useAgregarAdjuntos } from '../hooks/useAgregarAdjuntos'
+import { MAX_ARCHIVOS, ACCEPT_ADJUNTOS, formatTamano } from '../utils/attachments'
 
 interface AttachmentInputProps {
   files: File[]
@@ -10,28 +10,13 @@ interface AttachmentInputProps {
 
 // Selector de archivos con chips; valida tipo, tamaño y cantidad antes de enviar
 function AttachmentInput({ files, onChange, disabled = false }: AttachmentInputProps) {
-  const { toast } = useToast()
   const inputRef = useRef<HTMLInputElement>(null)
+  const agregar = useAgregarAdjuntos(files, onChange)
 
   const handleSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const seleccionados = Array.from(e.target.files ?? [])
     e.target.value = '' // permite volver a elegir el mismo archivo
-
-    const validos: File[] = []
-    for (const archivo of seleccionados) {
-      const error = validarArchivo(archivo)
-      if (error) {
-        toast.warning(error)
-      } else {
-        validos.push(archivo)
-      }
-    }
-
-    const disponibles = MAX_ARCHIVOS - files.length
-    if (validos.length > disponibles) {
-      toast.warning(`Puedes adjuntar como máximo ${MAX_ARCHIVOS} archivos`)
-    }
-    onChange([...files, ...validos.slice(0, Math.max(disponibles, 0))])
+    agregar(seleccionados)
   }
 
   return (
@@ -53,7 +38,7 @@ function AttachmentInput({ files, onChange, disabled = false }: AttachmentInputP
         📎 Adjuntar archivos
       </button>
       <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">
-        Imágenes, PDF, Word, Excel, CSV o TXT · máx. 10 MB · hasta {MAX_ARCHIVOS}
+        Imágenes, PDF, Word, Excel, CSV o TXT · máx. 10 MB · hasta {MAX_ARCHIVOS} · también puedes pegar o arrastrar
       </span>
 
       {files.length > 0 && (

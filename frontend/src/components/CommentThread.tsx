@@ -4,6 +4,7 @@ import { getComments, createComment } from '../services/commentService'
 import type { Comment } from '../services/commentService'
 import { useToast } from '../hooks/useToast'
 import AttachmentInput from './AttachmentInput'
+import AttachmentDropZone from './AttachmentDropZone'
 import AttachmentList from './AttachmentList'
 import { SkeletonLines } from './Skeleton'
 
@@ -147,25 +148,27 @@ function CommentThread({
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
             Agregar comentario
           </h3>
-          <form onSubmit={handleSend}>
-            <textarea
-              value={contenido}
-              onChange={(e) => setContenido(e.target.value)}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              rows={3}
-              placeholder={placeholder}
-            />
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-3">
-              <AttachmentInput files={archivos} onChange={setArchivos} disabled={isSending} />
-              <button
-                type="submit"
-                disabled={isSending || !puedeEnviar}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
-              >
-                {isSending ? 'Enviando...' : 'Enviar'}
-              </button>
-            </div>
-          </form>
+          <AttachmentDropZone files={archivos} onChange={setArchivos} disabled={isSending}>
+            <form onSubmit={handleSend}>
+              <textarea
+                value={contenido}
+                onChange={(e) => setContenido(e.target.value)}
+                className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                rows={3}
+                placeholder={placeholder}
+              />
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-3">
+                <AttachmentInput files={archivos} onChange={setArchivos} disabled={isSending} />
+                <button
+                  type="submit"
+                  disabled={isSending || !puedeEnviar}
+                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  {isSending ? 'Enviando...' : 'Enviar'}
+                </button>
+              </div>
+            </form>
+          </AttachmentDropZone>
         </div>
       )}
     </>
