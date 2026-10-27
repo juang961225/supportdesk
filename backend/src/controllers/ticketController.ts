@@ -7,6 +7,7 @@ import TicketEvent, { TipoEvento } from '../models/TicketEvent'
 import { esEstadoValido, puedeTransicionar, aplicarEstado } from '../utils/ticketStatus'
 import { AuthRequest } from '../middlewares/auth'
 import { leerPaginacion, armarPaginacion } from '../utils/pagination'
+import { leerFiltrosTicket } from '../utils/ticketFilters'
 import { puedeVerTicket } from '../utils/ticketAccess'
 import { registrarEvento } from '../services/ticketEvents'
 import { findTicketResponse } from '../services/ticketQueries'
@@ -138,6 +139,10 @@ export const getTickets = async (req: AuthRequest, res: Response, next: NextFunc
       // usuario ve los que creó y los que sigue como observador
       filtro = { marca, $or: [{ creadoPor: id }, { observadores: id }] }
     }
+
+    // Filtros de la lista (búsqueda, estado, fechas...) sobre lo que el rol puede ver
+    const condiciones = leerFiltrosTicket(req.query)
+    if (condiciones.length > 0) filtro = { $and: [filtro, ...condiciones] }
 
     const consulta = Ticket.find(filtro)
       .populate('categoria', 'nombre')
