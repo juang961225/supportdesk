@@ -50,3 +50,18 @@ export const getSuperadminSummary = async (): Promise<SuperadminSummary> => {
   const response = await api.get('/dashboard/summary')
   return response.data.summary
 }
+
+export interface SlaArea {
+  areaId: string | null
+  area: string
+  tramos: number
+  promedioMinutos: number
+  vencidos: number
+  porcentajeVencidos: number
+}
+
+// Solo admin: tramos terminados en los últimos `dias` días, por área
+export const getSlaPorArea = async (): Promise<{ dias: number; areas: SlaArea[] }> => {
+  const response = await api.get('/dashboard/sla')
+  return { dias: response.data.dias, areas: response.data.areas }
+}

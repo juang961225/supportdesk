@@ -8,3 +8,11 @@ const dosDigitos = (n: number): string => String(n).padStart(2, '0')
 export const aFechaHoraLocal = (fecha: Date): string =>
   `${fecha.getFullYear()}-${dosDigitos(fecha.getMonth() + 1)}-${dosDigitos(fecha.getDate())}` +
   `T${dosDigitos(fecha.getHours())}:${dosDigitos(fecha.getMinutes())}`
+
+// Duración en tiempo laboral: 45 → "45 min", 600 → "10 h", 570 → "9 h 30 min"
+export const formatDuracion = (minutos: number): string => {
+  const h = Math.floor(minutos / 60)
+  const m = minutos % 60
+  if (h === 0) return `${m} min`
+  return m ? `${h} h ${m} min` : `${h} h`
+}

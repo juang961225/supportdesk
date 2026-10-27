@@ -6,6 +6,7 @@ import CommentThread from '../../components/CommentThread'
 import AttachmentList from '../../components/AttachmentList'
 import ObserversPanel from '../../components/ObserversPanel'
 import TicketTimeline from '../../components/TicketTimeline'
+import TicketTramos from '../../components/TicketTramos'
 import AssignTicketModal from '../../components/AssignTicketModal'
 import MoveAreaModal from '../../components/MoveAreaModal'
 import FechaLimiteModal from '../../components/FechaLimiteModal'
@@ -180,6 +181,8 @@ function AdminTicketDetail() {
             onUpdated={(updated) => updated && setTicket(updated)}
           />
         </div>
+
+        <TicketTramos ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.area?._id ?? ''}-${ticket.fechaLimite ?? ''}`} />
 
         <TicketTimeline ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.asignadoA?._id ?? ''}-${ticket.area?._id ?? ''}-${ticket.observadores?.length ?? 0}-${ticket.fechaLimite ?? ''}`} />
 

@@ -148,3 +148,14 @@ export interface HorarioLaboral {
   fin: string
   festivos: string[]
 }
+
+// Paso de un ticket por un área (tiempo en horario laboral). salida null = en curso
+export interface Tramo {
+  areaId: string | null
+  area: string
+  entrada: string
+  salida: string | null
+  minutosLaborales: number
+  fechaLimite: string | null
+  vencido: boolean | null // null = sin fecha límite (tickets antiguos)
+}

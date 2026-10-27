@@ -5,6 +5,7 @@ import { PageSkeleton } from '../../components/Skeleton'
 import EmptyState from '../../components/EmptyState'
 import { getHorario, updateHorario } from '../../services/horarioService'
 import { useToast } from '../../hooks/useToast'
+import { formatDuracion } from '../../utils/fechas'
 import type { HorarioLaboral } from '../../types'
 
 const inputClass =
@@ -24,12 +25,6 @@ const DIAS = [
 const aMinutos = (hora: string): number => {
   const [h, m] = hora.split(':').map(Number)
   return h * 60 + m
-}
-
-const formatHoras = (minutos: number): string => {
-  const h = Math.floor(minutos / 60)
-  const m = minutos % 60
-  return m ? `${h} h ${m} min` : `${h} h`
 }
 
 // "2026-12-25" → "vie, 25 dic 2026" (sin desfase de zona: se arma en hora local)
@@ -179,7 +174,7 @@ function HorarioPage() {
                 className={inputClass}
               />
               {jornadaValida && (
-                <span className="text-sm text-gray-500 dark:text-gray-400">Jornada de {formatHoras(jornada)}</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">Jornada de {formatDuracion(jornada)}</span>
               )}
             </div>
 
@@ -188,7 +183,7 @@ function HorarioPage() {
               <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
                 {[
                   { label: 'Crítica', plazo: '4 h laborales' },
-                  { label: 'Alta', plazo: `1 día (${formatHoras(jornada)})` },
+                  { label: 'Alta', plazo: `1 día (${formatDuracion(jornada)})` },
                   { label: 'Media', plazo: '3 días laborales' },
                   { label: 'Baja', plazo: '5 días laborales' },
                 ].map((p) => (
