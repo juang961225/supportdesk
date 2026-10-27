@@ -5,7 +5,7 @@ import Area from '../models/Area'
 import User from '../models/User'
 import Brand from '../models/Brand'
 import { AuthRequest } from '../middlewares/auth'
-import { slaPorArea } from '../services/tramos'
+import { tendenciasDeMarca, PERIODOS_VALIDOS } from '../services/tendencias'
 
 // Expresiones de agregación reutilizables
 const estaAsignado = { $ifNull: ['$asignadoA', false] }
@@ -177,10 +177,8 @@ export const getDashboardSummary = async (req: AuthRequest, res: Response, next:
   }
 }
 
-const DIAS_SLA = 30
-
-// GET /api/dashboard/sla — tiempo promedio y % de tramos vencidos por área, últimos 30 días (admin, su marca)
-export const getSlaPorArea = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+// GET /api/dashboard/tendencias?dias=7|30|90 — gráficas del admin (su marca); por defecto 30 días
+export const getTendencias = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { marca } = req.user!
     if (!marca) {
@@ -188,7 +186,10 @@ export const getSlaPorArea = async (req: AuthRequest, res: Response, next: NextF
       return
     }
 
-    res.status(200).json({ dias: DIAS_SLA, areas: await slaPorArea(marca, DIAS_SLA) })
+    const pedido = Number(req.query.dias)
+    const dias = PERIODOS_VALIDOS.find((p) => p === pedido) ?? 30
+
+    res.status(200).json({ tendencias: await tendenciasDeMarca(marca, dias) })
 
   } catch (error) {
     next(error)
