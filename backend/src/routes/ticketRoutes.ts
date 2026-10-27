@@ -9,6 +9,7 @@ import {
 } from '../controllers/ticketController'
 import { takeTicket, releaseTicket, moveTicket, getTicketRecorrido } from '../controllers/ticketQueueController'
 import { addObserver, removeObserver } from '../controllers/ticketObserverController'
+import { updateFechaLimite } from '../controllers/ticketDeadlineController'
 import { authenticate, authorize } from '../middlewares/auth'
 import { uploadAdjuntos } from '../services/attachments'
 
@@ -34,6 +35,9 @@ router.post('/:id/take', authenticate, authorize('soporte'), takeTicket)
 router.post('/:id/release', authenticate, authorize('soporte'), releaseTicket)
 router.put('/:id/move', authenticate, authorize('admin', 'soporte'), moveTicket)
 router.get('/:id/recorrido', authenticate, authorize('superadmin', 'admin', 'soporte', 'usuario'), getTicketRecorrido)
+
+// Ajustar la fecha límite — solo el admin de la marca, con motivo (queda en el historial)
+router.put('/:id/fecha-limite', authenticate, authorize('admin'), updateFechaLimite)
 
 // Actualizar estado — soporte (flujo) y usuario (reabrir)
 router.put('/:id/status', authenticate, authorize('soporte', 'usuario'), updateTicketStatus)

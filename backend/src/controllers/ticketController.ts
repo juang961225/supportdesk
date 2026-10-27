@@ -346,6 +346,8 @@ interface EventoHistorial {
   deNombre?: string
   aNombre?: string
   motivo?: string
+  fechaLimiteAnterior?: Date
+  fechaLimiteNueva?: Date
   createdAt: Date | null
   sintetico?: boolean
 }
@@ -382,6 +384,8 @@ export const getTicketHistory = async (req: AuthRequest, res: Response, next: Ne
       deNombre: e.deNombre,
       aNombre: e.aNombre,
       motivo: e.motivo,
+      fechaLimiteAnterior: e.fechaLimiteAnterior,
+      fechaLimiteNueva: e.fechaLimiteNueva,
       createdAt: e.createdAt
     }))
     const creadoPor = ticket.creadoPor as unknown as { _id: mongoose.Types.ObjectId; nombre: string; rol: string }
