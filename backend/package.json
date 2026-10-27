@@ -7,6 +7,7 @@
     "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "test": "jest",
     "migrate:areas": "ts-node src/scripts/migrateAreas.ts"
   },
   "keywords": [],
@@ -28,10 +29,13 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.3.0",
     "@types/node": "^25.5.0",
+    "jest": "^30.5.2",
     "nodemon": "^3.1.14",
+    "ts-jest": "^29.4.14",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.2"
   }
