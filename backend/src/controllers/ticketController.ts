@@ -11,7 +11,7 @@ import { leerFiltrosTicket } from '../utils/ticketFilters'
 import { puedeVerTicket } from '../utils/ticketAccess'
 import { registrarEvento } from '../services/ticketEvents'
 import { findTicketResponse } from '../services/ticketQueries'
-import { calcularFechaLimite } from '../utils/fechaLimite'
+import { fechaLimiteDeMarca } from '../services/horario'
 import { buscarObservadorValido } from './ticketObserverController'
 import { guardarAdjuntos } from '../services/attachments'
 import { storageConfigurado } from '../services/storage'
@@ -69,7 +69,7 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       observadores.push(observador)
     }
 
-    const fechaLimite = calcularFechaLimite(prioridad)
+    const fechaLimite = await fechaLimiteDeMarca(marcaId, prioridad)
 
     const ticket = await Ticket.create({
       titulo,
@@ -310,9 +310,14 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
       return
     }
 
-    // Al reabrir se conserva asignadoA: vuelve al soporte que lo cerró
+    // Al reabrir se conserva asignadoA: vuelve al soporte que lo cerró.
+    // Recibe una fecha límite nueva desde la reapertura (si no, nacería vencido)
     const estadoAnterior = ticket.estado
+    const fechaLimiteAnterior = ticket.fechaLimite
     aplicarEstado(ticket, estado)
+    if (estado === 'reabierto') {
+      ticket.fechaLimite = await fechaLimiteDeMarca(ticket.marca, ticket.prioridad)
+    }
     await ticket.save()
 
     await registrarEvento({
@@ -321,7 +326,8 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
       tipo: 'estado',
       autor: id,
       de: estadoAnterior,
-      a: estado
+      a: estado,
+      ...(estado === 'reabierto' && { fechaLimiteAnterior, fechaLimiteNueva: ticket.fechaLimite })
     })
 
     const ticketActualizado = await findTicketResponse(ticket._id)

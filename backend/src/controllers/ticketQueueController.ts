@@ -6,7 +6,7 @@ import TicketEvent from '../models/TicketEvent'
 import { AuthRequest } from '../middlewares/auth'
 import { puedeVerTicket } from '../utils/ticketAccess'
 import { puedeTransicionar, aplicarEstado } from '../utils/ticketStatus'
-import { calcularFechaLimite } from '../utils/fechaLimite'
+import { fechaLimiteDeMarca } from '../services/horario'
 import { registrarEvento } from '../services/ticketEvents'
 import { findTicketResponse } from '../services/ticketQueries'
 
@@ -145,7 +145,7 @@ export const moveTicket = async (req: AuthRequest, res: Response, next: NextFunc
     ticket.area = destino._id
     ticket.asignadoA = undefined
     ticket.estado = 'abierto'
-    ticket.fechaLimite = calcularFechaLimite(ticket.prioridad)
+    ticket.fechaLimite = await fechaLimiteDeMarca(ticket.marca, ticket.prioridad)
     await ticket.save()
 
     await registrarEvento({
