@@ -10,6 +10,7 @@ import { leerPaginacion, armarPaginacion } from '../utils/pagination'
 import { leerFiltrosTicket } from '../utils/ticketFilters'
 import { puedeVerTicket } from '../utils/ticketAccess'
 import { registrarEvento } from '../services/ticketEvents'
+import { notificar } from '../services/notificaciones'
 import { findTicketResponse } from '../services/ticketQueries'
 import { fechaLimiteDeMarca } from '../services/horario'
 import { buscarObservadorValido } from './ticketObserverController'
@@ -105,6 +106,8 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
         aNombre: observador.nombre
       })
     }
+
+    notificar(ticket._id, req.user!.id, { tipo: 'creado' })
 
     // Populate para devolver datos completos
     const ticketPopulado = await findTicketResponse(ticket._id)
@@ -259,6 +262,8 @@ export const assignTicket = async (req: AuthRequest, res: Response, next: NextFu
       aNombre: soporte.nombre
     })
 
+    notificar(ticket._id, req.user!.id, { tipo: 'asignado' })
+
     const ticketActualizado = await findTicketResponse(ticket._id)
 
     res.status(200).json({
@@ -329,6 +334,8 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
       a: estado,
       ...(estado === 'reabierto' && { fechaLimiteAnterior, fechaLimiteNueva: ticket.fechaLimite })
     })
+
+    notificar(ticket._id, id, { tipo: 'estado', de: estadoAnterior, a: estado })
 
     const ticketActualizado = await findTicketResponse(ticket._id)
 

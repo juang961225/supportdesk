@@ -6,6 +6,7 @@ import { AuthRequest } from '../middlewares/auth'
 import { puedeVerTicket } from '../utils/ticketAccess'
 import { guardarAdjuntos, firmarAdjuntos } from '../services/attachments'
 import { storageConfigurado } from '../services/storage'
+import { notificar } from '../services/notificaciones'
 
 // Comentario con sus adjuntos firmados (URL temporal)
 const conAdjuntosFirmados = async (comment: InstanceType<typeof Comment>) => ({
@@ -49,6 +50,8 @@ export const createComment = async (req: AuthRequest, res: Response, next: NextF
       ticket: new mongoose.Types.ObjectId(req.params.id as string),
       autor: new mongoose.Types.ObjectId(req.user!.id)
     })
+
+    notificar(ticket._id, req.user!.id, { tipo: 'comentario', contenido, adjuntos: archivos.length })
 
     // Populate para devolver datos completos
     const commentPopulado = await Comment.findById(comment._id)
