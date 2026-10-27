@@ -1,3 +1,20 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* Colores de las gráficas (validados contra la superficie de las tarjetas en ambos modos) */
+:root {
+  --chart-serie: #2a78d6;
+  --chart-superficie: #ffffff;
+  --chart-tinta: #1f2937;
+  --chart-tinta-suave: #6b7280;
+  --chart-rejilla: #e5e7eb;
+  --chart-eje: #9ca3af;
+}
+.dark {
+  --chart-serie: #3987e5;
+  --chart-superficie: #1f2937;
+  --chart-tinta: #f9fafb;
+  --chart-tinta-suave: #9ca3af;
+  --chart-rejilla: #374151;
+  --chart-eje: #6b7280;
+}

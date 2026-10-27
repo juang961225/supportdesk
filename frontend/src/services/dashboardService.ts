@@ -60,8 +60,22 @@ export interface SlaArea {
   porcentajeVencidos: number
 }
 
-// Solo admin: tramos terminados en los últimos `dias` días, por área
-export const getSlaPorArea = async (): Promise<{ dias: number; areas: SlaArea[] }> => {
-  const response = await api.get('/dashboard/sla')
-  return { dias: response.data.dias, areas: response.data.areas }
+export type PeriodoTendencias = 7 | 30 | 90
+
+// Tickets creados en el periodo (por día o semana, estado, categoría y área) + SLA de los tramos terminados
+export interface Tendencias {
+  dias: PeriodoTendencias
+  unidad: 'dia' | 'semana'
+  total: number
+  creados: { fecha: string; total: number }[]
+  porEstado: { estado: Ticket['estado']; total: number }[]
+  porCategoria: { id: string | null; nombre: string; total: number }[]
+  porArea: { id: string | null; nombre: string; total: number }[]
+  sla: SlaArea[]
+}
+
+// Solo admin: gráficas de su marca
+export const getTendencias = async (dias: PeriodoTendencias): Promise<Tendencias> => {
+  const response = await api.get('/dashboard/tendencias', { params: { dias } })
+  return response.data.tendencias
 }
