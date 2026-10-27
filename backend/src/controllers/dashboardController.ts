@@ -31,7 +31,7 @@ interface ConteoSoporte {
 const resumenAdmin = async (marcaId: string) => {
   const ahora = new Date()
   const marca = new mongoose.Types.ObjectId(marcaId)
-  const noCerrados = { marca, estado: { $ne: 'cerrado' } }
+  const noCerrados = { marca, estado: { $ne: 'cerrado' as const } }
 
   const [abiertos, enProgreso, vencidos, criticos, cerrados] = await Promise.all([
     Ticket.countDocuments({ marca, estado: { $in: ['abierto', 'reabierto'] } }),
