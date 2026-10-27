@@ -36,7 +36,7 @@ const describirEvento = (evento: TicketEvent): string => {
       return `${autor} reasignó el ticket de ${evento.deNombre ?? 'otro soporte'} a ${evento.aNombre}`
     case 'estado':
       return evento.a === 'reabierto'
-        ? `${autor} reabrió el ticket`
+        ? `${autor} reabrió el ticket${evento.fechaLimiteNueva ? `; nueva fecha límite ${formatFechaLimite(evento.fechaLimiteNueva)}` : ''}`
         : `${autor} cambió el estado: ${labelDeEstado(evento.de)} → ${labelDeEstado(evento.a)}`
     case 'desasignado':
       return `${autor} quitó la asignación a ${evento.deNombre}${evento.motivo ? ` (${evento.motivo})` : ''}; el ticket volvió a Abierto`

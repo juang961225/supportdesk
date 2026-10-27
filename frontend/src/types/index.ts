@@ -140,3 +140,11 @@ export interface Paginado<T> {
 export type ClaveFiltroTicket =
   'q' | 'estado' | 'prioridad' | 'area' | 'asignado' | 'marca' | 'desde' | 'hasta' | 'vencimiento'
 export type FiltrosTicket = Record<ClaveFiltroTicket, string>
+
+// Horario laboral de la marca (hora Colombia). dias: 0 = domingo … 6 = sábado
+export interface HorarioLaboral {
+  dias: number[]
+  inicio: string
+  fin: string
+  festivos: string[]
+}
