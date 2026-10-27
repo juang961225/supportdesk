@@ -1,12 +1,17 @@
 import mongoose from 'mongoose'
 import Ticket from '../models/Ticket'
-import TicketEvent from '../models/TicketEvent'
+import TicketEvent, { TipoEvento } from '../models/TicketEvent'
 import Area from '../models/Area'
 import { horarioDeMarca } from './horario'
 import { calcularTramos, EventoParaTramos, TicketParaTramos, Tramo } from '../utils/tramos'
 
-const TIPOS_RELEVANTES = ['movido', 'estado', 'fecha_limite']
+const TIPOS_RELEVANTES: TipoEvento[] = ['movido', 'estado', 'fecha_limite']
 const CAMPOS_EVENTO = 'ticket tipo createdAt de a deNombre aNombre fechaLimiteAnterior'
+
+// Forma de los eventos que trae CAMPOS_EVENTO con .lean()
+interface EventoLean extends EventoParaTramos {
+  ticket: mongoose.Types.ObjectId
+}
 
 interface TicketLean {
   _id: mongoose.Types.ObjectId
@@ -39,7 +44,7 @@ export const tramosDeTicket = async (ticketId: mongoose.Types.ObjectId): Promise
   if (!ticket) return []
 
   const [eventos, horario] = await Promise.all([
-    TicketEvent.find({ ticket: ticketId, tipo: { $in: TIPOS_RELEVANTES } }).select(CAMPOS_EVENTO).sort({ createdAt: 1 }).lean(),
+    TicketEvent.find({ ticket: ticketId, tipo: { $in: TIPOS_RELEVANTES } }).select(CAMPOS_EVENTO).sort({ createdAt: 1 }).lean<EventoLean[]>(),
     horarioDeMarca(ticket.marca)
   ])
   return calcularTramos(aTicketParaTramos(ticket), eventos.map(aEvento), horario)
@@ -66,7 +71,7 @@ export const slaPorArea = async (marcaId: string, dias: number): Promise<SlaArea
 
   const [eventos, horario, areas] = await Promise.all([
     TicketEvent.find({ ticket: { $in: tickets.map((t) => t._id) }, tipo: { $in: TIPOS_RELEVANTES } })
-      .select(CAMPOS_EVENTO).sort({ createdAt: 1 }).lean(),
+      .select(CAMPOS_EVENTO).sort({ createdAt: 1 }).lean<EventoLean[]>(),
     horarioDeMarca(marcaId),
     Area.find({ marca: marcaId }).select('nombre').lean()
   ])

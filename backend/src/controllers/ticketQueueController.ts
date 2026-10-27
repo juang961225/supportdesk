@@ -8,6 +8,7 @@ import { puedeVerTicket } from '../utils/ticketAccess'
 import { puedeTransicionar, aplicarEstado } from '../utils/ticketStatus'
 import { fechaLimiteDeMarca } from '../services/horario'
 import { registrarEvento } from '../services/ticketEvents'
+import { notificar } from '../services/notificaciones'
 import { findTicketResponse } from '../services/ticketQueries'
 
 // POST /api/tickets/:id/take — un soporte del área se autoasigna un ticket de la cola → en_progreso
@@ -159,6 +160,8 @@ export const moveTicket = async (req: AuthRequest, res: Response, next: NextFunc
       aNombre: destino.nombre,
       fechaLimiteAnterior
     })
+
+    notificar(ticket._id, id, { tipo: 'movido' })
 
     res.status(200).json({
       message: `Ticket movido a ${destino.nombre}`,
