@@ -63,6 +63,12 @@ export const moveTicket = async (ticketId: string, areaId: string): Promise<Tick
   return response.data.ticket
 }
 
+// Solo admin: ajusta la fecha límite actual (ISO) con un motivo que queda en el historial
+export const updateFechaLimite = async (ticketId: string, fechaLimite: string, motivo: string): Promise<Ticket> => {
+  const response = await api.put(`/tickets/${ticketId}/fecha-limite`, { fechaLimite, motivo })
+  return response.data.ticket
+}
+
 export const getTicketRecorrido = async (ticketId: string): Promise<TramoRecorrido[]> => {
   const response = await api.get(`/tickets/${ticketId}/recorrido`)
   return response.data.recorrido

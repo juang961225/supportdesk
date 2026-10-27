@@ -100,6 +100,7 @@ export interface TicketEvent {
     | 'creado' | 'asignado' | 'reasignado' | 'estado' | 'desasignado'
     | 'tomado' | 'soltado' | 'pasado' | 'movido'
     | 'observador_agregado' | 'observador_quitado'
+    | 'fecha_limite'
   autor?: {
     _id: string
     nombre: string
@@ -110,6 +111,8 @@ export interface TicketEvent {
   deNombre?: string
   aNombre?: string
   motivo?: string
+  fechaLimiteAnterior?: string
+  fechaLimiteNueva?: string
   createdAt: string | null
   sintetico?: boolean
 }

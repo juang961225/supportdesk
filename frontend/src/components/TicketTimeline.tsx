@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getTicketHistory } from '../services/historyService'
 import { useToast } from '../hooks/useToast'
 import { labelDeEstado } from '../utils/ticketLabels'
+import { formatFechaLimite } from '../utils/fechas'
 import type { TicketEvent } from '../types'
 import { SkeletonLines } from './Skeleton'
 
@@ -53,6 +54,11 @@ const describirEvento = (evento: TicketEvent): string => {
       return evento.motivo
         ? `${evento.deNombre} dejó de seguir el ticket`
         : `${autor} quitó a ${evento.deNombre} como observador`
+    case 'fecha_limite': {
+      const anterior = evento.fechaLimiteAnterior ? formatFechaLimite(evento.fechaLimiteAnterior) : 'sin fecha'
+      const nueva = evento.fechaLimiteNueva ? formatFechaLimite(evento.fechaLimiteNueva) : '—'
+      return `${autor} cambió la fecha límite: ${anterior} → ${nueva}${evento.motivo ? ` (${evento.motivo})` : ''}`
+    }
   }
 }
 
@@ -68,6 +74,7 @@ const dotColor: Record<TicketEvent['tipo'], string> = {
   movido: 'bg-purple-500',
   observador_agregado: 'bg-gray-400',
   observador_quitado: 'bg-gray-400',
+  fecha_limite: 'bg-orange-500',
 }
 
 // Historial interno del ticket — solo admin, soporte y superadmin
