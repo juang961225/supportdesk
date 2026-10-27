@@ -5,10 +5,13 @@ import { PageSkeleton } from '../../components/Skeleton'
 import EmptyState from '../../components/EmptyState'
 import TicketCard from '../../components/TicketCard'
 import TicketList from '../../components/TicketList'
+import TicketFilters from '../../components/TicketFilters'
 import { getTickets } from '../../services/ticketService'
+import { getAreas } from '../../services/areaService'
+import { useTicketFilters } from '../../hooks/useTicketFilters'
 import { useToast } from '../../hooks/useToast'
 import { useAuth } from '../../hooks/useAuth'
-import type { Ticket } from '../../types'
+import type { AreaRef, Ticket } from '../../types'
 
 type Vista = 'cola' | 'mios' | 'equipo'
 
@@ -34,21 +37,46 @@ function SoporteDashboard() {
   const { toast } = useToast()
   const { user } = useAuth()
   const [tickets, setTickets] = useState<Ticket[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true) // solo la primera carga (skeleton)
+  const [isFetching, setIsFetching] = useState(false)
   const [vista, setVista] = useState<Vista>('cola')
+  const [areas, setAreas] = useState<AreaRef[]>()
+  const { filtros, setFiltro, limpiar, hayFiltros, clave } = useTicketFilters()
   const navigate = useNavigate()
 
+  // Se recarga cada vez que cambia un filtro (las vistas se reparten aquí, sobre el resultado filtrado)
   useEffect(() => {
+    let cancelado = false
     const fetchTickets = async () => {
+      setIsFetching(true)
       try {
-        setTickets(await getTickets())
+        const data = await getTickets(filtros)
+        if (!cancelado) setTickets(data)
       } catch {
-        toast.error('No se pudieron cargar tus tickets')
+        if (!cancelado) toast.error('No se pudieron cargar tus tickets')
       } finally {
-        setIsLoading(false)
+        if (!cancelado) {
+          setIsLoading(false)
+          setIsFetching(false)
+        }
       }
     }
     fetchTickets()
+    return () => {
+      cancelado = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clave])
+
+  useEffect(() => {
+    const fetchAreas = async () => {
+      try {
+        setAreas(await getAreas())
+      } catch {
+        toast.error('No se pudieron cargar las áreas')
+      }
+    }
+    fetchAreas()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -73,9 +101,14 @@ function SoporteDashboard() {
   return (
     <Layout>
       <div>
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
-          Tickets
-        </h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-6">
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+            Tickets
+          </h2>
+          {hayFiltros && (
+            <p className="text-sm text-gray-500 dark:text-gray-400">Los números reflejan los filtros activos</p>
+          )}
+        </div>
 
         {/* Métricas */}
         <div className="grid grid-cols-3 gap-2 md:gap-4 mb-8">
@@ -92,6 +125,8 @@ function SoporteDashboard() {
             <p className="text-2xl md:text-3xl font-bold text-gray-600 dark:text-gray-300 mt-1">{porVista.equipo.length}</p>
           </div>
         </div>
+
+        <TicketFilters filtros={filtros} onChange={setFiltro} onLimpiar={limpiar} areas={areas} />
 
         {/* Pestañas */}
         <div className="flex gap-2 mb-4 overflow-x-auto">
@@ -110,14 +145,25 @@ function SoporteDashboard() {
           ))}
         </div>
 
-        {/* Lista de la vista actual */}
-        <TicketList
-          tickets={listaActual}
-          vacio={<EmptyState {...(vistas.find(v => v.id === vista) ?? vistas[0]).vacio} />}
-          renderTicket={(ticket) => (
-            <TicketCard ticket={ticket} onClick={() => navigate(`/soporte/tickets/${ticket._id}`)} />
-          )}
-        />
+        {/* Lista de la vista actual (se atenúa mientras se aplica un filtro) */}
+        <div className={`transition-opacity ${isFetching ? 'opacity-60' : ''}`}>
+          <TicketList
+            tickets={listaActual}
+            vacio={hayFiltros ? (
+              <EmptyState
+                icon="🔍"
+                title="Ningún ticket coincide con los filtros"
+                description="Prueba con otros filtros o límpialos para ver todos."
+                action={{ label: 'Limpiar filtros', onClick: limpiar }}
+              />
+            ) : (
+              <EmptyState {...(vistas.find(v => v.id === vista) ?? vistas[0]).vacio} />
+            )}
+            renderTicket={(ticket) => (
+              <TicketCard ticket={ticket} onClick={() => navigate(`/soporte/tickets/${ticket._id}`)} />
+            )}
+          />
+        </div>
       </div>
     </Layout>
   )

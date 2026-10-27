@@ -1,15 +1,16 @@
 import api from './api'
-import type { Ticket, TramoRecorrido, Paginado } from '../types'
+import type { Ticket, TramoRecorrido, Paginado, FiltrosTicket } from '../types'
+import { filtrosParaApi } from '../utils/ticketFilters'
 
 export type { Ticket }
 
-export const getTickets = async (): Promise<Ticket[]> => {
-  const response = await api.get('/tickets')
+export const getTickets = async (filtros?: FiltrosTicket): Promise<Ticket[]> => {
+  const response = await api.get('/tickets', { params: filtros ? filtrosParaApi(filtros) : undefined })
   return response.data.tickets
 }
 
-export const getTicketsPage = async (page: number): Promise<Paginado<Ticket>> => {
-  const response = await api.get('/tickets', { params: { page } })
+export const getTicketsPage = async (page: number, filtros?: FiltrosTicket): Promise<Paginado<Ticket>> => {
+  const response = await api.get('/tickets', { params: { page, ...(filtros ? filtrosParaApi(filtros) : {}) } })
   return { items: response.data.tickets, pagination: response.data.pagination }
 }
 

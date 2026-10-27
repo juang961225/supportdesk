@@ -132,3 +132,8 @@ export interface Paginado<T> {
   items: T[]
   pagination: Paginacion
 }
+
+// Filtros de la lista de tickets (viven en la URL). '' = sin filtro
+export type ClaveFiltroTicket =
+  'q' | 'estado' | 'prioridad' | 'area' | 'asignado' | 'marca' | 'desde' | 'hasta' | 'vencimiento'
+export type FiltrosTicket = Record<ClaveFiltroTicket, string>
