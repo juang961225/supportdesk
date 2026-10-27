@@ -11,6 +11,7 @@ import UsersPage from './pages/superadmin/UsersPage'
 import TicketsPage from './pages/admin/TicketsPage'
 import CategoriesPage from './pages/admin/CategoriesPage'
 import AreasPage from './pages/admin/AreasPage'
+import HorarioPage from './pages/admin/HorarioPage'
 import AdminUsersPage from './pages/admin/UsersPage'
 import SoporteTicketDetail from './pages/soporte/TicketDetail'
 import NewTicketPage from './pages/usuario/NewTicketPage'
@@ -94,6 +95,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AreasPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/horario"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <HorarioPage />
             </ProtectedRoute>
           }
         />

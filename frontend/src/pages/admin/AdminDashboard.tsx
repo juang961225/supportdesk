@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import StatCard from '../../components/StatCard'
 import EmptyState from '../../components/EmptyState'
 import TicketCard from '../../components/TicketCard'
-import { PageSkeleton } from '../../components/Skeleton'
+import { PageSkeleton, Skeleton } from '../../components/Skeleton'
 import { getAdminSummary } from '../../services/dashboardService'
 import type { AdminSummary } from '../../services/dashboardService'
 import { useToast } from '../../hooks/useToast'
+
+// Recharts pesa: las gráficas se descargan aparte, solo cuando se abre este dashboard
+const TendenciasAdmin = lazy(() => import('../../components/charts/TendenciasAdmin'))
 
 const thClass = 'px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase'
 const tdClass = 'px-4 py-2 text-sm text-gray-700 dark:text-gray-300'
@@ -141,6 +144,11 @@ function AdminDashboard() {
             )}
           </div>
         </div>
+
+        {/* Gráficas: se cargan aparte; si fallan, lo operativo de arriba sigue funcionando */}
+        <Suspense fallback={<Skeleton className="h-64 mt-8" />}>
+          <TendenciasAdmin />
+        </Suspense>
       </div>
     </Layout>
   )

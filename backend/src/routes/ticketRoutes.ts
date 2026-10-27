@@ -9,6 +9,8 @@ import {
 } from '../controllers/ticketController'
 import { takeTicket, releaseTicket, moveTicket, getTicketRecorrido } from '../controllers/ticketQueueController'
 import { addObserver, removeObserver } from '../controllers/ticketObserverController'
+import { updateFechaLimite } from '../controllers/ticketDeadlineController'
+import { getTicketTramos } from '../controllers/ticketSlaController'
 import { authenticate, authorize } from '../middlewares/auth'
 import { uploadAdjuntos } from '../services/attachments'
 
@@ -26,6 +28,9 @@ router.get('/:id', authenticate, authorize('superadmin', 'admin', 'soporte', 'us
 // Historial interno — admin, soporte y superadmin (solo lectura)
 router.get('/:id/history', authenticate, authorize('superadmin', 'admin', 'soporte'), getTicketHistory)
 
+// Tramos por área con tiempo laboral y SLA — mismos roles que el historial
+router.get('/:id/tramos', authenticate, authorize('superadmin', 'admin', 'soporte'), getTicketTramos)
+
 // Asignar ticket — admin asigna; el soporte asignado lo pasa a un compañero (superadmin es solo lectura)
 router.put('/:id/assign', authenticate, authorize('admin', 'soporte'), assignTicket)
 
@@ -34,6 +39,9 @@ router.post('/:id/take', authenticate, authorize('soporte'), takeTicket)
 router.post('/:id/release', authenticate, authorize('soporte'), releaseTicket)
 router.put('/:id/move', authenticate, authorize('admin', 'soporte'), moveTicket)
 router.get('/:id/recorrido', authenticate, authorize('superadmin', 'admin', 'soporte', 'usuario'), getTicketRecorrido)
+
+// Ajustar la fecha límite — solo el admin de la marca, con motivo (queda en el historial)
+router.put('/:id/fecha-limite', authenticate, authorize('admin'), updateFechaLimite)
 
 // Actualizar estado — soporte (flujo) y usuario (reabrir)
 router.put('/:id/status', authenticate, authorize('soporte', 'usuario'), updateTicketStatus)

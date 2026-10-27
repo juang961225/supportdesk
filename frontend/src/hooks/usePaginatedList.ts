@@ -4,7 +4,12 @@ import type { Paginacion, Paginado } from '../types'
 
 // Lista paginada con la página en la URL (?page=N): carga, error y recarga.
 // onError se llama si falla la carga (normalmente un toast).
-export function usePaginatedList<T>(fetchPage: (page: number) => Promise<Paginado<T>>, onError: () => void) {
+// clave: cambia cuando cambian los filtros de la consulta y fuerza una recarga.
+export function usePaginatedList<T>(
+  fetchPage: (page: number) => Promise<Paginado<T>>,
+  onError: () => void,
+  clave = ''
+) {
   const [searchParams, setSearchParams] = useSearchParams()
   const page = Math.max(Math.floor(Number(searchParams.get('page'))) || 1, 1)
 
@@ -57,7 +62,7 @@ export function usePaginatedList<T>(fetchPage: (page: number) => Promise<Paginad
       cancelado = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, version])
+  }, [page, version, clave])
 
   // Recarga la página actual (ej. después de editar)
   const recargar = () => setVersion((v) => v + 1)

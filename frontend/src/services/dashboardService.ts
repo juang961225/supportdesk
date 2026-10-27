@@ -50,3 +50,32 @@ export const getSuperadminSummary = async (): Promise<SuperadminSummary> => {
   const response = await api.get('/dashboard/summary')
   return response.data.summary
 }
+
+export interface SlaArea {
+  areaId: string | null
+  area: string
+  tramos: number
+  promedioMinutos: number
+  vencidos: number
+  porcentajeVencidos: number
+}
+
+export type PeriodoTendencias = 7 | 30 | 90
+
+// Tickets creados en el periodo (por día o semana, estado, categoría y área) + SLA de los tramos terminados
+export interface Tendencias {
+  dias: PeriodoTendencias
+  unidad: 'dia' | 'semana'
+  total: number
+  creados: { fecha: string; total: number }[]
+  porEstado: { estado: Ticket['estado']; total: number }[]
+  porCategoria: { id: string | null; nombre: string; total: number }[]
+  porArea: { id: string | null; nombre: string; total: number }[]
+  sla: SlaArea[]
+}
+
+// Solo admin: gráficas de su marca
+export const getTendencias = async (dias: PeriodoTendencias): Promise<Tendencias> => {
+  const response = await api.get('/dashboard/tendencias', { params: { dias } })
+  return response.data.tendencias
+}

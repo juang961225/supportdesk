@@ -11,6 +11,7 @@ import commentRoutes from './routes/commentRoutes'
 import userRoutes from './routes/userRoutes'
 import areaRoutes from './routes/areaRoutes'
 import dashboardRoutes from './routes/dashboardRoutes'
+import horarioRoutes from './routes/horarioRoutes'
 
 dotenv.config()
 
@@ -26,6 +27,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/areas', areaRoutes)
 app.use('/api/dashboard', dashboardRoutes)
+app.use('/api/horario', horarioRoutes)
 app.use('/api/brands', brandRoutes)
 app.use('/api/categories', categoryRoutes)
 app.use('/api/tickets', ticketRoutes)

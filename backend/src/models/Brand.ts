@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import { HorarioLaboral, HORARIO_POR_DEFECTO } from '../utils/horarioLaboral'
 
 export interface IBrand extends Document {
   nombre: string
@@ -6,6 +7,7 @@ export interface IBrand extends Document {
   logo?: string
   estado: 'activo' | 'inactivo'
   admin?: mongoose.Types.ObjectId
+  horario: HorarioLaboral // para fechas límite y SLA (lo ajusta el admin)
   createdAt: Date
 }
 
@@ -36,6 +38,12 @@ const BrandSchema = new Schema<IBrand>(
     admin: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User' // referencia al modelo User
+    },
+    horario: {
+      dias: { type: [Number], default: () => [...HORARIO_POR_DEFECTO.dias] },
+      inicio: { type: String, default: HORARIO_POR_DEFECTO.inicio },
+      fin: { type: String, default: HORARIO_POR_DEFECTO.fin },
+      festivos: { type: [String], default: () => [] }
     }
   },
   {

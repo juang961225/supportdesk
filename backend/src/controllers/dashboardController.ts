@@ -5,6 +5,7 @@ import Area from '../models/Area'
 import User from '../models/User'
 import Brand from '../models/Brand'
 import { AuthRequest } from '../middlewares/auth'
+import { tendenciasDeMarca, PERIODOS_VALIDOS } from '../services/tendencias'
 
 // Expresiones de agregación reutilizables
 const estaAsignado = { $ifNull: ['$asignadoA', false] }
@@ -170,6 +171,25 @@ export const getDashboardSummary = async (req: AuthRequest, res: Response, next:
     }
 
     res.status(200).json({ summary: await resumenAdmin(marca) })
+
+  } catch (error) {
+    next(error)
+  }
+}
+
+// GET /api/dashboard/tendencias?dias=7|30|90 — gráficas del admin (su marca); por defecto 30 días
+export const getTendencias = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { marca } = req.user!
+    if (!marca) {
+      res.status(400).json({ message: 'No tienes una marca asignada' })
+      return
+    }
+
+    const pedido = Number(req.query.dias)
+    const dias = PERIODOS_VALIDOS.find((p) => p === pedido) ?? 30
+
+    res.status(200).json({ tendencias: await tendenciasDeMarca(marca, dias) })
 
   } catch (error) {
     next(error)

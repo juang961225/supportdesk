@@ -1,15 +1,16 @@
 import api from './api'
-import type { Ticket, TramoRecorrido, Paginado } from '../types'
+import type { Ticket, TramoRecorrido, Paginado, FiltrosTicket } from '../types'
+import { filtrosParaApi } from '../utils/ticketFilters'
 
 export type { Ticket }
 
-export const getTickets = async (): Promise<Ticket[]> => {
-  const response = await api.get('/tickets')
+export const getTickets = async (filtros?: FiltrosTicket): Promise<Ticket[]> => {
+  const response = await api.get('/tickets', { params: filtros ? filtrosParaApi(filtros) : undefined })
   return response.data.tickets
 }
 
-export const getTicketsPage = async (page: number): Promise<Paginado<Ticket>> => {
-  const response = await api.get('/tickets', { params: { page } })
+export const getTicketsPage = async (page: number, filtros?: FiltrosTicket): Promise<Paginado<Ticket>> => {
+  const response = await api.get('/tickets', { params: { page, ...(filtros ? filtrosParaApi(filtros) : {}) } })
   return { items: response.data.tickets, pagination: response.data.pagination }
 }
 
@@ -59,6 +60,12 @@ export const releaseTicket = async (ticketId: string): Promise<Ticket> => {
 
 export const moveTicket = async (ticketId: string, areaId: string): Promise<Ticket> => {
   const response = await api.put(`/tickets/${ticketId}/move`, { areaId })
+  return response.data.ticket
+}
+
+// Solo admin: ajusta la fecha límite actual (ISO) con un motivo que queda en el historial
+export const updateFechaLimite = async (ticketId: string, fechaLimite: string, motivo: string): Promise<Ticket> => {
+  const response = await api.put(`/tickets/${ticketId}/fecha-limite`, { fechaLimite, motivo })
   return response.data.ticket
 }
 
