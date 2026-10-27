@@ -93,3 +93,25 @@ export const validarHorario = (datos: unknown): HorarioLaboral | string => {
 
   return { dias: diasUnicos, inicio, fin, festivos: [...new Set(listaFestivos as string[])].sort() }
 }
+
+// Minutos de tiempo laboral entre dos instantes (0 si hasta <= desde)
+export const minutosLaboralesEntre = (desde: Date, hasta: Date, horario: HorarioLaboral): number => {
+  const fin = hasta.getTime()
+  let t = desde.getTime()
+  if (fin <= t) return 0
+
+  const abreMs = aMinutos(horario.inicio) * MINUTO_MS
+  const cierraMs = aMinutos(horario.fin) * MINUTO_MS
+  let total = 0
+
+  while (t < fin) {
+    const dia = inicioDiaLocal(t)
+    if (esDiaLaborable(dia, horario)) {
+      const desdeAqui = Math.max(t, dia + abreMs)
+      const hastaAqui = Math.min(fin, dia + cierraMs)
+      if (hastaAqui > desdeAqui) total += hastaAqui - desdeAqui
+    }
+    t = dia + DIA_MS
+  }
+  return Math.round(total / MINUTO_MS)
+}

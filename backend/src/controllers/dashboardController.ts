@@ -5,6 +5,7 @@ import Area from '../models/Area'
 import User from '../models/User'
 import Brand from '../models/Brand'
 import { AuthRequest } from '../middlewares/auth'
+import { slaPorArea } from '../services/tramos'
 
 // Expresiones de agregación reutilizables
 const estaAsignado = { $ifNull: ['$asignadoA', false] }
@@ -170,6 +171,24 @@ export const getDashboardSummary = async (req: AuthRequest, res: Response, next:
     }
 
     res.status(200).json({ summary: await resumenAdmin(marca) })
+
+  } catch (error) {
+    next(error)
+  }
+}
+
+const DIAS_SLA = 30
+
+// GET /api/dashboard/sla — tiempo promedio y % de tramos vencidos por área, últimos 30 días (admin, su marca)
+export const getSlaPorArea = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { marca } = req.user!
+    if (!marca) {
+      res.status(400).json({ message: 'No tienes una marca asignada' })
+      return
+    }
+
+    res.status(200).json({ dias: DIAS_SLA, areas: await slaPorArea(marca, DIAS_SLA) })
 
   } catch (error) {
     next(error)

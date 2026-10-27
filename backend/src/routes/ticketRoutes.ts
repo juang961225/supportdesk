@@ -10,6 +10,7 @@ import {
 import { takeTicket, releaseTicket, moveTicket, getTicketRecorrido } from '../controllers/ticketQueueController'
 import { addObserver, removeObserver } from '../controllers/ticketObserverController'
 import { updateFechaLimite } from '../controllers/ticketDeadlineController'
+import { getTicketTramos } from '../controllers/ticketSlaController'
 import { authenticate, authorize } from '../middlewares/auth'
 import { uploadAdjuntos } from '../services/attachments'
 
@@ -26,6 +27,9 @@ router.get('/:id', authenticate, authorize('superadmin', 'admin', 'soporte', 'us
 
 // Historial interno — admin, soporte y superadmin (solo lectura)
 router.get('/:id/history', authenticate, authorize('superadmin', 'admin', 'soporte'), getTicketHistory)
+
+// Tramos por área con tiempo laboral y SLA — mismos roles que el historial
+router.get('/:id/tramos', authenticate, authorize('superadmin', 'admin', 'soporte'), getTicketTramos)
 
 // Asignar ticket — admin asigna; el soporte asignado lo pasa a un compañero (superadmin es solo lectura)
 router.put('/:id/assign', authenticate, authorize('admin', 'soporte'), assignTicket)
