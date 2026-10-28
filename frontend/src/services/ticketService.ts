@@ -1,3 +1,4 @@
+import axios from 'axios'
 import api from './api'
 import type { Ticket, TramoRecorrido, Paginado, FiltrosTicket } from '../types'
 import { filtrosParaApi } from '../utils/ticketFilters'
@@ -83,4 +84,40 @@ export const addObserver = async (ticketId: string, userId: string): Promise<Tic
 export const removeObserver = async (ticketId: string, userId: string): Promise<Ticket | null> => {
   const response = await api.delete(`/tickets/${ticketId}/observers/${userId}`)
   return response.data.ticket
+}
+
+export type FormatoExportacion = 'xlsx' | 'pdf'
+
+const dosDigitos = (n: number): string => String(n).padStart(2, '0')
+
+// Admin y superadmin: descarga la lista con los filtros actuales (todas las páginas) en Excel o PDF
+export const exportarTickets = async (formato: FormatoExportacion, filtros: FiltrosTicket): Promise<void> => {
+  const response = await api.get<Blob>('/tickets/exportar', {
+    params: { formato, ...filtrosParaApi(filtros) },
+    responseType: 'blob',
+  })
+  const hoy = new Date()
+  const nombre = `tickets-${hoy.getFullYear()}-${dosDigitos(hoy.getMonth() + 1)}-${dosDigitos(hoy.getDate())}.${formato}`
+
+  const url = URL.createObjectURL(response.data)
+  const enlace = document.createElement('a')
+  enlace.href = url
+  enlace.download = nombre
+  document.body.appendChild(enlace)
+  enlace.click()
+  enlace.remove()
+  URL.revokeObjectURL(url)
+}
+
+// Con responseType 'blob' el mensaje de error del backend también llega como Blob
+export const mensajeDeErrorBlob = async (err: unknown, porDefecto: string): Promise<string> => {
+  if (!axios.isAxiosError(err) || !(err.response?.data instanceof Blob)) return porDefecto
+  try {
+    const cuerpo: unknown = JSON.parse(await err.response.data.text())
+    return typeof cuerpo === 'object' && cuerpo !== null && 'message' in cuerpo && typeof cuerpo.message === 'string'
+      ? cuerpo.message
+      : porDefecto
+  } catch {
+    return porDefecto
+  }
 }

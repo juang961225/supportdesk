@@ -6,7 +6,8 @@ import TicketCard from '../../components/TicketCard'
 import TicketList from '../../components/TicketList'
 import AssignTicketModal from '../../components/AssignTicketModal'
 import TicketFilters from '../../components/TicketFilters'
-import { getTicketsPage } from '../../services/ticketService'
+import { getTicketsPage, exportarTickets, mensajeDeErrorBlob } from '../../services/ticketService'
+import type { FormatoExportacion } from '../../services/ticketService'
 import { getAreas } from '../../services/areaService'
 import { getUsers } from '../../services/userService'
 import { getBrands } from '../../services/brandService'
@@ -65,6 +66,21 @@ function TicketsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Exportación (Excel o PDF) de la lista filtrada, todas las páginas
+  const [exportando, setExportando] = useState<FormatoExportacion | null>(null)
+
+  const handleExportar = async (formato: FormatoExportacion) => {
+    setExportando(formato)
+    try {
+      await exportarTickets(formato, filtros)
+      toast.success(formato === 'xlsx' ? 'Excel descargado' : 'PDF descargado')
+    } catch (err) {
+      toast.error(await mensajeDeErrorBlob(err, 'No se pudo exportar la lista'))
+    } finally {
+      setExportando(null)
+    }
+  }
+
   // Estado del modal de asignación
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
 
@@ -90,9 +106,23 @@ function TicketsPage() {
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
             Tickets
           </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {pagination?.total ?? tickets.length} {hayFiltros ? 'tickets encontrados' : 'tickets en total'}
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {pagination?.total ?? tickets.length} {hayFiltros ? 'tickets encontrados' : 'tickets en total'}
+            </p>
+            {/* Exporta lo que se ve con los filtros actuales (todas las páginas) */}
+            {(['xlsx', 'pdf'] as const).map((formato) => (
+              <button
+                key={formato}
+                type="button"
+                onClick={() => handleExportar(formato)}
+                disabled={exportando !== null || (pagination?.total ?? 0) === 0}
+                className="text-sm px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
+              >
+                {exportando === formato ? 'Exportando…' : formato === 'xlsx' ? '⬇ Excel' : '⬇ PDF'}
+              </button>
+            ))}
+          </div>
         </div>
 
         <TicketFilters
