@@ -1,4 +1,4 @@
-import { calcularTramos, EventoParaTramos, TicketParaTramos } from '../src/utils/tramos'
+import { calcularTramos, resumenSla, EventoParaTramos, TicketParaTramos, Tramo } from '../src/utils/tramos'
 import { HORARIO_POR_DEFECTO } from '../src/utils/horarioLaboral'
 import { bog } from './helpers'
 
@@ -72,5 +72,28 @@ describe('calcularTramos', () => {
   it('sin área conocida usa "Sin área"', () => {
     const [tramo] = tramosDe({ createdAt: bog('2026-10-26T09:00'), estado: 'abierto' }, [], '2026-10-26T10:00')
     expect(tramo).toMatchObject({ areaId: null, area: 'Sin área' })
+  })
+})
+
+describe('resumenSla', () => {
+  const tramo = (extra: Partial<Tramo>): Tramo => ({
+    areaId: 'a', area: 'A', entrada: bog('2026-10-26T09:00'), salida: bog('2026-10-26T10:00'),
+    minutosLaborales: 60, fechaLimite: bog('2026-10-26T13:00'), vencido: false, ...extra
+  })
+
+  it('vencido si se venció en cualquier tramo, y suma el tiempo', () => {
+    expect(resumenSla([tramo({ vencido: true }), tramo({ minutosLaborales: 30 })])).toEqual({ minutosLaborales: 90, sla: 'vencido' })
+  })
+
+  it('en curso si el último tramo sigue abierto y no venció', () => {
+    expect(resumenSla([tramo({}), tramo({ salida: null })]).sla).toBe('en_curso')
+  })
+
+  it('a tiempo si terminó sin vencer', () => {
+    expect(resumenSla([tramo({})]).sla).toBe('a_tiempo')
+  })
+
+  it('sin fecha límite si ningún tramo la tiene', () => {
+    expect(resumenSla([tramo({ vencido: null })]).sla).toBe('sin_fecha')
   })
 })

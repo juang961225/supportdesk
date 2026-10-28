@@ -1,4 +1,4 @@
-import { leerFiltrosTicket } from '../src/utils/ticketFilters'
+import { filtroDeLista, filtroPorRol, leerFiltrosTicket } from '../src/utils/ticketFilters'
 
 const ID = '64b7f0c2a1b2c3d4e5f60718'
 
@@ -76,5 +76,23 @@ describe('leerFiltrosTicket', () => {
 
   it('ignora intentos de inyección con objetos o arreglos', () => {
     expect(leerFiltrosTicket({ q: { $ne: 1 }, estado: { $ne: 'cerrado' }, marca: [ID], area: { $gt: '' } })).toEqual([])
+  })
+})
+
+describe('filtroPorRol / filtroDeLista', () => {
+  const base = { id: 'u1', marca: 'm1', areas: ['a1', 'a2'] }
+
+  it('cada rol ve lo suyo', () => {
+    expect(filtroPorRol({ ...base, rol: 'superadmin' })).toEqual({})
+    expect(filtroPorRol({ ...base, rol: 'admin' })).toEqual({ marca: 'm1' })
+    expect(filtroPorRol({ ...base, rol: 'soporte' })).toEqual({ marca: 'm1', $or: [{ area: { $in: ['a1', 'a2'] } }, { asignadoA: 'u1' }] })
+    expect(filtroPorRol({ ...base, rol: 'usuario' })).toEqual({ marca: 'm1', $or: [{ creadoPor: 'u1' }, { observadores: 'u1' }] })
+  })
+
+  it('los filtros se combinan con $and sobre lo del rol (nunca lo amplían)', () => {
+    expect(filtroDeLista({ ...base, rol: 'admin' }, {})).toEqual({ marca: 'm1' })
+    expect(filtroDeLista({ ...base, rol: 'admin' }, { estado: 'cerrado', marca: ID })).toEqual({
+      $and: [{ marca: 'm1' }, { estado: 'cerrado' }, expect.objectContaining({ marca: expect.anything() })]
+    })
   })
 })

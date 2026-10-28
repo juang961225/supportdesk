@@ -7,7 +7,7 @@ import TicketEvent, { TipoEvento } from '../models/TicketEvent'
 import { esEstadoValido, puedeTransicionar, aplicarEstado } from '../utils/ticketStatus'
 import { AuthRequest } from '../middlewares/auth'
 import { leerPaginacion, armarPaginacion } from '../utils/pagination'
-import { leerFiltrosTicket } from '../utils/ticketFilters'
+import { filtroDeLista } from '../utils/ticketFilters'
 import { puedeVerTicket } from '../utils/ticketAccess'
 import { registrarEvento } from '../services/ticketEvents'
 import { notificar } from '../services/notificaciones'
@@ -127,27 +127,8 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
 // GET /api/tickets — listar tickets según rol
 export const getTickets = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { rol, id, marca } = req.user!
-
-    let filtro: Record<string, unknown> = {}  // ← mejorado de any a Record
-
-    if (rol === 'superadmin') {
-      // superadmin ve todos los tickets de todas las marcas
-      filtro = {}
-    } else if (rol === 'admin') {
-      // admin ve todos los tickets de su marca
-      filtro = { marca }
-    } else if (rol === 'soporte') {
-      // soporte ve los tickets de sus áreas (cola, suyos y de compañeros) y los asignados a él
-      filtro = { marca, $or: [{ area: { $in: req.user!.areas } }, { asignadoA: id }] }
-    } else if (rol === 'usuario') {
-      // usuario ve los que creó y los que sigue como observador
-      filtro = { marca, $or: [{ creadoPor: id }, { observadores: id }] }
-    }
-
-    // Filtros de la lista (búsqueda, estado, fechas...) sobre lo que el rol puede ver
-    const condiciones = leerFiltrosTicket(req.query)
-    if (condiciones.length > 0) filtro = { $and: [filtro, ...condiciones] }
+    // Lo que el rol puede ver + los filtros de la lista (búsqueda, estado, fechas...)
+    const filtro = filtroDeLista(req.user!, req.query)
 
     const consulta = Ticket.find(filtro)
       .populate('categoria', 'nombre')

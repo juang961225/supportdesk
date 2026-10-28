@@ -15,20 +15,7 @@ export interface ContenidoEmail {
 
 const MAX_EXTRACTO = 300
 
-export const estadoLegible: Record<string, string> = {
-  abierto: 'Abierto',
-  en_progreso: 'En progreso',
-  en_revision: 'En revisión',
-  cerrado: 'Cerrado',
-  reabierto: 'Reabierto'
-}
-
-export const prioridadLegible: Record<string, string> = {
-  baja: 'Baja',
-  media: 'Media',
-  alta: 'Alta',
-  critica: 'Crítica'
-}
+export { estadoLegible, prioridadLegible } from './etiquetas'
 
 // Todo lo que viene de usuarios (títulos, comentarios, nombres) se escapa antes de ir al HTML
 const escaparHtml = (texto: string): string =>
