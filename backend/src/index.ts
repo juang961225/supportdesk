@@ -12,6 +12,7 @@ import userRoutes from './routes/userRoutes'
 import areaRoutes from './routes/areaRoutes'
 import dashboardRoutes from './routes/dashboardRoutes'
 import horarioRoutes from './routes/horarioRoutes'
+import { origenesFrontend } from './config/origenes'
 
 dotenv.config()
 
@@ -20,7 +21,8 @@ const PORT = process.env.PORT || 3000
 
 connectDB()
 
-app.use(cors())
+// Solo el frontend propio, con credenciales (la cookie de sesión)
+app.use(cors({ origin: origenesFrontend(), credentials: true }))
 app.use(express.json())
 
 app.use('/api/auth', authRoutes)

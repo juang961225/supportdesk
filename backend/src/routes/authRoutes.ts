@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { register, login } from '../controllers/authController'
+import { register, login, refresh, logout } from '../controllers/authController'
 
 const router = Router()
 
@@ -8,5 +8,11 @@ router.post('/register', register)
 
 // POST /api/auth/login → ejecuta la función login
 router.post('/login', login)
+
+// POST /api/auth/refresh → renueva la sesión con la cookie httpOnly
+router.post('/refresh', refresh)
+
+// POST /api/auth/logout → invalida la cookie de sesión
+router.post('/logout', logout)
 
 export default router
