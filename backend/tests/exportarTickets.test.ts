@@ -18,10 +18,10 @@ const ticket = (extra: Partial<TicketExportable> = {}): TicketExportable => ({
 
 describe('armarFilas', () => {
   it('traduce estado, prioridad y SLA y calcula el tiempo laboral', () => {
-    const [fila] = armarFilas([ticket()], new Map([['t1', { minutosLaborales: 570, sla: 'vencido' as const }]]))
+    const [fila] = armarFilas([ticket()], new Map([['t1', { minutosLaborales: 570, sla: 'vencido' as const, minutosJornada: 480 }]]))
     expect(fila).toMatchObject({
       titulo: 'Impresora', estado: 'En progreso', prioridad: 'Crítica', area: 'Redes', marca: 'BMW',
-      asignadoA: 'Luis', tiempoLaboral: '9 h 30 min', horasLaborales: 9.5, sla: 'Vencido', vencido: true, cerrado: null
+      asignadoA: 'Luis', tiempoLaboral: '1 día y 1 h 30 min', horasLaborales: 9.5, sla: 'Vencido', vencido: true, cerrado: null
     })
   })
 
@@ -47,7 +47,7 @@ describe('resumenReporte', () => {
   it('cuenta por estado (en el orden del flujo, sin ceros) y los vencidos', () => {
     const filas = armarFilas(
       [ticket({ _id: '1' }), ticket({ _id: '2', estado: 'abierto' }), ticket({ _id: '3' })],
-      new Map([['1', { minutosLaborales: 60, sla: 'vencido' as const }]])
+      new Map([['1', { minutosLaborales: 60, sla: 'vencido' as const, minutosJornada: 480 }]])
     )
     expect(resumenReporte(filas)).toEqual({
       total: 3,

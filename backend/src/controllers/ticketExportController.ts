@@ -10,6 +10,8 @@ import { resumenSla } from '../utils/tramos'
 import { estadoLegible, prioridadLegible } from '../utils/etiquetas'
 import { armarFilas, columnasExportacion, formatFecha, formatFechaHora, nombreArchivo, TicketExportable } from '../utils/exportarTickets'
 import { tramosEnLote } from '../services/tramos'
+import { horarioDeMarca } from '../services/horario'
+import { minutosJornada } from '../utils/horarioLaboral'
 import { generarExcel, generarPdf } from '../services/exportacion'
 
 const MAX_TICKETS = 5000 // protege al servidor: con más, hay que ajustar los filtros
@@ -90,7 +92,14 @@ export const exportarTickets = async (req: AuthRequest, res: Response, next: Nex
       .lean<TicketLeido[]>()
 
     const tramos = await tramosEnLote(leidos)
-    const resumenes = new Map([...tramos].map(([id, t]) => [id, resumenSla(t)]))
+    // Jornada de la marca de cada ticket (el superadmin exporta varias marcas)
+    const jornadas = new Map(await Promise.all(
+      [...new Set(leidos.map((t) => String(t.marca._id)))].map(async (m) => [m, minutosJornada(await horarioDeMarca(m))] as const)
+    ))
+    const resumenes = new Map(leidos.map((t) => [
+      String(t._id),
+      { ...resumenSla(tramos.get(String(t._id)) ?? []), minutosJornada: jornadas.get(String(t.marca._id)) ?? 0 }
+    ]))
     const filas = armarFilas(leidos, resumenes)
     const esSuperadmin = req.user!.rol === 'superadmin'
     const columnas = columnasExportacion(formato, esSuperadmin)

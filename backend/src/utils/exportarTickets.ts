@@ -1,5 +1,6 @@
 import { EstadoSla } from './tramos'
 import { estadoLegible, prioridadLegible, slaLegible } from './etiquetas'
+import { formatTiempoLaboral } from './formatoTiempo'
 
 // Filas y columnas de la exportación de tickets (funciones puras: no saben de Excel, PDF ni BD)
 
@@ -59,40 +60,34 @@ const COLUMNAS_EXCEL: Columna[] = [
   { clave: 'creado', titulo: 'Creado', ancho: 17 },
   { clave: 'fechaLimite', titulo: 'Fecha límite', ancho: 17 },
   { clave: 'cerrado', titulo: 'Cerrado', ancho: 17 },
+  { clave: 'tiempoLaboral', titulo: 'Tiempo laboral', ancho: 18 },
   { clave: 'horasLaborales', titulo: 'Horas laborales', ancho: 15 },
   { clave: 'sla', titulo: 'SLA', ancho: 16 }
 ]
 
 const COLUMNAS_PDF: Columna[] = [
-  { clave: 'titulo', titulo: 'Título', ancho: 26 },
-  { clave: 'estado', titulo: 'Estado', ancho: 9 },
-  { clave: 'prioridad', titulo: 'Prioridad', ancho: 7 },
-  { clave: 'marca', titulo: 'Marca', ancho: 10 },
+  { clave: 'titulo', titulo: 'Título', ancho: 21 },
+  { clave: 'estado', titulo: 'Estado', ancho: 8.5 },
+  { clave: 'prioridad', titulo: 'Prioridad', ancho: 6.5 },
+  { clave: 'marca', titulo: 'Marca', ancho: 10.5 },
   { clave: 'area', titulo: 'Área', ancho: 10 },
-  { clave: 'asignadoA', titulo: 'Asignado a', ancho: 12 },
-  { clave: 'creado', titulo: 'Creado', ancho: 11 },
-  { clave: 'fechaLimite', titulo: 'Fecha límite', ancho: 11 },
-  { clave: 'tiempoLaboral', titulo: 'Tiempo', ancho: 8 },
-  { clave: 'sla', titulo: 'SLA', ancho: 9 }
+  { clave: 'asignadoA', titulo: 'Asignado a', ancho: 11 },
+  { clave: 'creado', titulo: 'Creado', ancho: 10.5 },
+  { clave: 'fechaLimite', titulo: 'Fecha límite', ancho: 10.5 },
+  { clave: 'tiempoLaboral', titulo: 'Tiempo laboral', ancho: 13.5 },
+  { clave: 'sla', titulo: 'SLA', ancho: 11 }
 ]
 
 // La columna "Marca" solo tiene sentido para el superadmin (el admin ve una sola)
 export const columnasExportacion = (formato: 'xlsx' | 'pdf', incluirMarca: boolean): Columna[] =>
   (formato === 'xlsx' ? COLUMNAS_EXCEL : COLUMNAS_PDF).filter((c) => incluirMarca || c.clave !== 'marca')
 
-export const formatDuracion = (minutos: number): string => {
-  const h = Math.floor(minutos / 60)
-  const m = minutos % 60
-  if (h === 0) return `${m} min`
-  return m ? `${h} h ${m} min` : `${h} h`
-}
-
 export const armarFilas = (
   tickets: TicketExportable[],
-  resumenes: Map<string, { minutosLaborales: number; sla: EstadoSla }>
+  resumenes: Map<string, { minutosLaborales: number; sla: EstadoSla; minutosJornada: number }>
 ): FilaExportacion[] =>
   tickets.map((t) => {
-    const resumen = resumenes.get(String(t._id)) ?? { minutosLaborales: 0, sla: 'sin_fecha' as const }
+    const resumen = resumenes.get(String(t._id)) ?? { minutosLaborales: 0, sla: 'sin_fecha' as const, minutosJornada: 0 }
     return {
       titulo: t.titulo,
       estado: estadoLegible[t.estado] ?? t.estado,
@@ -105,7 +100,7 @@ export const armarFilas = (
       creado: t.createdAt,
       fechaLimite: t.fechaLimite ?? null,
       cerrado: t.estado === 'cerrado' ? t.fechaCierre ?? null : null,
-      tiempoLaboral: formatDuracion(resumen.minutosLaborales),
+      tiempoLaboral: formatTiempoLaboral(resumen.minutosLaborales, resumen.minutosJornada),
       horasLaborales: Math.round((resumen.minutosLaborales / 60) * 10) / 10,
       sla: slaLegible[resumen.sla],
       vencido: resumen.sla === 'vencido'

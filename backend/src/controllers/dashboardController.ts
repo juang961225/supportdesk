@@ -7,6 +7,7 @@ import Brand from '../models/Brand'
 import { AuthRequest } from '../middlewares/auth'
 import { tendenciasDeMarca, PERIODOS_VALIDOS } from '../services/tendencias'
 import { conSla } from '../services/slaActual'
+import { cacheResumenes, claveResumenAdmin, claveTendencias, CLAVE_RESUMEN_SUPERADMIN } from '../services/cacheResumenes'
 
 // Expresiones de agregación reutilizables
 const estaAsignado = { $ifNull: ['$asignadoA', false] }
@@ -163,7 +164,7 @@ export const getDashboardSummary = async (req: AuthRequest, res: Response, next:
     const { rol, marca } = req.user!
 
     if (rol === 'superadmin') {
-      res.status(200).json({ summary: await resumenSuperadmin() })
+      res.status(200).json({ summary: await cacheResumenes.obtenerOCalcular(CLAVE_RESUMEN_SUPERADMIN, resumenSuperadmin) })
       return
     }
 
@@ -172,7 +173,7 @@ export const getDashboardSummary = async (req: AuthRequest, res: Response, next:
       return
     }
 
-    res.status(200).json({ summary: await resumenAdmin(marca) })
+    res.status(200).json({ summary: await cacheResumenes.obtenerOCalcular(claveResumenAdmin(marca), () => resumenAdmin(marca)) })
 
   } catch (error) {
     next(error)
@@ -191,7 +192,7 @@ export const getTendencias = async (req: AuthRequest, res: Response, next: NextF
     const pedido = Number(req.query.dias)
     const dias = PERIODOS_VALIDOS.find((p) => p === pedido) ?? 30
 
-    res.status(200).json({ tendencias: await tendenciasDeMarca(marca, dias) })
+    res.status(200).json({ tendencias: await cacheResumenes.obtenerOCalcular(claveTendencias(marca, dias), () => tendenciasDeMarca(marca, dias)) })
 
   } catch (error) {
     next(error)

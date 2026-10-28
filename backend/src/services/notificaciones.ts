@@ -30,7 +30,7 @@ interface TicketNotificable {
   area?: { _id: mongoose.Types.ObjectId; nombre: string } | null
   creadoPor: mongoose.Types.ObjectId
   asignadoA?: mongoose.Types.ObjectId | null
-  observadores: mongoose.Types.ObjectId[]
+  observadores?: mongoose.Types.ObjectId[]
 }
 
 interface Destinatario {
@@ -60,7 +60,8 @@ const adminsDeLaMarca = async (ticket: TicketNotificable): Promise<Id[]> => {
 }
 
 const idsDestinatarios = async (ticket: TicketNotificable, evento: EventoNotificable): Promise<Id[]> => {
-  const participantes = [ticket.creadoPor, ...ticket.observadores]
+  // Tickets anteriores a los observadores no tienen el campo en la base (lean no aplica el default)
+  const participantes = [ticket.creadoPor, ...(ticket.observadores ?? [])]
   switch (evento.tipo) {
     case 'creado':
       return [...(await soportesDelArea(ticket)), ...(await adminsDeLaMarca(ticket))]

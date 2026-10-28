@@ -16,7 +16,7 @@ function SuperAdminDashboard() {
   const { toast } = useToast()
   const [summary, setSummary] = useState<SuperadminSummary | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const enVivo = useRecargaEnVivo()
+  const enVivo = useRecargaEnVivo({ cadaMs: 10000 }) // resumen global: como mucho cada 10 s
 
   useEffect(() => {
     const fetchSummary = async () => {

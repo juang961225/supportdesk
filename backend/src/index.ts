@@ -15,8 +15,10 @@ import dashboardRoutes from './routes/dashboardRoutes'
 import horarioRoutes from './routes/horarioRoutes'
 import { origenesFrontend } from './config/origenes'
 import { iniciarTiempoReal } from './services/tiempoReal'
+import { configurarMedicion, medirPeticiones } from './middlewares/medicion'
 
 dotenv.config()
+configurarMedicion()
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -26,6 +28,7 @@ connectDB()
 // Solo el frontend propio, con credenciales (la cookie de sesión)
 app.use(cors({ origin: origenesFrontend(), credentials: true }))
 app.use(express.json())
+app.use(medirPeticiones)
 
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)

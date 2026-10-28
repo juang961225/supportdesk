@@ -57,4 +57,7 @@ const UserSchema = new Schema<IUser>(
   }
 )
 
+// Soportes/admins activos de una marca (asignar, notificaciones, dashboards)
+UserSchema.index({ marca: 1, rol: 1, estado: 1 })
+
 export default mongoose.model<IUser>('User', UserSchema)

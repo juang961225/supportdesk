@@ -1,24 +1,39 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { socket, seguirTicket } from '../services/tiempoReal'
 import type { EventoTicket } from '../services/tiempoReal'
 
 const ESPERA_MS = 400 // agrupa cambios seguidos en una sola recarga
 
+interface OpcionesRecarga {
+  cadaMs?: number // como mucho una recarga cada tantos ms (evita avalanchas con muchos usuarios)
+  filtro?: (evento: EventoTicket) => boolean // qué eventos importan (se lee siempre el más reciente)
+}
+
 // Cuenta que sube cuando hay que recargar: se pone en las dependencias del useEffect que pide los datos.
-// `filtro` decide qué eventos importan; al reconectar siempre se recarga (pudo perderse algún cambio).
-const useVersionPorEventos = (eventos: string[], filtro: (evento: EventoTicket) => boolean, activo: boolean): number => {
+// Al reconectar siempre se recarga (pudo perderse algún cambio).
+const useVersionPorEventos = (eventos: string[], activo: boolean, { cadaMs = 0, filtro }: OpcionesRecarga = {}): number => {
   const [version, setVersion] = useState(0)
+  const filtroRef = useRef(filtro)
+  useEffect(() => {
+    filtroRef.current = filtro
+  })
 
   useEffect(() => {
     if (!activo) return
     let timer: ReturnType<typeof setTimeout> | undefined
+    let ultimaRecarga = 0
     let yaConecto = socket.connected
     const programar = () => {
       clearTimeout(timer)
-      timer = setTimeout(() => setVersion((v) => v + 1), ESPERA_MS)
+      // Espera corta para agrupar, y además respeta el mínimo entre recargas
+      const espera = Math.max(ESPERA_MS, ultimaRecarga + cadaMs - Date.now())
+      timer = setTimeout(() => {
+        ultimaRecarga = Date.now()
+        setVersion((v) => v + 1)
+      }, espera)
     }
     const alEvento = (evento: EventoTicket) => {
-      if (filtro(evento)) programar()
+      if (!filtroRef.current || filtroRef.current(evento)) programar()
     }
     const alConectar = () => {
       if (yaConecto) programar() // reconexión (la primera conexión no necesita recargar)
@@ -33,15 +48,15 @@ const useVersionPorEventos = (eventos: string[], filtro: (evento: EventoTicket) 
       socket.off('connect', alConectar)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activo, eventos.join(',')])
+  }, [activo, cadaMs, eventos.join(',')])
 
   return version
 }
 
-const todos = () => true
-
-// Listas y dashboards: el servidor solo avisa de tickets que este usuario puede ver
-export const useRecargaEnVivo = (): number => useVersionPorEventos(['ticket:cambio'], todos, true)
+// Listas y dashboards: el servidor solo avisa de tickets que este usuario puede ver.
+// Por defecto como mucho una recarga cada 3 s; los dashboards piden más espacio (cadaMs)
+export const useRecargaEnVivo = (opciones: OpcionesRecarga = {}): number =>
+  useVersionPorEventos(['ticket:cambio'], true, { cadaMs: 3000, ...opciones })
 
 // Detalle de un ticket: se suscribe a su sala mientras la pantalla está abierta
 export const useTicketEnVivo = (ticketId: string | undefined): { versionTicket: number; versionComentarios: number } => {
@@ -52,8 +67,8 @@ export const useTicketEnVivo = (ticketId: string | undefined): { versionTicket: 
 
   const esDeEsteTicket = (evento: EventoTicket) => evento.ticketId === ticketId
   return {
-    versionTicket: useVersionPorEventos(['ticket:cambio'], esDeEsteTicket, Boolean(ticketId)),
-    versionComentarios: useVersionPorEventos(['comentario:nuevo'], esDeEsteTicket, Boolean(ticketId)),
+    versionTicket: useVersionPorEventos(['ticket:cambio'], Boolean(ticketId), { filtro: esDeEsteTicket }),
+    versionComentarios: useVersionPorEventos(['comentario:nuevo'], Boolean(ticketId), { filtro: esDeEsteTicket }),
   }
 }
 

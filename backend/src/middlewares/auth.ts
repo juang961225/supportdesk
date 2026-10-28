@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
+import mongoose from 'mongoose'
 import User from '../models/User'
 import Brand from '../models/Brand'
+import { CacheMemoria } from '../services/cacheMemoria'
 
 // Extendemos la interfaz Request de Express
 // para agregarle la propiedad "user" que no existe por defecto
@@ -16,7 +18,60 @@ export interface AuthRequest extends Request {
 
 export type UsuarioAutenticado = NonNullable<AuthRequest['user']>
 
-// Valida un access token y relee el usuario de la BD (lo usan el API y el tiempo real).
+// Lo que se guarda en caché: lo de la petición + nombre y email (los usa la renovación de sesión)
+export type UsuarioCargado = UsuarioAutenticado & { nombre: string; email: string }
+
+type ResultadoCarga = { ok: true; usuario: UsuarioCargado } | { ok: false; mensaje: string }
+
+// 15 s: un usuario activo no vuelve a consultarse en cada petición. Editar un usuario o una marca
+// desde la app borra su entrada al instante (invalidarSesion / invalidarTodasLasSesiones)
+const sesiones = new CacheMemoria<UsuarioCargado>(15 * 1000)
+
+export const invalidarSesion = (usuarioId: string): void => sesiones.borrar(usuarioId)
+export const invalidarTodasLasSesiones = (): void => sesiones.limpiar()
+
+interface UsuarioConMarca {
+  _id: mongoose.Types.ObjectId
+  nombre: string
+  email: string
+  rol: string
+  estado: string
+  marca?: mongoose.Types.ObjectId
+  areas?: mongoose.Types.ObjectId[]
+  marcaEstado: { estado: string }[]
+}
+
+// Usuario y estado de su marca en UNA consulta ($lookup), con caché. Solo se cachean los activos:
+// así reactivar a alguien aplica de inmediato
+export const cargarUsuarioActivo = async (id: string): Promise<ResultadoCarga> => {
+  const enCache = sesiones.obtener(id)
+  if (enCache) return { ok: true, usuario: enCache }
+  if (!mongoose.isValidObjectId(id)) return { ok: false, mensaje: 'Usuario inactivo o inexistente' }
+
+  const [user] = await User.aggregate<UsuarioConMarca>([
+    { $match: { _id: new mongoose.Types.ObjectId(id) } },
+    { $project: { nombre: 1, email: 1, rol: 1, estado: 1, marca: 1, areas: 1 } },
+    { $lookup: { from: Brand.collection.name, localField: 'marca', foreignField: '_id', as: 'marcaEstado', pipeline: [{ $project: { estado: 1 } }] } }
+  ])
+  if (!user || user.estado === 'inactivo') return { ok: false, mensaje: 'Usuario inactivo o inexistente' }
+  if (user.marca && (user.marcaEstado.length === 0 || user.marcaEstado[0].estado === 'inactivo')) {
+    return { ok: false, mensaje: 'Tu marca está desactivada' }
+  }
+
+  // rol, marca y áreas salen de la BD, no del token
+  const usuario: UsuarioCargado = {
+    id: String(user._id),
+    rol: user.rol,
+    marca: user.marca ? String(user.marca) : undefined,
+    areas: (user.areas ?? []).map(String),
+    nombre: user.nombre,
+    email: user.email
+  }
+  sesiones.guardar(id, usuario)
+  return { ok: true, usuario }
+}
+
+// Valida un access token y carga el usuario (lo usan el API y el tiempo real).
 // Así un usuario desactivado (o un cambio de rol/marca/áreas) aplica aunque su token siga vigente
 export const usuarioDesdeToken = async (
   token: string
@@ -28,24 +83,10 @@ export const usuarioDesdeToken = async (
     return { ok: false, mensaje: 'No autorizado - token inválido' }
   }
 
-  const user = await User.findById(decoded.id).select('rol estado marca areas')
-  if (!user || user.estado === 'inactivo') return { ok: false, mensaje: 'Usuario inactivo o inexistente' }
-
-  if (user.marca) {
-    const brand = await Brand.findById(user.marca).select('estado')
-    if (!brand || brand.estado === 'inactivo') return { ok: false, mensaje: 'Tu marca está desactivada' }
-  }
-
-  // rol, marca y áreas salen de la BD, no del token
-  return {
-    ok: true,
-    usuario: {
-      id: String(user._id),
-      rol: user.rol,
-      marca: user.marca ? String(user.marca) : undefined,
-      areas: user.areas.map(String)
-    }
-  }
+  const resultado = await cargarUsuarioActivo(decoded.id)
+  if (!resultado.ok) return resultado
+  const { id, rol, marca, areas } = resultado.usuario
+  return { ok: true, usuario: { id, rol, marca, areas } }
 }
 
 export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {

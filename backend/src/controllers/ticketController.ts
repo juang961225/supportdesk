@@ -356,9 +356,16 @@ interface EventoHistorial {
 // Los tickets anteriores al historial reciben eventos sintéticos calculados aquí (no se guardan)
 export const getTicketHistory = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const ticket = await Ticket.findById(req.params.id)
-      .populate('creadoPor', 'nombre rol')
-      .populate('asignadoA', 'nombre')
+    // Ticket y eventos a la vez (antes en cadena); los eventos solo se devuelven si pasa el control de acceso
+    const [ticket, eventos] = await Promise.all([
+      Ticket.findById(req.params.id)
+        .populate('creadoPor', 'nombre rol')
+        .populate('asignadoA', 'nombre'),
+      TicketEvent.find({ ticket: req.params.id })
+        .populate('autor', 'nombre rol')
+        .sort({ createdAt: 1 })
+        .lean()
+    ])
 
     if (!ticket) {
       res.status(404).json({ message: 'Ticket no encontrado' })
@@ -369,11 +376,6 @@ export const getTicketHistory = async (req: AuthRequest, res: Response, next: Ne
       res.status(403).json({ message: 'No tienes acceso a este ticket' })
       return
     }
-
-    const eventos = await TicketEvent.find({ ticket: ticket._id })
-      .populate('autor', 'nombre rol')
-      .sort({ createdAt: 1 })
-      .lean()
 
     const historial: EventoHistorial[] = eventos.map((e) => ({
       _id: String(e._id),

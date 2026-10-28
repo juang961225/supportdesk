@@ -6,11 +6,20 @@ import { emitirAccessToken, crearRefreshToken, rotarRefreshToken, revocarRefresh
 import { COOKIE_REFRESH, RUTA_COOKIE_REFRESH, leerCookie, opcionesCookieRefresh } from '../utils/cookies'
 
 // Lo que el frontend necesita del usuario (sin password)
-const usuarioPublico = (user: IUser) => ({
-  _id: user._id,
+const usuarioPublico = (user: { id: string; nombre: string; email: string; rol: string }) => ({
+  _id: user.id,
   nombre: user.nombre,
   email: user.email,
   rol: user.rol
+})
+
+// Del documento de Mongoose a lo que usan el token y la respuesta
+const datosSesion = (user: IUser) => ({
+  id: String(user._id),
+  rol: user.rol,
+  marca: user.marca ? String(user.marca) : undefined,
+  nombre: user.nombre,
+  email: user.email
 })
 
 const ponerCookieRefresh = (res: Response, token: string): void => {
@@ -110,14 +119,15 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     }
 
     // 5. Access token corto (va en la respuesta) + refresh token largo (cookie httpOnly)
-    const token = emitirAccessToken(user)
+    const sesion = datosSesion(user)
+    const token = emitirAccessToken(sesion)
     ponerCookieRefresh(res, await crearRefreshToken(user._id))
 
     // 6. Responder con el token
     res.status(200).json({
       message: 'Login exitoso',
       token,
-      user: usuarioPublico(user)
+      user: usuarioPublico(sesion)
     })
 
   } catch (error) {

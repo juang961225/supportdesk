@@ -88,5 +88,11 @@ TicketSchema.index({ observadores: 1 })
 
 // Cola de cada área: tickets por marca, área y estado
 TicketSchema.index({ marca: 1, area: 1, estado: 1 })
+// Lista de tickets (por marca, de más nuevo a más viejo), "mis tickets" del usuario, tickets de un soporte
+// y SLA por área (tickets actualizados en el periodo)
+TicketSchema.index({ marca: 1, createdAt: -1 })
+TicketSchema.index({ creadoPor: 1, createdAt: -1 })
+TicketSchema.index({ asignadoA: 1, estado: 1 })
+TicketSchema.index({ marca: 1, updatedAt: -1 })
 
 export default mongoose.model<ITicket>('Ticket', TicketSchema)
