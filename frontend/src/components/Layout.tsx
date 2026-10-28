@@ -36,8 +36,8 @@ function Layout({ children }: { children: React.ReactNode }) {
   // location.pathname → la URL actual, para marcar el item activo
   const [menuAbierto, setMenuAbierto] = useState(false) // solo aplica en móvil
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     navigate('/login')
   }
 
