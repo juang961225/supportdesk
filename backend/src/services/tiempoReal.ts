@@ -90,7 +90,7 @@ export const avisarCambioTicket = (ticketId: Id, opciones: { areasAnteriores?: I
     .then((ticket) => {
       if (!ticket) return
       const areas = [ticket.area, ...(opciones.areasAnteriores ?? [])].filter(Boolean)
-      const usuarios = [ticket.creadoPor, ticket.asignadoA, ...ticket.observadores, ...(opciones.usuariosAnteriores ?? [])].filter(Boolean)
+      const usuarios = [ticket.creadoPor, ticket.asignadoA, ...(ticket.observadores ?? []), ...(opciones.usuariosAnteriores ?? [])].filter(Boolean)
       servidor
         .to([
           `ticket:${String(ticketId)}`,
