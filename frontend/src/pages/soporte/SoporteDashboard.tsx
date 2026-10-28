@@ -12,6 +12,7 @@ import { useTicketFilters } from '../../hooks/useTicketFilters'
 import { useToast } from '../../hooks/useToast'
 import { useAuth } from '../../hooks/useAuth'
 import type { AreaRef, Ticket } from '../../types'
+import { useRecargaEnVivo } from '../../hooks/useTiempoReal'
 
 type Vista = 'cola' | 'mios' | 'equipo'
 
@@ -42,6 +43,7 @@ function SoporteDashboard() {
   const [vista, setVista] = useState<Vista>('cola')
   const [areas, setAreas] = useState<AreaRef[]>()
   const { filtros, setFiltro, limpiar, hayFiltros, clave } = useTicketFilters()
+  const enVivo = useRecargaEnVivo() // sube cuando cambia un ticket de mis áreas o asignado a mí
   const navigate = useNavigate()
 
   // Se recarga cada vez que cambia un filtro (las vistas se reparten aquí, sobre el resultado filtrado)
@@ -66,7 +68,7 @@ function SoporteDashboard() {
       cancelado = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clave])
+  }, [clave, enVivo])
 
   useEffect(() => {
     const fetchAreas = async () => {

@@ -8,6 +8,8 @@ import Area from '../models/Area'
 import { AuthRequest } from '../middlewares/auth'
 import { leerPaginacion, armarPaginacion } from '../utils/pagination'
 import { registrarEvento } from '../services/ticketEvents'
+import { revocarTodos } from '../services/sesion'
+import { avisarCambioTicket, desconectarUsuario } from '../services/tiempoReal'
 
 const ROLES_EDITABLES: IUser['rol'][] = ['admin', 'soporte', 'usuario']
 const ESTADOS_VALIDOS: IUser['estado'][] = ['activo', 'inactivo']
@@ -45,6 +47,7 @@ const liberarTickets = async (
       deNombre: soporteNombre,
       motivo
     })
+    avisarCambioTicket(ticket._id, { usuariosAnteriores: [soporteId] })
   }
 }
 
@@ -253,6 +256,12 @@ export const updateUser = async (req: AuthRequest, res: Response, next: NextFunc
     target.areas = areasFinales.map((a) => new mongoose.Types.ObjectId(a))
 
     await target.save()
+
+    // Desactivado: sus sesiones abiertas (refresh tokens) dejan de servir
+    if (seDesactiva) {
+      await revocarTodos(target._id)
+      desconectarUsuario(target._id)
+    }
 
     if (cambiaRol && rol === 'admin' && target.marca) {
       await Brand.findByIdAndUpdate(target.marca, { admin: target._id })

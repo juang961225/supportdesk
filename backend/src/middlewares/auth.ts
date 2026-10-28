@@ -14,9 +14,42 @@ export interface AuthRequest extends Request {
   }
 }
 
+export type UsuarioAutenticado = NonNullable<AuthRequest['user']>
+
+// Valida un access token y relee el usuario de la BD (lo usan el API y el tiempo real).
+// Así un usuario desactivado (o un cambio de rol/marca/áreas) aplica aunque su token siga vigente
+export const usuarioDesdeToken = async (
+  token: string
+): Promise<{ ok: true; usuario: UsuarioAutenticado } | { ok: false; mensaje: string }> => {
+  let decoded: { id: string }
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { id: string }
+  } catch {
+    return { ok: false, mensaje: 'No autorizado - token inválido' }
+  }
+
+  const user = await User.findById(decoded.id).select('rol estado marca areas')
+  if (!user || user.estado === 'inactivo') return { ok: false, mensaje: 'Usuario inactivo o inexistente' }
+
+  if (user.marca) {
+    const brand = await Brand.findById(user.marca).select('estado')
+    if (!brand || brand.estado === 'inactivo') return { ok: false, mensaje: 'Tu marca está desactivada' }
+  }
+
+  // rol, marca y áreas salen de la BD, no del token
+  return {
+    ok: true,
+    usuario: {
+      id: String(user._id),
+      rol: user.rol,
+      marca: user.marca ? String(user.marca) : undefined,
+      areas: user.areas.map(String)
+    }
+  }
+}
+
 export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
-  // El token viene en el header Authorization así:
-  // "Bearer eyJhbGciOiJIUzI1NiJ9..."
+  // El token viene en el header Authorization así: "Bearer eyJhbGciOiJIUzI1NiJ9..."
   const authHeader = req.headers.authorization
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -24,43 +57,14 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     return
   }
 
-  // Extraemos solo el token, sin el "Bearer "
-  const token = authHeader.split(' ')[1]
-
-  let decoded: { id: string }
   try {
-    // Verificamos que el token sea válido y no haya expirado
-    decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { id: string }
-  } catch {
-    res.status(401).json({ message: 'No autorizado - token inválido' })
-    return
-  }
-
-  try {
-    // Leemos el usuario de la BD en cada petición: así un usuario desactivado
-    // (o un cambio de rol/marca) aplica aunque su token siga vigente
-    const user = await User.findById(decoded.id).select('rol estado marca areas')
-    if (!user || user.estado === 'inactivo') {
-      res.status(401).json({ message: 'Usuario inactivo o inexistente' })
+    const resultado = await usuarioDesdeToken(authHeader.split(' ')[1])
+    if (!resultado.ok) {
+      res.status(401).json({ message: resultado.mensaje })
       return
     }
 
-    if (user.marca) {
-      const brand = await Brand.findById(user.marca).select('estado')
-      if (!brand || brand.estado === 'inactivo') {
-        res.status(401).json({ message: 'Tu marca está desactivada' })
-        return
-      }
-    }
-
-    // rol, marca y áreas salen de la BD, no del token
-    req.user = {
-      id: String(user._id),
-      rol: user.rol,
-      marca: user.marca ? String(user.marca) : undefined,
-      areas: user.areas.map(String)
-    }
-
+    req.user = resultado.usuario
     // next() le dice a Express que siga al siguiente paso (el controller)
     next()
   } catch (error) {

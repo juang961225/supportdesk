@@ -17,6 +17,7 @@ import Pagination from '../../components/Pagination'
 import { useAuth } from '../../hooks/useAuth'
 import type { AreaRef, Brand, Ticket, UserRef } from '../../types'
 import { useNavigate } from 'react-router-dom'
+import { useRecargaEnVivo } from '../../hooks/useTiempoReal'
 
 function TicketsPage() {
   const { toast } = useToast()
@@ -26,13 +27,20 @@ function TicketsPage() {
   const esSuperadmin = user?.rol === 'superadmin'
   const { filtros, setFiltro, limpiar, hayFiltros, clave } = useTicketFilters()
   const {
-    items: tickets, setItems: setTickets, pagination, setPage, isLoading, isFetching, error
+    items: tickets, setItems: setTickets, pagination, setPage, isLoading, isFetching, error, recargar
   } = usePaginatedList<Ticket>(
     (page) => getTicketsPage(page, filtros),
     () => toast.error('No se pudieron cargar los tickets'),
     clave
   )
   const navigate = useNavigate()
+
+  // Tiempo real: recargar la página actual (mismos filtros) cuando cambia un ticket visible
+  const enVivo = useRecargaEnVivo()
+  useEffect(() => {
+    if (enVivo > 0) recargar()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enVivo])
 
   // Opciones de los filtros: admin filtra por área y asignado; superadmin por marca
   const [areas, setAreas] = useState<AreaRef[]>()

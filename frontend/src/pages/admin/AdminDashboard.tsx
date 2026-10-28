@@ -8,6 +8,7 @@ import { PageSkeleton, Skeleton } from '../../components/Skeleton'
 import { getAdminSummary } from '../../services/dashboardService'
 import type { AdminSummary } from '../../services/dashboardService'
 import { useToast } from '../../hooks/useToast'
+import { useRecargaEnVivo } from '../../hooks/useTiempoReal'
 
 // Recharts pesa: las gráficas se descargan aparte, solo cuando se abre este dashboard
 const TendenciasAdmin = lazy(() => import('../../components/charts/TendenciasAdmin'))
@@ -25,6 +26,7 @@ function AdminDashboard() {
   const navigate = useNavigate()
   const [summary, setSummary] = useState<AdminSummary | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const enVivo = useRecargaEnVivo() // los contadores se recalculan cuando cambia un ticket de la marca
 
   useEffect(() => {
     const fetchSummary = async () => {
@@ -38,7 +40,7 @@ function AdminDashboard() {
     }
     fetchSummary()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [enVivo])
 
   if (isLoading) {
     return (

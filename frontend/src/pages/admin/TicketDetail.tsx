@@ -18,9 +18,12 @@ import { TicketTimeBadge } from '../../components/TicketTimeBadge'
 import { prioridadColor, estadoColor } from '../../utils/ticketColors'
 import { estadoLabel, prioridadLabel } from '../../utils/ticketLabels'
 import { formatFechaLimite } from '../../utils/fechas'
+import { useTicketEnVivo } from '../../hooks/useTiempoReal'
 
 function AdminTicketDetail() {
   const { id } = useParams<{ id: string }>()
+  // Tiempo real: sube cuando otra persona cambia este ticket
+  const { versionTicket } = useTicketEnVivo(id)
   const navigate = useNavigate()
   const { toast } = useToast()
   const { user } = useAuth()
@@ -37,7 +40,7 @@ function AdminTicketDetail() {
 
   useEffect(() => {
     if (id) fetchData(id)
-  }, [id])
+  }, [id, versionTicket])
 
   const fetchData = async (ticketId: string) => {
     try {

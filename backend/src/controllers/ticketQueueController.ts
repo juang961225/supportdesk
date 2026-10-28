@@ -10,6 +10,7 @@ import { fechaLimiteDeMarca } from '../services/horario'
 import { registrarEvento } from '../services/ticketEvents'
 import { notificar } from '../services/notificaciones'
 import { findTicketResponse } from '../services/ticketQueries'
+import { avisarCambioTicket } from '../services/tiempoReal'
 
 // POST /api/tickets/:id/take — un soporte del área se autoasigna un ticket de la cola → en_progreso
 export const takeTicket = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -51,6 +52,8 @@ export const takeTicket = async (req: AuthRequest, res: Response, next: NextFunc
       a: ticket.estado
     })
 
+    avisarCambioTicket(ticket._id)
+
     res.status(200).json({ message: 'Ticket tomado', ticket: await findTicketResponse(ticket._id) })
 
   } catch (error) {
@@ -88,6 +91,8 @@ export const releaseTicket = async (req: AuthRequest, res: Response, next: NextF
       de: estadoAnterior,
       a: 'abierto'
     })
+
+    avisarCambioTicket(ticket._id)
 
     res.status(200).json({ message: 'Ticket devuelto a la cola', ticket: await findTicketResponse(ticket._id) })
 
@@ -162,6 +167,7 @@ export const moveTicket = async (req: AuthRequest, res: Response, next: NextFunc
     })
 
     notificar(ticket._id, id, { tipo: 'movido' })
+    avisarCambioTicket(ticket._id, { areasAnteriores: origen ? [origen._id] : [] })
 
     res.status(200).json({
       message: `Ticket movido a ${destino.nombre}`,

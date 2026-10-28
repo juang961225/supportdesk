@@ -9,6 +9,7 @@ import { getTickets } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
 import { useAuth } from '../../hooks/useAuth'
 import type { Ticket } from '../../types'
+import { useRecargaEnVivo } from '../../hooks/useTiempoReal'
 
 function UsuarioDashboard() {
   const { toast } = useToast()
@@ -16,6 +17,7 @@ function UsuarioDashboard() {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const navigate = useNavigate()
+  const enVivo = useRecargaEnVivo() // sube cuando cambia alguno de mis tickets
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -30,7 +32,7 @@ function UsuarioDashboard() {
     }
     fetchTickets()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [enVivo])
 
   // El backend devuelve los que creé y los que sigo como observador
   const misTickets = tickets.filter(t => t.creadoPor._id === user?._id)

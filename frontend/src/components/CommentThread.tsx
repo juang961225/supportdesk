@@ -7,6 +7,7 @@ import AttachmentInput from './AttachmentInput'
 import AttachmentDropZone from './AttachmentDropZone'
 import AttachmentList from './AttachmentList'
 import { SkeletonLines } from './Skeleton'
+import { useTicketEnVivo } from '../hooks/useTiempoReal'
 
 interface CommentThreadProps {
   ticketId: string
@@ -47,6 +48,8 @@ function CommentThread({
   const [contenido, setContenido] = useState('')
   const [archivos, setArchivos] = useState<File[]>([])
   const [isSending, setIsSending] = useState(false)
+  // Tiempo real: sube cuando alguien comenta en este ticket
+  const { versionComentarios } = useTicketEnVivo(ticketId)
 
   useEffect(() => {
     const fetchComments = async () => {
@@ -60,7 +63,7 @@ function CommentThread({
     }
     fetchComments()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ticketId])
+  }, [ticketId, versionComentarios])
 
   // Papel de quien comenta dentro del ticket
   const papelDe = (autor: Comment['autor']): string | null => {

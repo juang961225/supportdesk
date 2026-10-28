@@ -21,6 +21,7 @@ import { TicketTimeBadge } from '../../components/TicketTimeBadge'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { transicionesSoporte } from '../../utils/ticketStatus'
 import type { EstadoTicket } from '../../utils/ticketStatus'
+import { useTicketEnVivo } from '../../hooks/useTiempoReal'
 
 // Texto y color del botón según el estado destino
 const accionEstado: Record<EstadoTicket, { label: string; className: string }> = {
@@ -33,6 +34,8 @@ const accionEstado: Record<EstadoTicket, { label: string; className: string }> =
 
 function SoporteTicketDetail() {
   const { id } = useParams<{ id: string }>()
+  // Tiempo real: sube cuando otra persona cambia este ticket
+  const { versionTicket } = useTicketEnVivo(id)
   const navigate = useNavigate()
   const { toast } = useToast()
   const { user } = useAuth()
@@ -50,7 +53,7 @@ function SoporteTicketDetail() {
 
   useEffect(() => {
     if (id) fetchData(id)
-  }, [id])
+  }, [id, versionTicket])
 
   const fetchData = async (ticketId: string) => {
     try {

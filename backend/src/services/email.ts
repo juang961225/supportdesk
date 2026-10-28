@@ -1,3 +1,5 @@
+import { origenesFrontend } from '../config/origenes'
+
 // Envío de emails independiente del proveedor. Cada proveedor es un adaptador con `enviar`.
 //
 // Variables en .env:
@@ -52,7 +54,7 @@ const obtenerProveedor = (): ProveedorEmail => {
   return proveedor
 }
 
-export const urlFrontend = (): string => (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '')
+export const urlFrontend = (): string => origenesFrontend()[0]
 
 // Nunca lanza: un fallo de email se registra pero no rompe la acción que lo disparó
 export const enviarEmail = async (email: EmailSaliente): Promise<void> => {
