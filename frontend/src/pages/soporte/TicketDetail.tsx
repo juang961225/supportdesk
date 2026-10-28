@@ -22,6 +22,7 @@ import ConfirmDialog from '../../components/ConfirmDialog'
 import { transicionesSoporte } from '../../utils/ticketStatus'
 import type { EstadoTicket } from '../../utils/ticketStatus'
 import { useTicketEnVivo } from '../../hooks/useTiempoReal'
+import SlaBarra from '../../components/SlaBarra'
 
 // Texto y color del botón según el estado destino
 const accionEstado: Record<EstadoTicket, { label: string; className: string }> = {
@@ -205,7 +206,7 @@ function SoporteTicketDetail() {
               <p className="text-gray-500 dark:text-gray-400">Prioridad</p>
               <p className="text-gray-800 dark:text-white font-medium flex flex-wrap items-center gap-2">
                 {prioridadLabel[ticket.prioridad]}
-                <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
+                <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} sla={ticket.sla} />
               </p>
             </div>
             {ticket.fechaLimite && (
@@ -214,6 +215,7 @@ function SoporteTicketDetail() {
                 <p className="text-gray-800 dark:text-white font-medium">
                   {formatFechaLimite(ticket.fechaLimite)}
                 </p>
+                <SlaBarra sla={ticket.sla} />
               </div>
             )}
           </div>

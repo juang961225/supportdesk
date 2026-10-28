@@ -54,6 +54,15 @@ export interface Brand {
   }
   createdAt: string
 }
+// SLA en este momento: % del plazo vigente consumido en tiempo laboral y urgencia (lo calcula el backend)
+export interface SlaActual {
+  porcentaje: number
+  restanteMinutos: number    // laborales hasta la fecha límite
+  vencidoHaceMinutos: number // reales desde que venció
+  minutosJornada: number     // jornada de la marca: lo restante se muestra en días laborales
+  nivel: 'ok' | 'atencion' | 'pronto' | 'vencido'
+}
+
 export interface Ticket {
   _id: string
   titulo: string
@@ -82,6 +91,7 @@ export interface Ticket {
   observadores?: UserRef[] // usuarios que siguen el ticket
   archivos: Attachment[]
   fechaLimite?: string
+  sla?: SlaActual | null // null si está cerrado o no tiene fecha límite
   fechaCierre?: string
   createdAt: string
 }
@@ -146,6 +156,7 @@ export interface HorarioLaboral {
   dias: number[]
   inicio: string
   fin: string
+  pausa: { inicio: string; fin: string } | null // almuerzo: el reloj no corre
   festivos: string[]
 }
 

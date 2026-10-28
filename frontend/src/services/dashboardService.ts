@@ -21,7 +21,7 @@ export interface AdminSummary {
     activos: number
     vencidos: number
   }[]
-  urgentes: Pick<Ticket, '_id' | 'titulo' | 'estado' | 'prioridad' | 'fechaLimite' | 'area' | 'asignadoA'>[]
+  urgentes: Pick<Ticket, '_id' | 'titulo' | 'estado' | 'prioridad' | 'fechaLimite' | 'area' | 'asignadoA' | 'sla'>[]
 }
 
 export interface SuperadminSummary {

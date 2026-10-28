@@ -22,6 +22,9 @@ const DIAS = [
   { valor: 0, label: 'Dom' },
 ]
 
+// Valor inicial al activar la pausa (se puede cambiar)
+const PAUSA_SUGERIDA = { inicio: '12:30', fin: '13:00' }
+
 const aMinutos = (hora: string): number => {
   const [h, m] = hora.split(':').map(Number)
   return h * 60 + m
@@ -72,8 +75,14 @@ function HorarioPage() {
     )
   }
 
-  const jornada = aMinutos(horario.fin) - aMinutos(horario.inicio)
-  const jornadaValida = jornada > 0
+  const minutosPausa = horario.pausa ? aMinutos(horario.pausa.fin) - aMinutos(horario.pausa.inicio) : 0
+  const pausaValida = !horario.pausa || (
+    aMinutos(horario.inicio) < aMinutos(horario.pausa.inicio) &&
+    minutosPausa > 0 &&
+    aMinutos(horario.pausa.fin) < aMinutos(horario.fin)
+  )
+  const jornada = aMinutos(horario.fin) - aMinutos(horario.inicio) - minutosPausa
+  const jornadaValida = aMinutos(horario.fin) > aMinutos(horario.inicio) && pausaValida
 
   const toggleDia = (dia: number) => {
     const dias = horario.dias.includes(dia) ? horario.dias.filter((d) => d !== dia) : [...horario.dias, dia]
@@ -99,8 +108,12 @@ function HorarioPage() {
       setFormError('Elige al menos un día laborable')
       return
     }
-    if (!jornadaValida) {
+    if (aMinutos(horario.fin) <= aMinutos(horario.inicio)) {
       setFormError('La hora de inicio debe ser anterior a la de fin')
+      return
+    }
+    if (!pausaValida) {
+      setFormError('La pausa debe empezar después de la entrada, terminar antes de la salida y durar algo')
       return
     }
 
@@ -173,10 +186,43 @@ function HorarioPage() {
                 onChange={(e) => setHorario({ ...horario, fin: e.target.value })}
                 className={inputClass}
               />
-              {jornadaValida && (
-                <span className="text-sm text-gray-500 dark:text-gray-400">Jornada de {formatDuracion(jornada)}</span>
-              )}
             </div>
+
+            {/* Pausa de almuerzo: el tiempo de la pausa no cuenta para fechas límite ni SLA */}
+            <label className="mt-4 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <input
+                type="checkbox"
+                checked={horario.pausa !== null}
+                onChange={(e) => setHorario({ ...horario, pausa: e.target.checked ? PAUSA_SUGERIDA : null })}
+                className="h-4 w-4 rounded border-gray-300 dark:border-gray-600"
+              />
+              Pausa de almuerzo
+            </label>
+            {horario.pausa && (
+              <div className="mt-2 ml-6 flex flex-wrap items-center gap-3">
+                <input
+                  type="time"
+                  aria-label="Inicio de la pausa"
+                  value={horario.pausa.inicio}
+                  onChange={(e) => horario.pausa && setHorario({ ...horario, pausa: { ...horario.pausa, inicio: e.target.value } })}
+                  className={inputClass}
+                />
+                <span className="text-gray-500 dark:text-gray-400">a</span>
+                <input
+                  type="time"
+                  aria-label="Fin de la pausa"
+                  value={horario.pausa.fin}
+                  onChange={(e) => horario.pausa && setHorario({ ...horario, pausa: { ...horario.pausa, fin: e.target.value } })}
+                  className={inputClass}
+                />
+              </div>
+            )}
+
+            <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+              {jornadaValida
+                ? `Jornada de ${formatDuracion(jornada)}${minutosPausa > 0 ? ` (sin contar ${formatDuracion(minutosPausa)} de pausa)` : ''}`
+                : 'Revisa las horas: la pausa debe quedar dentro de la jornada'}
+            </p>
 
             {/* Cómo quedan los plazos por prioridad (1 día = 1 jornada) */}
             {jornadaValida && (

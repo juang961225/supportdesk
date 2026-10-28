@@ -19,6 +19,7 @@ import { prioridadColor, estadoColor } from '../../utils/ticketColors'
 import { estadoLabel, prioridadLabel } from '../../utils/ticketLabels'
 import { formatFechaLimite } from '../../utils/fechas'
 import { useTicketEnVivo } from '../../hooks/useTiempoReal'
+import SlaBarra from '../../components/SlaBarra'
 
 function AdminTicketDetail() {
   const { id } = useParams<{ id: string }>()
@@ -93,7 +94,7 @@ function AdminTicketDetail() {
               {ticket.titulo}
             </h2>
             <div className="flex flex-wrap items-center gap-2">
-              <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
+              <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} sla={ticket.sla} />
               <span
                 className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}
               >
@@ -155,6 +156,7 @@ function AdminTicketDetail() {
                     </button>
                   )}
                 </p>
+                <SlaBarra sla={ticket.sla} />
               </div>
             )}
           </div>

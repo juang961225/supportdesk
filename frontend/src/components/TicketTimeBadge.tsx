@@ -1,10 +1,18 @@
 import { getTicketTimeStatus } from '../utils/ticketTime'
 import type { TicketTimeStatus } from '../utils/ticketTime'
-import type { Ticket } from '../types'
+import type { SlaActual, Ticket } from '../types'
 
 interface TicketTimeBadgeProps {
   fechaLimite: string | undefined
   estado: Ticket['estado']
+  // Si llega, manda el SLA del backend ("vence pronto" = 75% del plazo laboral); si no, 24 h reales
+  sla?: SlaActual | null
+}
+
+const statusDesdeSla = (sla: SlaActual | null): TicketTimeStatus => {
+  if (!sla) return 'noLimit'
+  if (sla.nivel === 'vencido') return 'overdue'
+  return sla.nivel === 'pronto' ? 'dueSoon' : 'normal'
 }
 
 const labels: Record<TicketTimeStatus, string> = {
@@ -21,11 +29,11 @@ const styles: Record<TicketTimeStatus, string> = {
   noLimit: '',
 }
 
-export function TicketTimeBadge({ fechaLimite, estado }: TicketTimeBadgeProps) {
+export function TicketTimeBadge({ fechaLimite, estado, sla }: TicketTimeBadgeProps) {
   // Un ticket cerrado ya no vence
   if (estado === 'cerrado') return null
 
-  const status = getTicketTimeStatus(fechaLimite)
+  const status = sla !== undefined ? statusDesdeSla(sla) : getTicketTimeStatus(fechaLimite)
 
   // Si no hay nada que mostrar (normal o noLimit), no renderiza nada.
   if (status === 'normal' || status === 'noLimit') return null

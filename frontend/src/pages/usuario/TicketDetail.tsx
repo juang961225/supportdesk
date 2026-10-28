@@ -16,6 +16,7 @@ import type { Ticket } from '../../types'
 import { TicketTimeBadge } from '../../components/TicketTimeBadge'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { useTicketEnVivo } from '../../hooks/useTiempoReal'
+import SlaBarra from '../../components/SlaBarra'
 
 function UsuarioTicketDetail() {
   const { id } = useParams<{ id: string }>()
@@ -127,7 +128,7 @@ function UsuarioTicketDetail() {
               <p className="text-gray-500 dark:text-gray-400">Prioridad</p>
               <p className="text-gray-800 dark:text-white font-medium flex flex-wrap items-center gap-2">
                 {prioridadLabel[ticket.prioridad]}
-                <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
+                <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} sla={ticket.sla} />
               </p>
             </div>
             <div>
@@ -148,6 +149,7 @@ function UsuarioTicketDetail() {
                 <p className="text-gray-800 dark:text-white font-medium">
                   {formatFechaLimite(ticket.fechaLimite)}
                 </p>
+                <SlaBarra sla={ticket.sla} />
               </div>
             )}
           </div>
