@@ -7,6 +7,7 @@ import { getSuperadminSummary } from '../../services/dashboardService'
 import type { SuperadminSummary } from '../../services/dashboardService'
 import { useToast } from '../../hooks/useToast'
 import { cuentaEstadoLabel } from '../../utils/userLabels'
+import { useRecargaEnVivo } from '../../hooks/useTiempoReal'
 
 const thClass = 'px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase'
 const tdClass = 'px-4 py-2 text-sm text-gray-700 dark:text-gray-300'
@@ -15,6 +16,7 @@ function SuperAdminDashboard() {
   const { toast } = useToast()
   const [summary, setSummary] = useState<SuperadminSummary | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const enVivo = useRecargaEnVivo()
 
   useEffect(() => {
     const fetchSummary = async () => {
@@ -28,7 +30,7 @@ function SuperAdminDashboard() {
     }
     fetchSummary()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [enVivo])
 
   if (isLoading) {
     return (

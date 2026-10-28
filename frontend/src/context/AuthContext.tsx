@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect } from 'react'
 import { configurarSesion, renovarSesion, setAccessToken } from '../services/api'
 import { logoutServidor } from '../services/authService'
+import { conectarTiempoReal, desconectarTiempoReal } from '../services/tiempoReal'
 import type { User } from '../types'
 
 interface AuthContextType {
@@ -69,6 +70,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .catch(() => limpiar())
       .finally(() => setIsRestoring(false))
   }, [])
+
+  // Tiempo real: conectado mientras hay sesión
+  const haySesion = token !== null
+  useEffect(() => {
+    if (haySesion) conectarTiempoReal()
+    else desconectarTiempoReal()
+  }, [haySesion])
 
   return (
     <AuthContext.Provider value={{ user, token, isRestoring, setAuth, logout }}>

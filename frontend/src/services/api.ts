@@ -23,6 +23,9 @@ export const setAccessToken = (token: string | null): void => {
   accessToken = token
 }
 
+// Para el tiempo real: el socket se autentica con el mismo access token
+export const obtenerAccessToken = (): string | null => accessToken
+
 // AuthContext se entera de las renovaciones y de la expiración de la sesión
 export const configurarSesion = (callbacks: { alRenovar: (sesion: Sesion) => void; alExpirar: () => void }): void => {
   alRenovar = callbacks.alRenovar

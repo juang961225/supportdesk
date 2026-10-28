@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import ThemeToggle from './ThemeToggle'
 import { rolLabel } from '../utils/userLabels'
+import { useConexionPerdida } from '../hooks/useTiempoReal'
 
 // Definimos los items del menú según el rol
 const menuItems = {
@@ -35,6 +36,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation()
   // location.pathname → la URL actual, para marcar el item activo
   const [menuAbierto, setMenuAbierto] = useState(false) // solo aplica en móvil
+  const conexionPerdida = useConexionPerdida()
 
   const handleLogout = async () => {
     await logout()
@@ -139,6 +141,11 @@ function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Contenido principal */}
         <main className="flex-1 p-4 md:p-8 overflow-auto">
+          {conexionPerdida && (
+            <div role="status" className="mb-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 px-4 py-2 text-sm text-yellow-800 dark:text-yellow-300">
+              Reconectando… Los cambios de otras personas aparecerán cuando vuelva la conexión.
+            </div>
+          )}
           {children}
         </main>
       </div>

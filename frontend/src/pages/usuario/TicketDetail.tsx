@@ -15,9 +15,12 @@ import { formatFechaLimite } from '../../utils/fechas'
 import type { Ticket } from '../../types'
 import { TicketTimeBadge } from '../../components/TicketTimeBadge'
 import ConfirmDialog from '../../components/ConfirmDialog'
+import { useTicketEnVivo } from '../../hooks/useTiempoReal'
 
 function UsuarioTicketDetail() {
   const { id } = useParams<{ id: string }>()
+  // Tiempo real: sube cuando otra persona cambia este ticket
+  const { versionTicket } = useTicketEnVivo(id)
   const navigate = useNavigate()
   const { toast } = useToast()
 
@@ -29,7 +32,7 @@ function UsuarioTicketDetail() {
 
   useEffect(() => {
     if (id) fetchData(id)
-  }, [id])
+  }, [id, versionTicket])
 
   const fetchData = async (ticketId: string) => {
     try {
