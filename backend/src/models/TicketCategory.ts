@@ -39,4 +39,7 @@ const TicketCategorySchema = new Schema<ITicketCategory>(
   }
 )
 
+// Categorías de una marca
+TicketCategorySchema.index({ marca: 1 })
+
 export default mongoose.model<ITicketCategory>('TicketCategory', TicketCategorySchema)

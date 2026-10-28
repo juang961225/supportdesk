@@ -3,6 +3,7 @@ import Brand from '../models/Brand'
 import { AuthRequest } from '../middlewares/auth'
 import { leerPaginacion, armarPaginacion } from '../utils/pagination'
 import User from '../models/User'
+import { invalidarTodasLasSesiones } from '../middlewares/auth'
 
 // Función helper — convierte "BMW Colombia" en "bmw-colombia"
 const generateSlug = (nombre: string): string => {
@@ -112,6 +113,7 @@ export const updateBrand = async (req: AuthRequest, res: Response, next: NextFun
     if (estado) brand.estado = estado
 
     await brand.save()
+    invalidarTodasLasSesiones() // activar o desactivar una marca afecta a todos sus usuarios
 
     res.status(200).json({
       message: 'Marca actualizada exitosamente',

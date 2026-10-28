@@ -36,4 +36,7 @@ const CommentSchema = new Schema<IComment>(
   }
 )
 
+// Hilo de un ticket en orden
+CommentSchema.index({ ticket: 1, createdAt: 1 })
+
 export default mongoose.model<IComment>('Comment', CommentSchema)

@@ -9,6 +9,7 @@ import { AuthRequest } from '../middlewares/auth'
 import { leerPaginacion, armarPaginacion } from '../utils/pagination'
 import { registrarEvento } from '../services/ticketEvents'
 import { revocarTodos } from '../services/sesion'
+import { invalidarSesion } from '../middlewares/auth'
 import { avisarCambioTicket, desconectarUsuario } from '../services/tiempoReal'
 
 const ROLES_EDITABLES: IUser['rol'][] = ['admin', 'soporte', 'usuario']
@@ -256,6 +257,7 @@ export const updateUser = async (req: AuthRequest, res: Response, next: NextFunc
     target.areas = areasFinales.map((a) => new mongoose.Types.ObjectId(a))
 
     await target.save()
+    invalidarSesion(String(target._id)) // rol, áreas, marca o estado pudieron cambiar
 
     // Desactivado: sus sesiones abiertas (refresh tokens) dejan de servir
     if (seDesactiva) {

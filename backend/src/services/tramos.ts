@@ -36,15 +36,10 @@ const aEvento = (e: { tipo: string; createdAt: Date; de?: string; a?: string; de
 })
 
 // Tramos de un ticket (ya validado el acceso), con el horario de su marca
-export const tramosDeTicket = async (ticketId: mongoose.Types.ObjectId): Promise<Tramo[]> => {
-  const ticket = await Ticket.findById(ticketId)
-    .select('createdAt estado fechaCierre fechaLimite area marca')
-    .populate('area', 'nombre')
-    .lean<TicketLean & { marca: mongoose.Types.ObjectId }>()
-  if (!ticket) return []
-
+// Recibe el ticket ya leído (con el área poblada) para no volver a buscarlo
+export const tramosDeTicket = async (ticket: TicketLean & { marca: mongoose.Types.ObjectId }): Promise<Tramo[]> => {
   const [eventos, horario] = await Promise.all([
-    TicketEvent.find({ ticket: ticketId, tipo: { $in: TIPOS_RELEVANTES } }).select(CAMPOS_EVENTO).sort({ createdAt: 1 }).lean<EventoLean[]>(),
+    TicketEvent.find({ ticket: ticket._id, tipo: { $in: TIPOS_RELEVANTES } }).select(CAMPOS_EVENTO).sort({ createdAt: 1 }).lean<EventoLean[]>(),
     horarioDeMarca(ticket.marca)
   ])
   return calcularTramos(aTicketParaTramos(ticket), eventos.map(aEvento), horario)

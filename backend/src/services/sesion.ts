@@ -2,8 +2,7 @@ import crypto from 'crypto'
 import jwt from 'jsonwebtoken'
 import mongoose from 'mongoose'
 import RefreshToken from '../models/RefreshToken'
-import User, { IUser } from '../models/User'
-import Brand from '../models/Brand'
+import { cargarUsuarioActivo, UsuarioCargado } from '../middlewares/auth'
 
 // Sesión: access token corto (JWT, en memoria del navegador) + refresh token largo (cookie httpOnly) con rotación
 
@@ -14,9 +13,9 @@ const GRACIA_ROTACION_MS = 60 * 1000 // otra pestaña pudo renovar al mismo tiem
 
 const hash = (token: string): string => crypto.createHash('sha256').update(token).digest('hex')
 
-export const emitirAccessToken = (user: IUser): string =>
+export const emitirAccessToken = (user: { id: string; rol: string; marca?: string }): string =>
   jwt.sign(
-    { id: user._id, rol: user.rol, marca: user.marca },
+    { id: user.id, rol: user.rol, marca: user.marca },
     process.env.JWT_SECRET as string,
     { expiresIn: accessTokenSegundos() }
   )
@@ -37,15 +36,23 @@ export const revocarRefreshToken = async (token: string): Promise<void> => {
 }
 
 export type ResultadoRotacion =
-  | { ok: true; user: IUser; nuevoToken: string }
+  | { ok: true; user: UsuarioCargado; nuevoToken: string }
   | { ok: false; motivo: 'sin_sesion' | 'rotado' | 'reuso' | 'inactivo' }
 
-// Valida el refresh token, lo revoca y entrega uno nuevo
+// Valida el refresh token, lo revoca y entrega uno nuevo.
+// Camino normal en 2-3 viajes a la base: revocar (atómico) → usuario (suele estar en caché) → crear el nuevo
 export const rotarRefreshToken = async (token: string): Promise<ResultadoRotacion> => {
-  const guardado = await RefreshToken.findOne({ tokenHash: hash(token) })
-  if (!guardado || guardado.expiraEn.getTime() <= Date.now()) return { ok: false, motivo: 'sin_sesion' }
+  const ahora = new Date()
+  // Revocar de forma atómica solo si sigue vigente: si dos peticiones llegan a la vez, solo una gana
+  const vigente = await RefreshToken.findOneAndUpdate(
+    { tokenHash: hash(token), revocadoEn: { $exists: false }, expiraEn: { $gt: ahora } },
+    { revocadoEn: ahora }
+  )
 
-  if (guardado.revocadoEn) {
+  if (!vigente) {
+    // Solo si falló se averigua por qué (camino poco frecuente)
+    const guardado = await RefreshToken.findOne({ tokenHash: hash(token) })
+    if (!guardado || !guardado.revocadoEn || guardado.expiraEn.getTime() <= Date.now()) return { ok: false, motivo: 'sin_sesion' }
     // Recién rotado (otra pestaña): no es robo, el frontend reintenta con la cookie nueva
     if (Date.now() - guardado.revocadoEn.getTime() <= GRACIA_ROTACION_MS) return { ok: false, motivo: 'rotado' }
     // Un token viejo reutilizado: posible robo → se cierran todas las sesiones del usuario
@@ -53,19 +60,8 @@ export const rotarRefreshToken = async (token: string): Promise<ResultadoRotacio
     return { ok: false, motivo: 'reuso' }
   }
 
-  // Revocar de forma atómica: si dos peticiones llegan a la vez, solo una gana
-  const revocado = await RefreshToken.findOneAndUpdate(
-    { _id: guardado._id, revocadoEn: { $exists: false } },
-    { revocadoEn: new Date() }
-  )
-  if (!revocado) return { ok: false, motivo: 'rotado' }
+  const resultado = await cargarUsuarioActivo(String(vigente.usuario))
+  if (!resultado.ok) return { ok: false, motivo: 'inactivo' }
 
-  const user = await User.findById(guardado.usuario)
-  if (!user || user.estado === 'inactivo') return { ok: false, motivo: 'inactivo' }
-  if (user.marca) {
-    const marca = await Brand.findById(user.marca).select('estado')
-    if (!marca || marca.estado === 'inactivo') return { ok: false, motivo: 'inactivo' }
-  }
-
-  return { ok: true, user, nuevoToken: await crearRefreshToken(user._id) }
+  return { ok: true, user: resultado.usuario, nuevoToken: await crearRefreshToken(resultado.usuario.id) }
 }

@@ -5,6 +5,7 @@ import Ticket from '../models/Ticket'
 import { origenesFrontend } from '../config/origenes'
 import { usuarioDesdeToken, UsuarioAutenticado } from '../middlewares/auth'
 import { puedeVerTicket } from '../utils/ticketAccess'
+import { invalidarResumenesDeMarca } from './cacheResumenes'
 
 // Tiempo real con Socket.io. Los eventos solo llevan ids: el navegador vuelve a pedir los datos
 // por el API con sus permisos de siempre, así nunca viaja información a quien no la puede ver.
@@ -81,14 +82,16 @@ export const iniciarTiempoReal = (servidor: http.Server): void => {
 // Se llama sin await después de guardar: nunca rompe ni demora la respuesta.
 // `areasAnteriores` / `usuariosAnteriores`: quienes dejaron de estar ligados al ticket (área de origen al mover,
 // soporte reasignado u observador quitado) también refrescan sus listas.
+// También invalida los resúmenes de dashboard de su marca: toda modificación de un ticket pasa por aquí.
 export const avisarCambioTicket = (ticketId: Id, opciones: { areasAnteriores?: Id[]; usuariosAnteriores?: Id[] } = {}): void => {
-  if (!io) return
   const servidor = io
   Ticket.findById(ticketId)
     .select('marca area creadoPor asignadoA observadores')
     .lean()
     .then((ticket) => {
       if (!ticket) return
+      invalidarResumenesDeMarca(String(ticket.marca))
+      if (!servidor) return
       const areas = [ticket.area, ...(opciones.areasAnteriores ?? [])].filter(Boolean)
       const usuarios = [ticket.creadoPor, ticket.asignadoA, ...(ticket.observadores ?? []), ...(opciones.usuariosAnteriores ?? [])].filter(Boolean)
       servidor

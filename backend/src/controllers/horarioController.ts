@@ -1,7 +1,8 @@
 import { Response, NextFunction } from 'express'
 import Brand from '../models/Brand'
 import { AuthRequest } from '../middlewares/auth'
-import { horarioDeMarca } from '../services/horario'
+import { horarioDeMarca, invalidarHorario } from '../services/horario'
+import { invalidarResumenesDeMarca } from '../services/cacheResumenes'
 import { validarHorario } from '../utils/horarioLaboral'
 
 // GET /api/horario — horario laboral de la marca del admin
@@ -23,7 +24,9 @@ export const updateHorario = async (req: AuthRequest, res: Response, next: NextF
       return
     }
 
-    const marca = await Brand.findByIdAndUpdate(req.user!.marca, { horario }, { new: true, runValidators: true })
+    const marca = await Brand.findByIdAndUpdate(req.user!.marca, { horario }, { returnDocument: 'after', runValidators: true })
+    invalidarHorario(String(req.user!.marca))
+    invalidarResumenesDeMarca(String(req.user!.marca)) // el SLA de las tendencias depende del horario
     if (!marca) {
       res.status(404).json({ message: 'Marca no encontrada' })
       return
