@@ -7,7 +7,8 @@ export const getTicketHistory = async (ticketId: string): Promise<TicketEvent[]>
 }
 
 // Tramos por área con tiempo laboral y si se venció en cada uno (admin, soporte, superadmin)
-export const getTicketTramos = async (ticketId: string): Promise<Tramo[]> => {
+// minutosJornada: jornada de la marca, para mostrar los tiempos en días laborales
+export const getTicketTramos = async (ticketId: string): Promise<{ tramos: Tramo[]; minutosJornada: number }> => {
   const response = await api.get(`/tickets/${ticketId}/tramos`)
-  return response.data.tramos
+  return { tramos: response.data.tramos, minutosJornada: response.data.minutosJornada ?? 0 }
 }

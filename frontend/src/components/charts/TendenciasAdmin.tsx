@@ -9,7 +9,7 @@ import { getTendencias } from '../../services/dashboardService'
 import type { PeriodoTendencias, Tendencias } from '../../services/dashboardService'
 import { useToast } from '../../hooks/useToast'
 import { estadoLabel } from '../../utils/ticketLabels'
-import { formatDuracion } from '../../utils/fechas'
+import { formatTiempoLaboral } from '../../utils/sla'
 
 const PERIODOS: PeriodoTendencias[] = [7, 30, 90]
 const PERIODO_POR_DEFECTO: PeriodoTendencias = 30
@@ -92,6 +92,8 @@ function TendenciasAdmin() {
     .map((s) => ({ etiqueta: s.area, valor: s.promedioMinutos }))
   const vencidos = [...sla].sort((a, b) => b.porcentajeVencidos - a.porcentajeVencidos)
   const sinTickets = (datos?.total ?? 0) === 0
+  // Tiempo promedio en días de la jornada de la marca ("2 días y 5 h")
+  const formatoTiempo = (minutos: number) => formatTiempoLaboral(minutos, datos?.minutosJornada ?? 0, false)
 
   return (
     <section className="mt-8" aria-labelledby="titulo-tendencias">
@@ -175,9 +177,9 @@ function TendenciasAdmin() {
             titulo="Tiempo promedio por área"
             subtitulo="Tramos terminados (movidos o cerrados) en el periodo · horario laboral"
             vacio={sla.length === 0}
-            tabla={{ columnaEtiqueta: 'Área', columnaValor: 'Promedio', filas: filasDe(tiempoPromedio, formatDuracion) }}
+            tabla={{ columnaEtiqueta: 'Área', columnaValor: 'Promedio', filas: filasDe(tiempoPromedio, formatoTiempo) }}
           >
-            <BarrasHorizontales datos={tiempoPromedio} formatoValor={formatDuracion} />
+            <BarrasHorizontales datos={tiempoPromedio} formatoValor={formatoTiempo} />
           </ChartCard>
 
           <ChartCard

@@ -13,11 +13,14 @@ const dias = (n: number, adjetivo = ''): string => `${n} ${n === 1 ? 'día' : 'd
 
 // Tiempo laboral en días de jornada + lo que sobra del último día: con jornada de 8 h, 21 h → "2 días y 5 h"
 // (así nadie lee "21 h" como "mañana"). Menos de una jornada queda en horas y minutos
-export const formatTiempoLaboral = (minutos: number, minutosJornada: number): string => {
-  if (minutosJornada <= 0 || minutos < minutosJornada) return `${horasYMinutos(minutos)} laborales`
+// `sufijo`: agrega "laborales" (la barra de SLA). Tablas y gráficas ya lo dicen en el título
+export const formatTiempoLaboral = (minutos: number, minutosJornada: number, sufijo = true): string => {
+  const fin = sufijo ? ' laborales' : ''
+  if (minutosJornada <= 0 || minutos < minutosJornada) return `${horasYMinutos(minutos)}${fin}`
   const completos = Math.floor(minutos / minutosJornada)
   const resto = minutos % minutosJornada
-  return resto ? `${dias(completos)} y ${horasYMinutos(resto)} laborales` : dias(completos, 'laboral')
+  if (resto) return `${dias(completos)} y ${horasYMinutos(resto)}${fin}`
+  return sufijo ? dias(completos, 'laboral') : dias(completos)
 }
 
 // Tiempo real (de calendario) desde que venció: 150 → "2 h 30 min", 3000 → "2 días y 2 h"

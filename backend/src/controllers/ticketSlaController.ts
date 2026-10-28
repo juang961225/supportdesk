@@ -4,6 +4,8 @@ import Ticket from '../models/Ticket'
 import { AuthRequest } from '../middlewares/auth'
 import { puedeVerTicket } from '../utils/ticketAccess'
 import { tramosDeTicket } from '../services/tramos'
+import { horarioDeMarca } from '../services/horario'
+import { minutosJornada } from '../utils/horarioLaboral'
 
 // GET /api/tickets/:id/tramos — tiempo laboral y SLA por área (admin, soporte y superadmin)
 export const getTicketTramos = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -23,7 +25,8 @@ export const getTicketTramos = async (req: AuthRequest, res: Response, next: Nex
       return
     }
 
-    res.status(200).json({ tramos: await tramosDeTicket(ticket) })
+    const [tramos, horario] = await Promise.all([tramosDeTicket(ticket), horarioDeMarca(ticket.marca)])
+    res.status(200).json({ tramos, minutosJornada: minutosJornada(horario) })
 
   } catch (error) {
     next(error)

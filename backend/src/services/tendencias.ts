@@ -3,6 +3,8 @@ import Ticket from '../models/Ticket'
 import TicketCategory from '../models/TicketCategory'
 import Area from '../models/Area'
 import { slaPorArea, SlaArea } from './tramos'
+import { horarioDeMarca } from './horario'
+import { minutosJornada } from '../utils/horarioLaboral'
 
 export const PERIODOS_VALIDOS = [7, 30, 90] as const
 export type Periodo = typeof PERIODOS_VALIDOS[number]
@@ -26,6 +28,7 @@ export interface Tendencias {
   porCategoria: { id: string | null; nombre: string; total: number }[]
   porArea: { id: string | null; nombre: string; total: number }[]
   sla: SlaArea[]
+  minutosJornada: number // para mostrar el tiempo promedio en días laborales
 }
 
 // "AAAA-MM-DD" del instante en hora Colombia
@@ -100,6 +103,7 @@ export const tendenciasDeMarca = async (marcaId: string, dias: Periodo): Promise
     porEstado: ORDEN_ESTADOS.map((estado) => ({ estado, total: totalPorEstado.get(estado) ?? 0 })),
     porCategoria: conNombres(porCategoria, new Map(categorias.map((c) => [String(c._id), c.nombre])), 'Sin categoría'),
     porArea: conNombres(porArea, new Map(areas.map((a) => [String(a._id), a.nombre])), 'Sin área'),
-    sla
+    sla,
+    minutosJornada: minutosJornada(await horarioDeMarca(marcaId))
   }
 }

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { getTicketTramos } from '../services/historyService'
 import { useToast } from '../hooks/useToast'
-import { formatFechaLimite, formatDuracion } from '../utils/fechas'
+import { formatFechaLimite } from '../utils/fechas'
+import { formatTiempoLaboral } from '../utils/sla'
 import type { Tramo } from '../types'
 import { SkeletonLines } from './Skeleton'
 
@@ -32,12 +33,15 @@ const EstadoTramo = ({ tramo }: { tramo: Tramo }) => {
 function TicketTramos({ ticketId, refreshKey }: TicketTramosProps) {
   const { toast } = useToast()
   const [tramos, setTramos] = useState<Tramo[]>([])
+  const [minutosJornada, setMinutosJornada] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const fetchTramos = async () => {
       try {
-        setTramos(await getTicketTramos(ticketId))
+        const datos = await getTicketTramos(ticketId)
+        setTramos(datos.tramos)
+        setMinutosJornada(datos.minutosJornada)
       } catch {
         toast.error('No se pudieron cargar los tiempos por área')
       } finally {
@@ -80,7 +84,7 @@ function TicketTramos({ ticketId, refreshKey }: TicketTramosProps) {
                   <td className={`${tdClass} font-medium`}>{tramo.area}</td>
                   <td className={tdClass}>{formatFechaLimite(tramo.entrada)}</td>
                   <td className={tdClass}>{tramo.salida ? formatFechaLimite(tramo.salida) : '—'}</td>
-                  <td className={tdClass}>{formatDuracion(tramo.minutosLaborales)}</td>
+                  <td className={tdClass}>{formatTiempoLaboral(tramo.minutosLaborales, minutosJornada, false)}</td>
                   <td className={tdClass}>{tramo.fechaLimite ? formatFechaLimite(tramo.fechaLimite) : '—'}</td>
                   <td className={tdClass}><EstadoTramo tramo={tramo} /></td>
                 </tr>
@@ -90,7 +94,7 @@ function TicketTramos({ ticketId, refreshKey }: TicketTramosProps) {
               <tfoot>
                 <tr className="border-t border-gray-200 dark:border-gray-700">
                   <td className={`${tdClass} font-medium`} colSpan={3}>Total</td>
-                  <td className={`${tdClass} font-medium`} colSpan={3}>{formatDuracion(total)}</td>
+                  <td className={`${tdClass} font-medium`} colSpan={3}>{formatTiempoLaboral(total, minutosJornada, false)}</td>
                 </tr>
               </tfoot>
             )}
