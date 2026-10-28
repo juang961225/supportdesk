@@ -7,6 +7,7 @@ import { puedeVerTicket } from '../utils/ticketAccess'
 import { guardarAdjuntos, firmarAdjuntos } from '../services/attachments'
 import { storageConfigurado } from '../services/storage'
 import { notificar } from '../services/notificaciones'
+import { avisarComentario } from '../services/tiempoReal'
 
 // Comentario con sus adjuntos firmados (URL temporal)
 const conAdjuntosFirmados = async (comment: InstanceType<typeof Comment>) => ({
@@ -52,6 +53,7 @@ export const createComment = async (req: AuthRequest, res: Response, next: NextF
     })
 
     notificar(ticket._id, req.user!.id, { tipo: 'comentario', contenido, adjuntos: archivos.length })
+    avisarComentario(ticket._id)
 
     // Populate para devolver datos completos
     const commentPopulado = await Comment.findById(comment._id)

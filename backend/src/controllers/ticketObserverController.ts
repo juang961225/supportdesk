@@ -5,6 +5,7 @@ import User from '../models/User'
 import { AuthRequest } from '../middlewares/auth'
 import { registrarEvento } from '../services/ticketEvents'
 import { findTicketResponse } from '../services/ticketQueries'
+import { avisarCambioTicket } from '../services/tiempoReal'
 
 // Un observador válido: usuario activo, de la misma marca y distinto del creador
 export const buscarObservadorValido = (userId: string, marca: mongoose.Types.ObjectId | string, creadorId: string) => {
@@ -59,6 +60,8 @@ export const addObserver = async (req: AuthRequest, res: Response, next: NextFun
       aNombre: observador.nombre
     })
 
+    avisarCambioTicket(ticket._id)
+
     res.status(200).json({ message: 'Observador agregado', ticket: await findTicketResponse(ticket._id) })
 
   } catch (error) {
@@ -102,6 +105,9 @@ export const removeObserver = async (req: AuthRequest, res: Response, next: Next
       deNombre: observador?.nombre,
       motivo: seSale ? 'Dejó de seguir el ticket' : undefined
     })
+
+    // El que dejó de ser observador también refresca su lista ("Compartidos conmigo")
+    avisarCambioTicket(ticket._id, { usuariosAnteriores: [userId] })
 
     // Quien se sale ya no puede ver el ticket: no se le devuelve
     res.status(200).json({

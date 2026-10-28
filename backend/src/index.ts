@@ -1,3 +1,4 @@
+import http from 'http'
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
@@ -13,6 +14,7 @@ import areaRoutes from './routes/areaRoutes'
 import dashboardRoutes from './routes/dashboardRoutes'
 import horarioRoutes from './routes/horarioRoutes'
 import { origenesFrontend } from './config/origenes'
+import { iniciarTiempoReal } from './services/tiempoReal'
 
 dotenv.config()
 
@@ -41,6 +43,10 @@ app.get('/health', (req, res) => {
 
 app.use(errorHandler)
 
-app.listen(PORT, () => {
+// Un solo servidor HTTP para el API y el tiempo real (Socket.io)
+const servidor = http.createServer(app)
+iniciarTiempoReal(servidor)
+
+servidor.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })

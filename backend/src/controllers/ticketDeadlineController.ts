@@ -3,6 +3,7 @@ import Ticket from '../models/Ticket'
 import { AuthRequest } from '../middlewares/auth'
 import { registrarEvento } from '../services/ticketEvents'
 import { findTicketResponse } from '../services/ticketQueries'
+import { avisarCambioTicket } from '../services/tiempoReal'
 
 const MOTIVO_MAX = 300
 const MAX_ADELANTE_MS = 365 * 24 * 60 * 60 * 1000 // hasta un año desde ahora
@@ -69,6 +70,8 @@ export const updateFechaLimite = async (req: AuthRequest, res: Response, next: N
       fechaLimiteAnterior: anterior,
       fechaLimiteNueva: nueva
     })
+
+    avisarCambioTicket(ticket._id)
 
     res.status(200).json({
       message: 'Fecha límite actualizada',

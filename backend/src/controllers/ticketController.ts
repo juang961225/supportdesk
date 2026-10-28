@@ -16,6 +16,7 @@ import { fechaLimiteDeMarca } from '../services/horario'
 import { buscarObservadorValido } from './ticketObserverController'
 import { guardarAdjuntos } from '../services/attachments'
 import { storageConfigurado } from '../services/storage'
+import { avisarCambioTicket } from '../services/tiempoReal'
 
 // POST /api/tickets — crear ticket (usuario). multipart/form-data: campos + archivos opcionales
 export const createTicket = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -108,6 +109,7 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
     }
 
     notificar(ticket._id, req.user!.id, { tipo: 'creado' })
+    avisarCambioTicket(ticket._id)
 
     // Populate para devolver datos completos
     const ticketPopulado = await findTicketResponse(ticket._id)
@@ -263,6 +265,7 @@ export const assignTicket = async (req: AuthRequest, res: Response, next: NextFu
     })
 
     notificar(ticket._id, req.user!.id, { tipo: 'asignado' })
+    avisarCambioTicket(ticket._id, { usuariosAnteriores: anteriorId ? [anteriorId] : [] })
 
     const ticketActualizado = await findTicketResponse(ticket._id)
 
@@ -336,6 +339,7 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
     })
 
     notificar(ticket._id, id, { tipo: 'estado', de: estadoAnterior, a: estado })
+    avisarCambioTicket(ticket._id)
 
     const ticketActualizado = await findTicketResponse(ticket._id)
 
