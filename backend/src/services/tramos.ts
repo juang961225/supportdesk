@@ -50,6 +50,39 @@ export const tramosDeTicket = async (ticketId: mongoose.Types.ObjectId): Promise
   return calcularTramos(aTicketParaTramos(ticket), eventos.map(aEvento), horario)
 }
 
+// Eventos relevantes de varios tickets en una sola consulta, agrupados por ticket
+const eventosEnLote = async (ticketIds: mongoose.Types.ObjectId[]): Promise<Map<string, EventoParaTramos[]>> => {
+  const eventos = await TicketEvent.find({ ticket: { $in: ticketIds }, tipo: { $in: TIPOS_RELEVANTES } })
+    .select(CAMPOS_EVENTO).sort({ createdAt: 1 }).lean<EventoLean[]>()
+  const porTicket = new Map<string, EventoParaTramos[]>()
+  for (const e of eventos) {
+    const clave = String(e.ticket)
+    porTicket.set(clave, [...(porTicket.get(clave) ?? []), aEvento(e)])
+  }
+  return porTicket
+}
+
+// Tramos de muchos tickets (pueden ser de varias marcas: cada uno con el horario de la suya)
+export const tramosEnLote = async (
+  tickets: (TicketLean & { marca: mongoose.Types.ObjectId | { _id: mongoose.Types.ObjectId } })[]
+): Promise<Map<string, Tramo[]>> => {
+  const idMarca = (t: (typeof tickets)[number]) => String('_id' in t.marca ? t.marca._id : t.marca)
+  const marcas = [...new Set(tickets.map(idMarca))]
+  const [eventosPorTicket, horarios] = await Promise.all([
+    eventosEnLote(tickets.map((t) => t._id)),
+    Promise.all(marcas.map(async (m) => [m, await horarioDeMarca(m)] as const))
+  ])
+  const horarioPorMarca = new Map(horarios)
+
+  const resultado = new Map<string, Tramo[]>()
+  for (const ticket of tickets) {
+    const horario = horarioPorMarca.get(idMarca(ticket))
+    if (!horario) continue
+    resultado.set(String(ticket._id), calcularTramos(aTicketParaTramos(ticket), eventosPorTicket.get(String(ticket._id)) ?? [], horario))
+  }
+  return resultado
+}
+
 export interface SlaArea {
   areaId: string | null
   area: string
@@ -69,18 +102,11 @@ export const slaPorArea = async (marcaId: string, dias: number): Promise<SlaArea
     .populate('area', 'nombre')
     .lean<TicketLean[]>()
 
-  const [eventos, horario, areas] = await Promise.all([
-    TicketEvent.find({ ticket: { $in: tickets.map((t) => t._id) }, tipo: { $in: TIPOS_RELEVANTES } })
-      .select(CAMPOS_EVENTO).sort({ createdAt: 1 }).lean<EventoLean[]>(),
+  const [eventosPorTicket, horario, areas] = await Promise.all([
+    eventosEnLote(tickets.map((t) => t._id)),
     horarioDeMarca(marcaId),
     Area.find({ marca: marcaId }).select('nombre').lean()
   ])
-
-  const eventosPorTicket = new Map<string, EventoParaTramos[]>()
-  for (const e of eventos) {
-    const clave = String(e.ticket)
-    eventosPorTicket.set(clave, [...(eventosPorTicket.get(clave) ?? []), aEvento(e)])
-  }
   const nombreArea = new Map(areas.map((a) => [String(a._id), a.nombre]))
 
   const porArea = new Map<string, { areaId: string | null; area: string; tramos: number; minutos: number; conLimite: number; vencidos: number }>()

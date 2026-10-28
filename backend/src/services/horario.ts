@@ -8,7 +8,8 @@ export const horarioDeMarca = async (marcaId: mongoose.Types.ObjectId | string):
   const marca = await Brand.findById(marcaId).select('horario').lean()
   const horario = marca?.horario
   if (!horario?.dias?.length || !horario.inicio || !horario.fin) return HORARIO_POR_DEFECTO
-  return { dias: horario.dias, inicio: horario.inicio, fin: horario.fin, festivos: horario.festivos ?? [] }
+  const pausa = horario.pausa?.inicio && horario.pausa?.fin ? { inicio: horario.pausa.inicio, fin: horario.pausa.fin } : null
+  return { dias: horario.dias, inicio: horario.inicio, fin: horario.fin, pausa, festivos: horario.festivos ?? [] }
 }
 
 // Fecha límite de un ticket de esa marca, en tiempo laboral desde `desde`

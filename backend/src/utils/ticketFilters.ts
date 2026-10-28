@@ -75,3 +75,34 @@ export const leerFiltrosTicket = (query: Record<string, unknown>): Record<string
 
   return condiciones
 }
+
+// Lo que cada rol puede ver en la lista de tickets
+export interface UsuarioLista {
+  id: string
+  rol: string
+  marca?: string
+  areas: string[]
+}
+
+export const filtroPorRol = (usuario: UsuarioLista): Record<string, unknown> => {
+  const { rol, id, marca } = usuario
+  switch (rol) {
+    case 'superadmin':
+      return {} // todas las marcas
+    case 'admin':
+      return { marca } // toda su marca
+    case 'soporte':
+      // los de sus áreas (cola, suyos y de compañeros) y los asignados a él
+      return { marca, $or: [{ area: { $in: usuario.areas } }, { asignadoA: id }] }
+    default:
+      // usuario: los que creó y los que sigue como observador
+      return { marca, $or: [{ creadoPor: id }, { observadores: id }] }
+  }
+}
+
+// Filtro final de la lista: lo del rol + los filtros pedidos (nunca amplían lo del rol)
+export const filtroDeLista = (usuario: UsuarioLista, query: Record<string, unknown>): Record<string, unknown> => {
+  const base = filtroPorRol(usuario)
+  const condiciones = leerFiltrosTicket(query)
+  return condiciones.length > 0 ? { $and: [base, ...condiciones] } : base
+}

@@ -134,3 +134,14 @@ export const calcularTramos = (
     }
   })
 }
+
+export type EstadoSla = 'a_tiempo' | 'vencido' | 'en_curso' | 'sin_fecha'
+
+// Resumen de un ticket para reportes: tiempo laboral total y SLA (vencido si se venció en algún tramo)
+export const resumenSla = (tramos: Tramo[]): { minutosLaborales: number; sla: EstadoSla } => {
+  const minutosLaborales = tramos.reduce((suma, t) => suma + t.minutosLaborales, 0)
+  if (tramos.some((t) => t.vencido === true)) return { minutosLaborales, sla: 'vencido' }
+  if (tramos.every((t) => t.vencido === null)) return { minutosLaborales, sla: 'sin_fecha' }
+  const ultimo = tramos[tramos.length - 1]
+  return { minutosLaborales, sla: ultimo && ultimo.salida === null ? 'en_curso' : 'a_tiempo' }
+}

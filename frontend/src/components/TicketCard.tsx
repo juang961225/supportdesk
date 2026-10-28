@@ -1,12 +1,13 @@
 import type { Ticket } from '../types'
 import { TicketTimeBadge } from './TicketTimeBadge'
+import SlaBarra from './SlaBarra'
 import { prioridadColor, estadoColor } from '../utils/ticketColors'
 import { estadoLabel, prioridadLabel } from '../utils/ticketLabels'
 import { formatFechaLimite } from '../utils/fechas'
 
 // Lo mínimo para pintar una card; creador y categoría no llegan en todas las listas (ej. urgentes del dashboard)
 export type TicketCardData = Pick<Ticket, '_id' | 'titulo' | 'estado' | 'prioridad' | 'fechaLimite' | 'area' | 'asignadoA'> &
-  Partial<Pick<Ticket, 'creadoPor' | 'categoria'>>
+  Partial<Pick<Ticket, 'creadoPor' | 'categoria' | 'sla'>>
 
 interface TicketCardProps {
   ticket: TicketCardData
@@ -52,9 +53,10 @@ function TicketCard({ ticket, onClick, variante = 'equipo', mostrarCreador = tru
           <span className={`text-xs px-2 py-0.5 rounded-full ${prioridadColor[ticket.prioridad]}`}>
             {prioridadLabel[ticket.prioridad]}
           </span>
-          <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} />
+          <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} sla={ticket.sla} />
           {detalle && <span className="text-xs text-gray-400 dark:text-gray-500">{detalle}</span>}
         </div>
+        <SlaBarra sla={ticket.sla} variante="tarjeta" />
       </div>
       {acciones && (
         <div className="shrink-0" onClick={(e) => e.stopPropagation()}>

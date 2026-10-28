@@ -6,6 +6,7 @@ import User from '../models/User'
 import Brand from '../models/Brand'
 import { AuthRequest } from '../middlewares/auth'
 import { tendenciasDeMarca, PERIODOS_VALIDOS } from '../services/tendencias'
+import { conSla } from '../services/slaActual'
 
 // Expresiones de agregación reutilizables
 const estaAsignado = { $ifNull: ['$asignadoA', false] }
@@ -64,11 +65,12 @@ const resumenAdmin = async (marcaId: string) => {
       ...noCerrados,
       $or: [{ asignadoA: { $exists: false } }, { asignadoA: null }, { fechaLimite: { $lt: ahora } }]
     })
-      .select('titulo estado prioridad fechaLimite area asignadoA')
+      .select('titulo estado prioridad fechaLimite area asignadoA marca createdAt')
       .populate('area', 'nombre')
       .populate('asignadoA', 'nombre')
       .sort({ fechaLimite: 1 })
       .limit(10)
+      .lean() // objetos planos: conSla les agrega el SLA
   ])
 
   // Todas las áreas activas aparecen aunque estén en cero; las inactivas solo si aún tienen tickets
@@ -96,7 +98,7 @@ const resumenAdmin = async (marcaId: string) => {
     totales: { abiertos, enProgreso, vencidos, criticos, cerrados },
     porArea,
     cargaPorSoporte,
-    urgentes
+    urgentes: await conSla(urgentes)
   }
 }
 

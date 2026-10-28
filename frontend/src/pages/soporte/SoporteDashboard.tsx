@@ -34,6 +34,10 @@ const vistas: { id: Vista; label: string; vacio: { icon: string; title: string; 
   },
 ]
 
+// Orden por urgencia: fecha límite más cercana primero (sin fecha al final)
+const limiteDe = (t: Ticket): number => (t.fechaLimite ? Date.parse(t.fechaLimite) : Number.MAX_SAFE_INTEGER)
+const porVencimiento = (a: Ticket, b: Ticket): number => limiteDe(a) - limiteDe(b)
+
 function SoporteDashboard() {
   const { toast } = useToast()
   const { user } = useAuth()
@@ -85,7 +89,7 @@ function SoporteDashboard() {
   // El backend devuelve los tickets de mis áreas + los asignados a mí; aquí se reparten por vista
   const abiertos = tickets.filter(t => t.estado !== 'cerrado')
   const porVista: Record<Vista, Ticket[]> = {
-    cola: abiertos.filter(t => !t.asignadoA),
+    cola: abiertos.filter(t => !t.asignadoA).sort(porVencimiento), // los que vencen antes, primero
     mios: tickets.filter(t => t.asignadoA?._id === user?._id),
     equipo: abiertos.filter(t => t.asignadoA && t.asignadoA._id !== user?._id),
   }

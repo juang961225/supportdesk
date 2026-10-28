@@ -11,6 +11,7 @@ import { takeTicket, releaseTicket, moveTicket, getTicketRecorrido } from '../co
 import { addObserver, removeObserver } from '../controllers/ticketObserverController'
 import { updateFechaLimite } from '../controllers/ticketDeadlineController'
 import { getTicketTramos } from '../controllers/ticketSlaController'
+import { exportarTickets } from '../controllers/ticketExportController'
 import { authenticate, authorize } from '../middlewares/auth'
 import { uploadAdjuntos } from '../services/attachments'
 
@@ -21,6 +22,9 @@ router.post('/', authenticate, authorize('usuario'), uploadAdjuntos, createTicke
 
 // Listar tickets — todos los roles
 router.get('/', authenticate, authorize('superadmin', 'admin', 'soporte', 'usuario'), getTickets)
+
+// Exportar la lista con sus filtros a Excel o PDF — admin y superadmin (antes de /:id)
+router.get('/exportar', authenticate, authorize('superadmin', 'admin'), exportarTickets)
 
 // Ver un ticket — todos los roles
 router.get('/:id', authenticate, authorize('superadmin', 'admin', 'soporte', 'usuario'), getTicketById)
