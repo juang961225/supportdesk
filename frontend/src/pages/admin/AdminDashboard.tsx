@@ -26,7 +26,8 @@ function AdminDashboard() {
   const navigate = useNavigate()
   const [summary, setSummary] = useState<AdminSummary | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const enVivo = useRecargaEnVivo() // los contadores se recalculan cuando cambia un ticket de la marca
+  // Los contadores se recalculan cuando cambia un ticket de la marca, como mucho cada 10 s
+  const enVivo = useRecargaEnVivo({ cadaMs: 10000 })
 
   useEffect(() => {
     const fetchSummary = async () => {

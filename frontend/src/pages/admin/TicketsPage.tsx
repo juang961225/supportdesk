@@ -28,7 +28,7 @@ function TicketsPage() {
   const esSuperadmin = user?.rol === 'superadmin'
   const { filtros, setFiltro, limpiar, hayFiltros, clave } = useTicketFilters()
   const {
-    items: tickets, setItems: setTickets, pagination, setPage, isLoading, isFetching, error, recargar
+    items: tickets, setItems: setTickets, pagination, page, setPage, isLoading, isFetching, error, recargar
   } = usePaginatedList<Ticket>(
     (page) => getTicketsPage(page, filtros),
     () => toast.error('No se pudieron cargar los tickets'),
@@ -36,8 +36,11 @@ function TicketsPage() {
   )
   const navigate = useNavigate()
 
-  // Tiempo real: recargar la página actual (mismos filtros) cuando cambia un ticket visible
-  const enVivo = useRecargaEnVivo()
+  // Tiempo real: recargar la página actual (mismos filtros) solo si el ticket que cambió está a la vista,
+  // o si estás en la página 1 (ahí aparecen los nuevos)
+  const enVivo = useRecargaEnVivo({
+    filtro: (evento) => page === 1 || tickets.some((t) => t._id === evento.ticketId),
+  })
   useEffect(() => {
     if (enVivo > 0) recargar()
     // eslint-disable-next-line react-hooks/exhaustive-deps
