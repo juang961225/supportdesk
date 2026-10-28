@@ -8,7 +8,9 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "jest",
-    "migrate:areas": "ts-node src/scripts/migrateAreas.ts"
+    "migrate:areas": "ts-node src/scripts/migrateAreas.ts",
+    "carga:datos": "ts-node -P tsconfig.test.json carga/datos.ts",
+    "carga:prueba": "ts-node -P tsconfig.test.json carga/prueba.ts"
   },
   "keywords": [],
   "author": "",
@@ -29,6 +31,7 @@
     "socket.io": "^4.8.4"
   },
   "devDependencies": {
+    "@types/autocannon": "^7.12.7",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
@@ -37,6 +40,7 @@
     "@types/multer": "^2.3.0",
     "@types/node": "^25.5.0",
     "@types/pdfkit": "^0.17.6",
+    "autocannon": "^8.0.0",
     "jest": "^30.5.2",
     "nodemon": "^3.1.14",
     "ts-jest": "^29.4.14",
