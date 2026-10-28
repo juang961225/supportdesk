@@ -11,7 +11,9 @@ import { bog } from './helpers'
 
 // Semana de referencia: lunes 26 oct 2026 – domingo 1 nov 2026. Horario por defecto: lun–vie 08:00–18:00
 const conFestivo = (fecha: string): HorarioLaboral => ({ ...HORARIO_POR_DEFECTO, festivos: [fecha] })
-const lunASab: HorarioLaboral = { dias: [1, 2, 3, 4, 5, 6], inicio: '08:00', fin: '12:00', festivos: [] }
+const lunASab: HorarioLaboral = { dias: [1, 2, 3, 4, 5, 6], inicio: '08:00', fin: '12:00', pausa: null, festivos: [] }
+// 08:30–17:00 con almuerzo 12:30–13:00 → jornada de 8 h
+const conAlmuerzo: HorarioLaboral = { ...HORARIO_POR_DEFECTO, inicio: '08:30', fin: '17:00', pausa: { inicio: '12:30', fin: '13:00' } }
 
 describe('calcularFechaLimite (tiempo laboral)', () => {
   it.each([
@@ -85,11 +87,11 @@ describe('minutosJornada', () => {
 describe('validarHorario', () => {
   it('normaliza días y festivos (sin duplicados, ordenados)', () => {
     expect(validarHorario({ dias: [5, 1, 1], inicio: '08:00', fin: '18:00', festivos: ['2026-12-25', '2026-12-08', '2026-12-25'] }))
-      .toEqual({ dias: [1, 5], inicio: '08:00', fin: '18:00', festivos: ['2026-12-08', '2026-12-25'] })
+      .toEqual({ dias: [1, 5], inicio: '08:00', fin: '18:00', pausa: null, festivos: ['2026-12-08', '2026-12-25'] })
   })
 
   it('festivos es opcional', () => {
-    expect(validarHorario({ dias: [1], inicio: '08:00', fin: '17:00' })).toEqual({ dias: [1], inicio: '08:00', fin: '17:00', festivos: [] })
+    expect(validarHorario({ dias: [1], inicio: '08:00', fin: '17:00' })).toEqual({ dias: [1], inicio: '08:00', fin: '17:00', pausa: null, festivos: [] })
   })
 
   it.each([
@@ -98,8 +100,37 @@ describe('validarHorario', () => {
     ['día fuera de rango', { dias: [7], inicio: '08:00', fin: '18:00' }, 'Los días laborables no son válidos'],
     ['hora sin cero inicial', { dias: [1], inicio: '8:00', fin: '18:00' }, 'Las horas deben tener formato HH:mm'],
     ['inicio después del fin', { dias: [1], inicio: '18:00', fin: '08:00' }, 'La hora de inicio debe ser anterior a la de fin'],
-    ['festivo inválido', { dias: [1], inicio: '08:00', fin: '18:00', festivos: ['2026-13-45'] }, 'Las fechas de festivos no son válidas']
+    ['festivo inválido', { dias: [1], inicio: '08:00', fin: '18:00', festivos: ['2026-13-45'] }, 'Las fechas de festivos no son válidas'],
+    ['pausa con formato inválido', { dias: [1], inicio: '08:00', fin: '18:00', pausa: { inicio: '12', fin: '13:00' } }, 'Las horas de la pausa deben tener formato HH:mm'],
+    ['pausa fuera de la jornada', { dias: [1], inicio: '08:00', fin: '18:00', pausa: { inicio: '17:30', fin: '18:30' } }, 'La pausa debe empezar después de la entrada, terminar antes de la salida y durar algo'],
+    ['pausa al revés', { dias: [1], inicio: '08:00', fin: '18:00', pausa: { inicio: '13:00', fin: '12:00' } }, 'La pausa debe empezar después de la entrada, terminar antes de la salida y durar algo']
   ])('rechaza: %s', (_caso, datos, mensaje) => {
     expect(validarHorario(datos)).toBe(mensaje)
+  })
+})
+
+describe('pausa de almuerzo', () => {
+  it('la jornada descuenta la pausa', () => {
+    expect(minutosJornada(conAlmuerzo)).toBe(480)
+  })
+
+  it('la fecha límite salta el almuerzo', () => {
+    // Crítico a las 10:00: 10:00–12:30 (2 h 30) + 13:00–14:30 (1 h 30) → 14:30
+    expect(calcularFechaLimite('critica', conAlmuerzo, bog('2026-10-26T10:00'))).toEqual(bog('2026-10-26T14:30'))
+    // Creado durante el almuerzo: empieza a contar a las 13:00
+    expect(calcularFechaLimite('critica', conAlmuerzo, bog('2026-10-26T12:45'))).toEqual(bog('2026-10-26T17:00'))
+    // Alta = 1 jornada de 8 h
+    expect(calcularFechaLimite('alta', conAlmuerzo, bog('2026-10-26T10:00'))).toEqual(bog('2026-10-27T10:00'))
+  })
+
+  it('el tiempo del almuerzo no cuenta', () => {
+    expect(minutosLaboralesEntre(bog('2026-10-26T12:00'), bog('2026-10-26T13:30'), conAlmuerzo)).toBe(60)
+    expect(minutosLaboralesEntre(bog('2026-10-26T08:30'), bog('2026-10-26T17:00'), conAlmuerzo)).toBe(480)
+  })
+
+  it('se valida y normaliza', () => {
+    expect(validarHorario({ dias: [1, 2, 3, 4, 5], inicio: '08:30', fin: '17:00', pausa: { inicio: '12:30', fin: '13:00' } }))
+      .toEqual({ dias: [1, 2, 3, 4, 5], inicio: '08:30', fin: '17:00', pausa: { inicio: '12:30', fin: '13:00' }, festivos: [] })
+    expect(validarHorario({ dias: [1], inicio: '08:00', fin: '17:00', pausa: null })).toMatchObject({ pausa: null })
   })
 })

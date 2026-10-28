@@ -11,6 +11,7 @@ import { filtroDeLista } from '../utils/ticketFilters'
 import { puedeVerTicket } from '../utils/ticketAccess'
 import { registrarEvento } from '../services/ticketEvents'
 import { notificar } from '../services/notificaciones'
+import { conSla } from '../services/slaActual'
 import { findTicketResponse } from '../services/ticketQueries'
 import { fechaLimiteDeMarca } from '../services/horario'
 import { buscarObservadorValido } from './ticketObserverController'
@@ -138,17 +139,18 @@ export const getTickets = async (req: AuthRequest, res: Response, next: NextFunc
       .populate('area', 'nombre')
       .sort({ createdAt: -1, _id: -1 }) // _id desempata para que las páginas no se solapen
 
+    // Cada ticket va con su SLA actual (barra de plazo en las tarjetas)
     const pag = leerPaginacion(req.query)
     if (pag) {
       const [tickets, total] = await Promise.all([
-        consulta.skip(pag.skip).limit(pag.limit),
+        consulta.skip(pag.skip).limit(pag.limit).lean(),
         Ticket.countDocuments(filtro)
       ])
-      res.status(200).json({ tickets, pagination: armarPaginacion(pag, total) })
+      res.status(200).json({ tickets: await conSla(tickets), pagination: armarPaginacion(pag, total) })
       return
     }
 
-    res.status(200).json({ tickets: await consulta })
+    res.status(200).json({ tickets: await conSla(await consulta.lean()) })
 
   } catch (error) {
     next(error)

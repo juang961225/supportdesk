@@ -43,6 +43,10 @@ const BrandSchema = new Schema<IBrand>(
       dias: { type: [Number], default: () => [...HORARIO_POR_DEFECTO.dias] },
       inicio: { type: String, default: HORARIO_POR_DEFECTO.inicio },
       fin: { type: String, default: HORARIO_POR_DEFECTO.fin },
+      pausa: {
+        type: new Schema({ inicio: { type: String, required: true }, fin: { type: String, required: true } }, { _id: false }),
+        default: null
+      },
       festivos: { type: [String], default: () => [] }
     }
   },
