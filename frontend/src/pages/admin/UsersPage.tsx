@@ -283,7 +283,7 @@ function AdminUsersPage() {
                 value={formData.password}
                 onChange={handleChange}
                 className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="••••••"
+                placeholder="Mínimo 8 caracteres, con letra y número"
               />
             </div>
             <div>

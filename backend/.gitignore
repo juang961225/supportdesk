@@ -3,3 +3,6 @@ dist
 .env
 # Datos generados por la prueba de carga
 carga/.datos-carga.json
+
+# Datos de Online Brief (catálogos, exportaciones): locales por ahora; se versionan en el git de la empresa
+migracion/*.json

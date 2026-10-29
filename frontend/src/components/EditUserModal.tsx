@@ -116,14 +116,21 @@ function EditUserModal({ user, rolesPermitidos, brands, areas, onClose, onSaved 
 
           <div>
             <label className={labelClass}>Nueva contraseña</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className={inputClass}
-              placeholder="Dejar vacío para no cambiarla"
-            />
+            {user?.origen === 'online_brief' ? (
+              // Su contraseña vive en Online Brief: cambiarla aquí los desincronizaría
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Este usuario viene de Online Brief: su contraseña se cambia allá.
+              </p>
+            ) : (
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className={inputClass}
+                placeholder="Dejar vacío para no cambiarla · mín. 8 caracteres, con letra y número"
+              />
+            )}
           </div>
 
           <div>

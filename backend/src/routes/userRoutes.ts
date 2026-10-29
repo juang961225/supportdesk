@@ -1,6 +1,8 @@
 import { Router } from 'express'
 import { getUsers, createUser, updateUser, searchUsers } from '../controllers/userController'
 import { authenticate, authorize } from '../middlewares/auth'
+import { validarBody } from '../validacion/validar'
+import { esquemaCrearUsuario, esquemaEditarUsuario } from '../validacion/esquemas'
 
 const router = Router()
 
@@ -8,7 +10,7 @@ const router = Router()
 router.get('/', authenticate, authorize('superadmin', 'admin'), getUsers)
 // Autocompletado de usuarios de la marca para agregar observadores (usuario creador y admin)
 router.get('/search', authenticate, authorize('usuario', 'admin'), searchUsers)
-router.post('/', authenticate, authorize('superadmin', 'admin'), createUser)
-router.patch('/:id', authenticate, authorize('superadmin', 'admin'), updateUser)
+router.post('/', authenticate, authorize('superadmin', 'admin'), validarBody(esquemaCrearUsuario), createUser)
+router.patch('/:id', authenticate, authorize('superadmin', 'admin'), validarBody(esquemaEditarUsuario), updateUser)
 
 export default router

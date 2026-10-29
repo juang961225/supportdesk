@@ -1,6 +1,7 @@
 import http from 'http'
 import express from 'express'
 import cors from 'cors'
+import helmet from 'helmet'
 import dotenv from 'dotenv'
 import connectDB from './config/database'
 import authRoutes from './routes/authRoutes'
@@ -16,8 +17,18 @@ import horarioRoutes from './routes/horarioRoutes'
 import { origenesFrontend } from './config/origenes'
 import { iniciarTiempoReal } from './services/tiempoReal'
 import { configurarMedicion, medirPeticiones } from './middlewares/medicion'
+import { revisarEntorno } from './config/entorno'
 
 dotenv.config()
+
+// Arranque seguro: sin las variables mínimas (o con un JWT_SECRET débil en producción) no se arranca
+const revision = revisarEntorno(process.env)
+revision.avisos.forEach((aviso) => console.warn(`⚠️  ${aviso}`))
+if (revision.errores.length > 0) {
+  revision.errores.forEach((error) => console.error(`❌ ${error}`))
+  process.exit(1)
+}
+
 configurarMedicion()
 
 const app = express()
@@ -25,9 +36,15 @@ const PORT = process.env.PORT || 3000
 
 connectDB()
 
+// Detrás de un proxy (producción): cuántos saltos confiar para leer la IP real del cliente (límites de intentos)
+app.set('trust proxy', Number(process.env.TRUST_PROXY) || false)
+
+// Cabeceras de seguridad (sin X-Powered-By, nosniff, HSTS, etc.)
+app.use(helmet())
+
 // Solo el frontend propio, con credenciales (la cookie de sesión)
 app.use(cors({ origin: origenesFrontend(), credentials: true }))
-app.use(express.json())
+app.use(express.json({ limit: '100kb' })) // los adjuntos van por multipart, no por JSON
 app.use(medirPeticiones)
 
 app.use('/api/auth', authRoutes)

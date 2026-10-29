@@ -14,6 +14,19 @@ export const errorHandler = (err: unknown, req: Request, res: Response, _next: N
     return
   }
 
+  // Cuerpo JSON mal formado o demasiado grande (express.json)
+  if (typeof err === 'object' && err !== null && 'type' in err) {
+    const tipo = (err as { type: unknown }).type
+    if (tipo === 'entity.parse.failed') {
+      res.status(400).json({ message: 'El cuerpo de la petición no es JSON válido' })
+      return
+    }
+    if (tipo === 'entity.too.large') {
+      res.status(413).json({ message: 'La petición es demasiado grande' })
+      return
+    }
+  }
+
   // ID de MongoDB inválido (ej. "/api/tickets/abc")
   if (err instanceof MongooseError.CastError) {
     res.status(400).json({ message: 'ID inválido' })
@@ -36,6 +49,7 @@ export const errorHandler = (err: unknown, req: Request, res: Response, _next: N
     return
   }
 
+  // Lo inesperado se registra completo en el servidor, pero al cliente nunca le llegan detalles internos
   console.error(`[${req.method}] ${req.path}`, err)
   res.status(500).json({ message: 'Error interno del servidor' })
 }
