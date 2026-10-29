@@ -183,8 +183,9 @@ export const updateUser = async (req: AuthRequest, res: Response, next: NextFunc
       return
     }
 
-    if (password !== undefined && password !== '' && String(password).length < 6) {
-      res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres' })
+    // La contraseña de un usuario de Online Brief vive allá: cambiarla aquí los desincronizaría
+    if (password && target.origen === 'online_brief') {
+      res.status(400).json({ message: 'La contraseña de este usuario se administra en Online Brief y no se puede cambiar aquí' })
       return
     }
 

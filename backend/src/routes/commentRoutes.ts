@@ -2,6 +2,8 @@ import { Router } from 'express'
 import { createComment, getComments } from '../controllers/commentController'
 import { authenticate, authorize } from '../middlewares/auth'
 import { uploadAdjuntos } from '../services/attachments'
+import { validarBody } from '../validacion/validar'
+import { esquemaComentario } from '../validacion/esquemas'
 
 const router = Router({ mergeParams: true })
 //                      ^^^^^^^^^^^^^^^^^^
@@ -9,7 +11,7 @@ const router = Router({ mergeParams: true })
 // que viene de la ruta padre /api/tickets/:id/comments
 
 // multipart/form-data: contenido + hasta 5 archivos en el campo "archivos"
-router.post('/', authenticate, authorize('superadmin', 'admin', 'soporte', 'usuario'), uploadAdjuntos, createComment)
+router.post('/', authenticate, authorize('superadmin', 'admin', 'soporte', 'usuario'), uploadAdjuntos, validarBody(esquemaComentario), createComment)
 router.get('/', authenticate, authorize('superadmin', 'admin', 'soporte', 'usuario'), getComments)
 
 export default router

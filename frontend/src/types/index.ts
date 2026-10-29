@@ -10,6 +10,7 @@ export interface User {
     nombre: string
   }
   areas?: AreaRef[] // solo soporte
+  origen?: 'local' | 'online_brief' // online_brief: su contraseña se administra en Online Brief
 }
 
 // Archivo adjunto (ticket o comentario). `url` es temporal: la firma el backend en cada respuesta

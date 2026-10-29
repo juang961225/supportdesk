@@ -4,5 +4,5 @@ dist
 # Datos generados por la prueba de carga
 carga/.datos-carga.json
 
-# Catálogos de Online Brief (local por ahora; se versiona en el git de la empresa)
-migracion/catalogos-online-brief.json
+# Datos de Online Brief (catálogos, exportaciones): locales por ahora; se versionan en el git de la empresa
+migracion/*.json
