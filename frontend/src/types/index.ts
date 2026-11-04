@@ -10,6 +10,7 @@ export interface User {
     nombre: string
   }
   areas?: AreaRef[] // solo soporte
+  submarcas?: AreaRef[] // solo usuario: de cuáles puede crear tickets
   origen?: 'local' | 'online_brief' // online_brief: su contraseña se administra en Online Brief
 }
 
@@ -93,6 +94,7 @@ export interface Ticket {
   archivos: Attachment[]
   fechaLimite?: string
   sla?: SlaActual | null // null si está cerrado o no tiene fecha límite
+  submarca?: AreaRef | null // null solo en tickets anteriores a la migración
   fechaCierre?: string
   createdAt: string
 }
@@ -149,7 +151,7 @@ export interface Paginado<T> {
 
 // Filtros de la lista de tickets (viven en la URL). '' = sin filtro
 export type ClaveFiltroTicket =
-  'q' | 'estado' | 'prioridad' | 'area' | 'asignado' | 'marca' | 'desde' | 'hasta' | 'vencimiento'
+  'q' | 'estado' | 'prioridad' | 'area' | 'submarca' | 'asignado' | 'marca' | 'desde' | 'hasta' | 'vencimiento'
 export type FiltrosTicket = Record<ClaveFiltroTicket, string>
 
 // Horario laboral de la marca (hora Colombia). dias: 0 = domingo … 6 = sábado
@@ -170,4 +172,12 @@ export interface Tramo {
   minutosLaborales: number
   fechaLimite: string | null
   vencido: boolean | null // null = sin fecha límite (tickets antiguos)
+}
+
+// Sub-marca dentro de una marca (BMW, MINI…). `marca` solo llega poblada para el superadmin
+export interface SubMarca {
+  _id: string
+  nombre: string
+  activo: boolean
+  marca?: AreaRef | string
 }

@@ -14,6 +14,7 @@ interface TicketFiltersProps {
   onLimpiar: () => void
   // Si no se pasan, ese filtro no se muestra
   areas?: AreaRef[]
+  submarcas?: AreaRef[]
   soportes?: UserRef[]
   marcas?: Opcion[]
 }
@@ -25,7 +26,7 @@ const campo =
 const etiqueta = 'block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1'
 
 // Barra de filtros de tickets: búsqueda, estado, prioridad y área siempre visibles; el resto en "Más filtros"
-function TicketFilters({ filtros, onChange, onLimpiar, areas, soportes, marcas }: TicketFiltersProps) {
+function TicketFilters({ filtros, onChange, onLimpiar, areas, submarcas, soportes, marcas }: TicketFiltersProps) {
   const [busqueda, setBusqueda] = useState(filtros.q)
   // Si la búsqueda cambia desde fuera (ej. "Limpiar filtros" del estado vacío), el input la sigue
   const [qAplicado, setQAplicado] = useState(filtros.q)
@@ -111,6 +112,17 @@ function TicketFilters({ filtros, onChange, onLimpiar, areas, soportes, marcas }
                 <option value="">Todas las marcas</option>
                 {marcas.map((m) => (
                   <option key={m._id} value={m._id}>{m.nombre}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          {submarcas && (
+            <div>
+              <label className={etiqueta} htmlFor="filtro-submarca">Sub-marca</label>
+              <select id="filtro-submarca" value={filtros.submarca} onChange={(e) => onChange('submarca', e.target.value)} className={`${campo} w-full`}>
+                <option value="">Todas las sub-marcas</option>
+                {submarcas.map((s) => (
+                  <option key={s._id} value={s._id}>{s.nombre}</option>
                 ))}
               </select>
             </div>

@@ -26,6 +26,7 @@ export const createTicket = async (data: {
   descripcion: string
   prioridad: string
   categoriaId: string
+  submarcaId: string
   observadorIds?: string[]
   archivos?: File[]
 }): Promise<Ticket> => {
@@ -34,6 +35,7 @@ export const createTicket = async (data: {
   form.append('descripcion', data.descripcion)
   form.append('prioridad', data.prioridad)
   form.append('categoriaId', data.categoriaId)
+  form.append('submarcaId', data.submarcaId)
   data.observadorIds?.forEach((id) => form.append('observadorIds', id))
   data.archivos?.forEach((archivo) => form.append('archivos', archivo))
   const response = await api.post('/tickets', form)

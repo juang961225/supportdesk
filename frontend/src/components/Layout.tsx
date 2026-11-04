@@ -17,6 +17,7 @@ const menuItems = {
     { label: 'Dashboard', path: '/admin/dashboard' },
     { label: 'Tickets', path: '/admin/tickets' },
     { label: 'Áreas', path: '/admin/areas' },
+    { label: 'Sub-marcas', path: '/admin/submarcas' },
     { label: 'Categorías', path: '/admin/categories' },
     { label: 'Usuarios', path: '/admin/users' },
     { label: 'Horario laboral', path: '/admin/horario' },

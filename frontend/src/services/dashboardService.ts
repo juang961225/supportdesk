@@ -71,6 +71,7 @@ export interface Tendencias {
   porEstado: { estado: Ticket['estado']; total: number }[]
   porCategoria: { id: string | null; nombre: string; total: number }[]
   porArea: { id: string | null; nombre: string; total: number }[]
+  porSubmarca: { id: string | null; nombre: string; total: number }[]
   sla: SlaArea[]
   minutosJornada: number // jornada de la marca: el tiempo promedio se muestra en días laborales
 }

@@ -9,6 +9,7 @@ import TicketFilters from '../../components/TicketFilters'
 import { getTicketsPage, exportarTickets, mensajeDeErrorBlob } from '../../services/ticketService'
 import type { FormatoExportacion } from '../../services/ticketService'
 import { getAreas } from '../../services/areaService'
+import { getSubMarcas } from '../../services/subMarcaService'
 import { getUsers } from '../../services/userService'
 import { getBrands } from '../../services/brandService'
 import { useTicketFilters } from '../../hooks/useTicketFilters'
@@ -48,6 +49,7 @@ function TicketsPage() {
 
   // Opciones de los filtros: admin filtra por área y asignado; superadmin por marca
   const [areas, setAreas] = useState<AreaRef[]>()
+  const [submarcas, setSubmarcas] = useState<AreaRef[]>()
   const [soportes, setSoportes] = useState<UserRef[]>()
   const [marcas, setMarcas] = useState<Brand[]>()
 
@@ -57,8 +59,9 @@ function TicketsPage() {
         if (esSuperadmin) {
           setMarcas(await getBrands())
         } else {
-          const [listaAreas, usuarios] = await Promise.all([getAreas(), getUsers()])
+          const [listaAreas, usuarios, listaSubmarcas] = await Promise.all([getAreas(), getUsers(), getSubMarcas()])
           setAreas(listaAreas)
+          setSubmarcas(listaSubmarcas)
           setSoportes(usuarios.filter(u => u.rol === 'soporte'))
         }
       } catch {
@@ -133,6 +136,7 @@ function TicketsPage() {
           onChange={setFiltro}
           onLimpiar={limpiar}
           areas={areas}
+          submarcas={submarcas}
           soportes={soportes}
           marcas={marcas}
         />

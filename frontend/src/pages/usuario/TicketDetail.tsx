@@ -119,6 +119,12 @@ function UsuarioTicketDetail() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
+              <p className="text-gray-500 dark:text-gray-400">Sub-marca</p>
+              <p className="text-gray-800 dark:text-white font-medium">
+                {ticket.submarca?.nombre ?? 'Sin sub-marca'}
+              </p>
+            </div>
+            <div>
               <p className="text-gray-500 dark:text-gray-400">Categoría</p>
               <p className="text-gray-800 dark:text-white font-medium">
                 {ticket.categoria.nombre}

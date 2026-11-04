@@ -11,6 +11,7 @@ export interface UpdateUserData {
   rol?: User['rol']
   marcaId?: string
   areaIds?: string[]
+  submarcaIds?: string[]
 }
 
 export const getUsers = async (): Promise<User[]> => {
@@ -30,6 +31,7 @@ export const createUser = async (data: {
   rol: string
   marcaId?: string
   areaIds?: string[]
+  submarcaIds?: string[]
 }): Promise<User> => {
   const response = await api.post('/users', data)
   return response.data.user

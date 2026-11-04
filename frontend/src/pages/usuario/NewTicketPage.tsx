@@ -11,12 +11,15 @@ import ObserverSearchInput from '../../components/ObserverSearchInput'
 import AttachmentInput from '../../components/AttachmentInput'
 import AttachmentDropZone from '../../components/AttachmentDropZone'
 import type { Category, UserRef } from '../../types'
+import { getSubMarcas } from '../../services/subMarcaService'
+import type { SubMarca } from '../../types'
 
 function NewTicketPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { user } = useAuth()
   const [categories, setCategories] = useState<Category[]>([])
+  const [submarcas, setSubmarcas] = useState<SubMarca[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [observadores, setObservadores] = useState<UserRef[]>([])
@@ -26,17 +29,22 @@ function NewTicketPage() {
     titulo: '',
     descripcion: '',
     prioridad: 'media',
-    categoriaId: ''
+    categoriaId: '',
+    submarcaId: ''
   })
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const data = await getCategories()
+        const [data, misSubmarcas] = await Promise.all([getCategories(), getSubMarcas()])
         setCategories(data)
-        if (data.length > 0) {
-          setFormData(prev => ({ ...prev, categoriaId: data[0]._id }))
-        }
+        setSubmarcas(misSubmarcas)
+        // Con una sola sub-marca se preselecciona; con varias, el usuario elige
+        setFormData(prev => ({
+          ...prev,
+          categoriaId: data[0]?._id ?? '',
+          submarcaId: misSubmarcas.length === 1 ? misSubmarcas[0]._id : ''
+        }))
       } catch {
         toast.error('No se pudieron cargar las categorías')
       } finally {
@@ -56,7 +64,7 @@ function NewTicketPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.titulo || !formData.descripcion || !formData.categoriaId) {
+    if (!formData.titulo || !formData.descripcion || !formData.categoriaId || !formData.submarcaId) {
       toast.warning('Todos los campos son obligatorios')
       return
     }
@@ -130,6 +138,31 @@ function NewTicketPage() {
                     className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                     placeholder="Describe el problema con el mayor detalle posible..."
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Sub-marca
+                  </label>
+                  {submarcas.length === 0 ? (
+                    <p className="text-sm text-red-600 dark:text-red-400">
+                      No tienes sub-marcas asignadas: pídele al administrador que te asigne al menos una para poder crear tickets.
+                    </p>
+                  ) : submarcas.length === 1 ? (
+                    <p className="text-sm text-gray-800 dark:text-white">{submarcas[0].nombre}</p>
+                  ) : (
+                    <select
+                      name="submarcaId"
+                      value={formData.submarcaId}
+                      onChange={handleChange}
+                      className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Selecciona una sub-marca</option>
+                      {submarcas.map((submarca) => (
+                        <option key={submarca._id} value={submarca._id}>{submarca.nombre}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

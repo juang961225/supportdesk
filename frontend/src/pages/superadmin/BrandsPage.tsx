@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
 import { PageSkeleton } from '../../components/Skeleton'
@@ -10,13 +10,29 @@ import { useToast } from '../../hooks/useToast'
 import { usePaginatedList } from '../../hooks/usePaginatedList'
 import Pagination from '../../components/Pagination'
 import { cuentaEstadoLabel } from '../../utils/userLabels'
-import type { Brand } from '../../types'
+import { getSubMarcas } from '../../services/subMarcaService'
+import type { Brand, SubMarca } from '../../types'
 
 function BrandsPage() {
   const { toast } = useToast()
   const {
     items: brands, setItems: setBrands, pagination, setPage, isLoading, isFetching, error, recargarDesdeInicio
   } = usePaginatedList<Brand>(getBrandsPage, () => toast.error('No se pudieron cargar las marcas'))
+
+  // Sub-marcas de todas las marcas: el superadmin solo las ve, las administra el admin de cada marca
+  const [submarcas, setSubmarcas] = useState<SubMarca[]>([])
+  useEffect(() => {
+    getSubMarcas()
+      .then(setSubmarcas)
+      .catch(() => toast.error('No se pudieron cargar las sub-marcas'))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const submarcasDe = (brandId: string): string =>
+    submarcas
+      .filter((s) => typeof s.marca === 'object' && s.marca?._id === brandId && s.activo)
+      .map((s) => s.nombre)
+      .join(', ') || 'sin sub-marcas'
 
   // Estado del modal
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -144,6 +160,9 @@ function BrandsPage() {
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                       {brand.admin ? brand.admin.nombre : 'Sin admin asignado'}
+                    </p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      Sub-marcas: {submarcasDe(brand._id)}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
