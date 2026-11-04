@@ -1,5 +1,7 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import CargandoPagina from './CargandoPagina'
+import SinPermisoPage from '../pages/SinPermisoPage'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -11,20 +13,16 @@ function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
 
   // Mientras se recupera la sesión con la cookie no se decide nada (evita mandar al login al recargar)
   if (isRestoring) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-        <p className="text-sm text-gray-500 dark:text-gray-400">Cargando…</p>
-      </div>
-    )
+    return <CargandoPagina />
   }
 
   if (!token || !user) {
     return <Navigate to="/login" replace />
   }
 
-  // Si hay roles permitidos verifica el rol
+  // Tiene sesión pero esta pantalla es de otro rol
   if (allowedRoles && !allowedRoles.includes(user.rol)) {
-    return <Navigate to="/login" replace />
+    return <SinPermisoPage />
   }
 
   return <>{children}</>

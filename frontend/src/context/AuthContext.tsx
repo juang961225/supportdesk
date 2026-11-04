@@ -26,20 +26,18 @@ const limpiarSesionAntigua = () => {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [token, setToken] = useState<string | null>(null)
+  // Usuario y token siempre juntos: una sola actualización, nunca quedan desalineados
+  const [sesion, setSesion] = useState<{ user: User; token: string } | null>(null)
   const [isRestoring, setIsRestoring] = useState(true)
 
   const setAuth = (nuevoUser: User, nuevoToken: string) => {
     setAccessToken(nuevoToken)
-    setUser(nuevoUser)
-    setToken(nuevoToken)
+    setSesion({ user: nuevoUser, token: nuevoToken })
   }
 
   const limpiar = () => {
     setAccessToken(null)
-    setUser(null)
-    setToken(null)
+    setSesion(null)
   }
 
   const logout = async () => {
@@ -54,10 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     limpiarSesionAntigua()
     configurarSesion({
-      alRenovar: (sesion) => {
-        setUser(sesion.user)
-        setToken(sesion.token)
-      },
+      alRenovar: ({ user, token }) => setSesion({ user, token }),
       alExpirar: () => {
         limpiar()
         // Recarga completa al login: ProtectedRoute ya no encuentra sesión
@@ -72,14 +67,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   // Tiempo real: conectado mientras hay sesión
-  const haySesion = token !== null
+  const haySesion = sesion !== null
   useEffect(() => {
     if (haySesion) conectarTiempoReal()
     else desconectarTiempoReal()
   }, [haySesion])
 
   return (
-    <AuthContext.Provider value={{ user, token, isRestoring, setAuth, logout }}>
+    <AuthContext.Provider value={{ user: sesion?.user ?? null, token: sesion?.token ?? null, isRestoring, setAuth, logout }}>
       {children}
     </AuthContext.Provider>
   )
