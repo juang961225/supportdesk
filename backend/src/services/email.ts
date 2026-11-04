@@ -1,14 +1,15 @@
 import { origenesFrontend } from '../config/origenes'
+import { proveedorMailchimp } from './emailMailchimp'
 
 // Envío de emails independiente del proveedor. Cada proveedor es un adaptador con `enviar`.
 //
 // Variables en .env:
-//   EMAIL_PROVEEDOR — "consola" (por defecto: imprime en la terminal, no envía nada)
+//   EMAIL_PROVEEDOR — "consola" (por defecto: imprime en la terminal, no envía nada) o "mailchimp"
 //   EMAIL_REMITENTE — ej. "SupportDesk <soporte@empresa.com>"
 //   FRONTEND_URL    — base de los enlaces de los emails (ej. http://localhost:5173)
 //
-// Para sumar un proveedor real (Mailchimp Transactional, Amazon SES, Resend...):
-// escribir su adaptador aquí y agregarlo a `PROVEEDORES`. El resto del código no cambia.
+// Para sumar otro proveedor (Amazon SES, Resend...): escribir su adaptador y agregarlo a `PROVEEDORES`.
+// El resto del código no cambia.
 
 export interface EmailSaliente {
   para: { nombre: string; email: string }
@@ -17,7 +18,7 @@ export interface EmailSaliente {
   texto: string
 }
 
-interface ProveedorEmail {
+export interface ProveedorEmail {
   enviar: (email: EmailSaliente, remitente: string) => Promise<void>
 }
 
@@ -39,12 +40,15 @@ const proveedorConsola: ProveedorEmail = {
 }
 
 const PROVEEDORES: Record<string, ProveedorEmail> = {
-  consola: proveedorConsola
+  consola: proveedorConsola,
+  mailchimp: proveedorMailchimp
 }
 
 const REMITENTE_POR_DEFECTO = 'SupportDesk <no-reply@localhost>'
 
-const obtenerProveedor = (): ProveedorEmail => {
+export const remitenteConfigurado = (): string => process.env.EMAIL_REMITENTE || REMITENTE_POR_DEFECTO
+
+export const obtenerProveedor = (): ProveedorEmail => {
   const nombre = (process.env.EMAIL_PROVEEDOR || 'consola').toLowerCase()
   const proveedor = PROVEEDORES[nombre]
   if (!proveedor) {
@@ -59,7 +63,7 @@ export const urlFrontend = (): string => origenesFrontend()[0]
 // Nunca lanza: un fallo de email se registra pero no rompe la acción que lo disparó
 export const enviarEmail = async (email: EmailSaliente): Promise<void> => {
   try {
-    await obtenerProveedor().enviar(email, process.env.EMAIL_REMITENTE || REMITENTE_POR_DEFECTO)
+    await obtenerProveedor().enviar(email, remitenteConfigurado())
   } catch (error) {
     console.error(`[email] No se pudo enviar "${email.asunto}" a ${email.para.email}:`, error)
   }
