@@ -10,12 +10,25 @@ import AreaSelector from '../../components/AreaSelector'
 import { getAreas } from '../../services/areaService'
 import { getSubMarcas } from '../../services/subMarcaService'
 import SubMarcaSelector from '../../components/SubMarcaSelector'
+import ContextoSelector from '../../components/ContextoSelector'
+import { getCatalogoContexto } from '../../services/catalogoService'
 import { getUsersPage, createUser, updateUser } from '../../services/userService'
 import { useToast } from '../../hooks/useToast'
 import { usePaginatedList } from '../../hooks/usePaginatedList'
 import Pagination from '../../components/Pagination'
 import { rolLabel, cuentaEstadoLabel } from '../../utils/userLabels'
-import type { User, Area, SubMarca } from '../../types'
+import type { User, Area, SubMarca, CatalogoContexto, ContextoUsuario } from '../../types'
+
+const CONTEXTO_INICIAL: ContextoUsuario = { organizaciones: [], sedes: [], todosConcesionarios: false, todosImportadores: false }
+
+// "MX · 3 sedes" en la fila del usuario
+const resumenContexto = (user: User, catalogo: CatalogoContexto): string => {
+  const organizaciones = catalogo.organizaciones.filter(o => user.organizaciones?.includes(o.id)).map(o => o.nombre)
+  if (organizaciones.length === 0) return 'Sin organización'
+  const todas = user.todosConcesionarios || user.todosImportadores
+  const cantidad = user.sedes?.length ?? 0
+  return `${organizaciones.join(', ')} · ${todas ? 'corporativo' : cantidad === 1 ? '1 concesionario o importador' : `${cantidad} concesionarios o importadores`}`
+}
 
 const rolColor: Record<string, string> = {
   admin: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
@@ -33,6 +46,8 @@ function AdminUsersPage() {
   const [newAreaIds, setNewAreaIds] = useState<string[]>([])
   const [submarcas, setSubmarcas] = useState<SubMarca[]>([])
   const [newSubmarcaIds, setNewSubmarcaIds] = useState<string[]>([])
+  const [catalogo, setCatalogo] = useState<CatalogoContexto>()
+  const [newContexto, setNewContexto] = useState<ContextoUsuario>(CONTEXTO_INICIAL)
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [formData, setFormData] = useState({
@@ -53,7 +68,8 @@ function AdminUsersPage() {
   useEffect(() => {
     const fetchAreas = async () => {
       try {
-        const [listaAreas, listaSubmarcas] = await Promise.all([getAreas(), getSubMarcas()])
+        const [listaAreas, listaSubmarcas, catalogoContexto] = await Promise.all([getAreas(), getSubMarcas(), getCatalogoContexto()])
+        setCatalogo(catalogoContexto)
         setAreas(listaAreas)
         setSubmarcas(listaSubmarcas)
       } catch {
@@ -83,6 +99,13 @@ function AdminUsersPage() {
       return
     }
 
+    const pideContexto = formData.rol === 'usuario' && catalogo?.disponible
+    if (pideContexto && newContexto.organizaciones.length === 0) {
+      setFormError('Asigna al menos una organización al usuario')
+      toast.warning('Asigna al menos una organización al usuario')
+      return
+    }
+
     setIsSubmitting(true)
     setFormError('')
 
@@ -90,7 +113,15 @@ function AdminUsersPage() {
       const newUser = await createUser({
         ...formData,
         areaIds: formData.rol === 'soporte' ? newAreaIds : undefined,
-        submarcaIds: formData.rol === 'usuario' ? newSubmarcaIds : undefined
+        submarcaIds: formData.rol === 'usuario' ? newSubmarcaIds : undefined,
+        ...(pideContexto
+          ? {
+              organizacionIds: newContexto.organizaciones,
+              sedes: newContexto.sedes,
+              todosConcesionarios: newContexto.todosConcesionarios,
+              todosImportadores: newContexto.todosImportadores,
+            }
+          : {}),
       })
       recargarDesdeInicio()
       toast.success(`Usuario "${newUser.nombre}" creado`)
@@ -155,6 +186,7 @@ function AdminUsersPage() {
     setFormError('')
     setNewAreaIds([])
     setNewSubmarcaIds([])
+    setNewContexto(CONTEXTO_INICIAL)
   }
 
   if (isLoading) {
@@ -209,6 +241,11 @@ function AdminUsersPage() {
                     {user.rol === 'usuario' && (
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                         Sub-marcas: {user.submarcas?.length ? user.submarcas.map(s => s.nombre).join(', ') : 'sin sub-marcas'}
+                      </p>
+                    )}
+                    {user.rol === 'usuario' && catalogo?.disponible && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                        {resumenContexto(user, catalogo)}
                       </p>
                     )}
                   </div>
@@ -325,6 +362,9 @@ function AdminUsersPage() {
             {formData.rol === 'usuario' && (
               <SubMarcaSelector submarcas={submarcas} selected={newSubmarcaIds} onChange={setNewSubmarcaIds} />
             )}
+            {formData.rol === 'usuario' && catalogo?.disponible && (
+              <ContextoSelector catalogo={catalogo} value={newContexto} onChange={setNewContexto} />
+            )}
           </div>
 
           <div className="flex gap-3 justify-end mt-6">
@@ -351,6 +391,7 @@ function AdminUsersPage() {
         rolesPermitidos={['soporte', 'usuario']}
         areas={areas}
         submarcas={submarcas}
+        catalogo={catalogo}
         onClose={() => setEditingUser(null)}
         onSaved={handleSaved}
       />

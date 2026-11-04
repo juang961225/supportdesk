@@ -1,10 +1,10 @@
 import type { ClaveFiltroTicket, FiltrosTicket } from '../types'
 
 export const CLAVES_FILTRO: ClaveFiltroTicket[] =
-  ['q', 'estado', 'prioridad', 'area', 'submarca', 'asignado', 'marca', 'desde', 'hasta', 'vencimiento']
+  ['q', 'estado', 'prioridad', 'area', 'submarca', 'organizacion', 'sede', 'asignado', 'marca', 'desde', 'hasta', 'vencimiento']
 
 // Los que van dentro del panel "Más filtros"
-export const CLAVES_MAS_FILTROS: ClaveFiltroTicket[] = ['submarca', 'asignado', 'marca', 'desde', 'hasta', 'vencimiento']
+export const CLAVES_MAS_FILTROS: ClaveFiltroTicket[] = ['submarca', 'organizacion', 'sede', 'asignado', 'marca', 'desde', 'hasta', 'vencimiento']
 
 export const filtrosDesdeUrl = (params: URLSearchParams): FiltrosTicket => {
   const filtros = {} as FiltrosTicket

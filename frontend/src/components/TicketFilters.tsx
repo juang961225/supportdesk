@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { estadoLabel, prioridadLabel } from '../utils/ticketLabels'
 import { CLAVES_MAS_FILTROS, contarFiltros } from '../utils/ticketFilters'
-import type { AreaRef, ClaveFiltroTicket, FiltrosTicket, UserRef } from '../types'
+import type { AreaRef, ClaveFiltroTicket, FiltrosContexto, FiltrosTicket, UserRef } from '../types'
 
 interface Opcion {
   _id: string
@@ -15,6 +15,7 @@ interface TicketFiltersProps {
   // Si no se pasan, ese filtro no se muestra
   areas?: AreaRef[]
   submarcas?: AreaRef[]
+  contexto?: FiltrosContexto
   soportes?: UserRef[]
   marcas?: Opcion[]
 }
@@ -26,7 +27,7 @@ const campo =
 const etiqueta = 'block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1'
 
 // Barra de filtros de tickets: búsqueda, estado, prioridad y área siempre visibles; el resto en "Más filtros"
-function TicketFilters({ filtros, onChange, onLimpiar, areas, submarcas, soportes, marcas }: TicketFiltersProps) {
+function TicketFilters({ filtros, onChange, onLimpiar, areas, submarcas, contexto, soportes, marcas }: TicketFiltersProps) {
   const [busqueda, setBusqueda] = useState(filtros.q)
   // Si la búsqueda cambia desde fuera (ej. "Limpiar filtros" del estado vacío), el input la sigue
   const [qAplicado, setQAplicado] = useState(filtros.q)
@@ -123,6 +124,28 @@ function TicketFilters({ filtros, onChange, onLimpiar, areas, submarcas, soporte
                 <option value="">Todas las sub-marcas</option>
                 {submarcas.map((s) => (
                   <option key={s._id} value={s._id}>{s.nombre}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          {contexto && contexto.organizaciones.length > 0 && (
+            <div>
+              <label className={etiqueta} htmlFor="filtro-organizacion">Organización</label>
+              <select id="filtro-organizacion" value={filtros.organizacion} onChange={(e) => onChange('organizacion', e.target.value)} className={`${campo} w-full`}>
+                <option value="">Todas las organizaciones</option>
+                {contexto.organizaciones.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          {contexto && contexto.sedes.length > 0 && (
+            <div>
+              <label className={etiqueta} htmlFor="filtro-sede">Concesionario / importador</label>
+              <select id="filtro-sede" value={filtros.sede} onChange={(e) => onChange('sede', e.target.value)} className={`${campo} w-full`}>
+                <option value="">Todos</option>
+                {contexto.sedes.map((s) => (
+                  <option key={s} value={s}>{s}</option>
                 ))}
               </select>
             </div>

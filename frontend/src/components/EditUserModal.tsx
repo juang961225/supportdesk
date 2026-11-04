@@ -6,8 +6,9 @@ import type { UpdateUserData } from '../services/userService'
 import { useToast } from '../hooks/useToast'
 import AreaSelector from './AreaSelector'
 import SubMarcaSelector from './SubMarcaSelector'
+import ContextoSelector from './ContextoSelector'
 import { rolLabel } from '../utils/userLabels'
-import type { User, Brand, Area, SubMarca } from '../types'
+import type { User, Brand, Area, SubMarca, CatalogoContexto, ContextoUsuario } from '../types'
 
 interface EditUserModalProps {
   user: User | null
@@ -15,6 +16,7 @@ interface EditUserModalProps {
   brands?: Brand[] // si viene, se muestra el selector de marca (solo superadmin)
   areas?: Area[]   // si viene, se muestra el selector de áreas para soportes (admin)
   submarcas?: SubMarca[] // si viene, se muestra el selector de sub-marcas para usuarios (admin)
+  catalogo?: CatalogoContexto // si está disponible, se muestra el contexto para usuarios (admin)
   onClose: () => void
   onSaved: (user: User) => void
 }
@@ -24,11 +26,22 @@ const inputClass =
 
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'
 
-function EditUserModal({ user, rolesPermitidos, brands, areas, submarcas, onClose, onSaved }: EditUserModalProps) {
+const contextoDe = (user: User | null): ContextoUsuario => ({
+  organizaciones: user?.organizaciones ?? [],
+  sedes: user?.sedes ?? [],
+  todosConcesionarios: user?.todosConcesionarios ?? false,
+  todosImportadores: user?.todosImportadores ?? false,
+})
+
+const claveContexto = (c: ContextoUsuario): string =>
+  JSON.stringify([[...c.organizaciones].sort(), [...c.sedes].sort(), c.todosConcesionarios, c.todosImportadores])
+
+function EditUserModal({ user, rolesPermitidos, brands, areas, submarcas, catalogo, onClose, onSaved }: EditUserModalProps) {
   const { toast } = useToast()
   const [formData, setFormData] = useState({ nombre: '', email: '', password: '', rol: '', marcaId: '' })
   const [areaIds, setAreaIds] = useState<string[]>([])
   const [submarcaIds, setSubmarcaIds] = useState<string[]>([])
+  const [contexto, setContexto] = useState<ContextoUsuario>(contextoDe(null))
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
 
@@ -44,6 +57,7 @@ function EditUserModal({ user, rolesPermitidos, brands, areas, submarcas, onClos
     })
     setAreaIds(user.areas?.map((a) => a._id) ?? [])
     setSubmarcaIds(user.submarcas?.map((s) => s._id) ?? [])
+    setContexto(contextoDe(user))
     setFormError('')
   }, [user])
 
@@ -66,6 +80,12 @@ function EditUserModal({ user, rolesPermitidos, brands, areas, submarcas, onClos
     if (submarcas && formData.rol === 'usuario') {
       const originales = original.submarcas?.map((s) => s._id).sort().join() ?? ''
       if ([...submarcaIds].sort().join() !== originales) changes.submarcaIds = submarcaIds
+    }
+    if (catalogo?.disponible && formData.rol === 'usuario' && claveContexto(contexto) !== claveContexto(contextoDe(original))) {
+      changes.organizacionIds = contexto.organizaciones
+      changes.sedes = contexto.sedes
+      changes.todosConcesionarios = contexto.todosConcesionarios
+      changes.todosImportadores = contexto.todosImportadores
     }
     return changes
   }
@@ -171,6 +191,10 @@ function EditUserModal({ user, rolesPermitidos, brands, areas, submarcas, onClos
 
           {submarcas && formData.rol === 'usuario' && (
             <SubMarcaSelector submarcas={submarcas} selected={submarcaIds} onChange={setSubmarcaIds} />
+          )}
+
+          {catalogo?.disponible && formData.rol === 'usuario' && (
+            <ContextoSelector catalogo={catalogo} value={contexto} onChange={setContexto} />
           )}
         </div>
 

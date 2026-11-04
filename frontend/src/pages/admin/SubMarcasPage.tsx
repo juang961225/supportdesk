@@ -6,8 +6,9 @@ import EmptyState from '../../components/EmptyState'
 import Modal from '../../components/Modal'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { getSubMarcas, createSubMarca, updateSubMarca, updateSubMarcaEstado } from '../../services/subMarcaService'
+import { getCatalogoContexto } from '../../services/catalogoService'
 import { useToast } from '../../hooks/useToast'
-import type { SubMarca } from '../../types'
+import type { CatalogoContexto, SubMarca } from '../../types'
 
 const inputClass =
   'w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500'
@@ -15,12 +16,14 @@ const inputClass =
 function SubMarcasPage() {
   const { toast } = useToast()
   const [submarcas, setSubmarcas] = useState<SubMarca[]>([])
+  const [catalogo, setCatalogo] = useState<CatalogoContexto>()
   const [isLoading, setIsLoading] = useState(true)
 
   // Modal de crear / editar
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editing, setEditing] = useState<SubMarca | null>(null)
   const [nombre, setNombre] = useState('')
+  const [organizaciones, setOrganizaciones] = useState<number[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
 
@@ -31,7 +34,9 @@ function SubMarcasPage() {
   useEffect(() => {
     const fetchSubmarcas = async () => {
       try {
-        setSubmarcas(await getSubMarcas())
+        const [lista, catalogoContexto] = await Promise.all([getSubMarcas(), getCatalogoContexto()])
+        setSubmarcas(lista)
+        setCatalogo(catalogoContexto)
       } catch {
         toast.error('No se pudieron cargar las sub-marcas')
       } finally {
@@ -48,6 +53,7 @@ function SubMarcasPage() {
   const handleOpenCreate = () => {
     setEditing(null)
     setNombre('')
+    setOrganizaciones([])
     setFormError('')
     setIsModalOpen(true)
   }
@@ -55,6 +61,7 @@ function SubMarcasPage() {
   const handleOpenEdit = (submarca: SubMarca) => {
     setEditing(submarca)
     setNombre(submarca.nombre)
+    setOrganizaciones(submarca.organizaciones ?? [])
     setFormError('')
     setIsModalOpen(true)
   }
@@ -77,11 +84,11 @@ function SubMarcasPage() {
     setFormError('')
     try {
       if (editing) {
-        const updated = await updateSubMarca(editing._id, nombre)
+        const updated = await updateSubMarca(editing._id, nombre, catalogo?.disponible ? organizaciones : undefined)
         setSubmarcas(submarcas.map(s => (s._id === updated._id ? updated : s)))
         toast.success('Sub-marca actualizada')
       } else {
-        const created = await createSubMarca(nombre)
+        const created = await createSubMarca(nombre, catalogo?.disponible ? organizaciones : undefined)
         setSubmarcas([...submarcas, created].sort((a, b) => a.nombre.localeCompare(b.nombre)))
         toast.success(`Sub-marca "${created.nombre}" creada`)
       }
@@ -163,6 +170,13 @@ function SubMarcasPage() {
                 <div key={submarca._id} className="p-4 md:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className={submarca.activo ? '' : 'opacity-50'}>
                     <p className="font-medium text-gray-800 dark:text-white">{submarca.nombre}</p>
+                    {catalogo?.disponible && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                        {submarca.organizaciones?.length
+                          ? `Solo: ${catalogo.organizaciones.filter((o) => submarca.organizaciones?.includes(o.id)).map((o) => o.nombre).join(', ')}`
+                          : 'Todas las organizaciones'}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`text-xs px-2 py-1 rounded-full ${
@@ -214,6 +228,26 @@ function SubMarcasPage() {
               autoFocus
             />
           </div>
+          {catalogo?.disponible && (
+            <div className="mt-4">
+              <p className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Organizaciones donde aplica</p>
+              <div className="flex flex-wrap gap-3">
+                {catalogo.organizaciones.map((org) => (
+                  <label key={org.id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <input
+                      type="checkbox"
+                      checked={organizaciones.includes(org.id)}
+                      onChange={(e) => setOrganizaciones(e.target.checked ? [...organizaciones, org.id] : organizaciones.filter((o) => o !== org.id))}
+                    />
+                    {org.nombre}
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                Si no marcas ninguna, aplica a todas. Los usuarios de otras organizaciones no podrán crear tickets de esta sub-marca.
+              </p>
+            </div>
+          )}
           <div className="flex gap-3 justify-end mt-6">
             <button
               type="button"

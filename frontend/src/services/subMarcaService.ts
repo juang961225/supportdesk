@@ -8,13 +8,13 @@ export const getSubMarcas = async (): Promise<SubMarca[]> => {
   return response.data.submarcas
 }
 
-export const createSubMarca = async (nombre: string): Promise<SubMarca> => {
-  const response = await api.post('/submarcas', { nombre })
+export const createSubMarca = async (nombre: string, organizaciones?: number[]): Promise<SubMarca> => {
+  const response = await api.post('/submarcas', { nombre, organizaciones })
   return response.data.submarca
 }
 
-export const updateSubMarca = async (id: string, nombre: string): Promise<SubMarca> => {
-  const response = await api.put(`/submarcas/${id}`, { nombre })
+export const updateSubMarca = async (id: string, nombre: string, organizaciones?: number[]): Promise<SubMarca> => {
+  const response = await api.put(`/submarcas/${id}`, { nombre, organizaciones })
   return response.data.submarca
 }
 

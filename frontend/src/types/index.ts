@@ -12,6 +12,11 @@ export interface User {
   areas?: AreaRef[] // solo soporte
   submarcas?: AreaRef[] // solo usuario: de cuáles puede crear tickets
   origen?: 'local' | 'online_brief' // online_brief: su contraseña se administra en Online Brief
+  // Solo usuario de una marca ligada a Online Brief
+  organizaciones?: number[]
+  sedes?: string[]
+  todosConcesionarios?: boolean
+  todosImportadores?: boolean
 }
 
 // Archivo adjunto (ticket o comentario). `url` es temporal: la firma el backend en cada respuesta
@@ -95,6 +100,7 @@ export interface Ticket {
   fechaLimite?: string
   sla?: SlaActual | null // null si está cerrado o no tiene fecha límite
   submarca?: AreaRef | null // null solo en tickets anteriores a la migración
+  contexto?: ContextoTicket | null // copia al crear; solo marcas ligadas a Online Brief
   fechaCierre?: string
   createdAt: string
 }
@@ -151,7 +157,7 @@ export interface Paginado<T> {
 
 // Filtros de la lista de tickets (viven en la URL). '' = sin filtro
 export type ClaveFiltroTicket =
-  'q' | 'estado' | 'prioridad' | 'area' | 'submarca' | 'asignado' | 'marca' | 'desde' | 'hasta' | 'vencimiento'
+  'q' | 'estado' | 'prioridad' | 'area' | 'submarca' | 'organizacion' | 'sede' | 'asignado' | 'marca' | 'desde' | 'hasta' | 'vencimiento'
 export type FiltrosTicket = Record<ClaveFiltroTicket, string>
 
 // Horario laboral de la marca (hora Colombia). dias: 0 = domingo … 6 = sábado
@@ -180,4 +186,48 @@ export interface SubMarca {
   nombre: string
   activo: boolean
   marca?: AreaRef | string
+  onlineBriefId?: number
+  organizaciones?: number[] // vacío = aplica a todas
+}
+
+// Contexto del usuario según los catálogos de Online Brief
+export type TipoSede = 'concesionario' | 'importador'
+
+export interface Sede {
+  clave: string
+  tipo: TipoSede
+  nombre: string
+  brandId: number
+  subMarca: string
+}
+
+export interface ContextoUsuario {
+  organizaciones: number[]
+  sedes: string[]
+  todosConcesionarios: boolean
+  todosImportadores: boolean
+}
+
+export interface ContextoTicket {
+  organizacion?: string
+  tipo?: TipoSede | 'corporativo'
+  clave?: string
+  nombre?: string
+}
+
+export interface CatalogoContexto {
+  disponible: boolean
+  organizaciones: { id: number; nombre: string }[]
+  sedes: Sede[]
+}
+
+export interface MiContexto {
+  aplica: boolean
+  todas: boolean // corporativo: puede dejar el ticket como "Corporativo"
+  sedes: Sede[]
+}
+
+export interface FiltrosContexto {
+  organizaciones: string[]
+  sedes: string[]
 }
