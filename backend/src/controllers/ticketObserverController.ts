@@ -6,6 +6,7 @@ import { AuthRequest } from '../middlewares/auth'
 import { registrarEvento } from '../services/ticketEvents'
 import { findTicketResponse } from '../services/ticketQueries'
 import { avisarCambioTicket } from '../services/tiempoReal'
+import { ticketParaRol } from '../utils/privacidadTicket'
 
 // Un observador válido: usuario activo, de la misma marca y distinto del creador
 export const buscarObservadorValido = (userId: string, marca: mongoose.Types.ObjectId | string, creadorId: string) => {
@@ -62,7 +63,8 @@ export const addObserver = async (req: AuthRequest, res: Response, next: NextFun
 
     avisarCambioTicket(ticket._id)
 
-    res.status(200).json({ message: 'Observador agregado', ticket: await findTicketResponse(ticket._id) })
+    const actualizado = await findTicketResponse(ticket._id)
+    res.status(200).json({ message: 'Observador agregado', ticket: actualizado && ticketParaRol(actualizado, req.user?.rol) })
 
   } catch (error) {
     next(error)
@@ -110,9 +112,10 @@ export const removeObserver = async (req: AuthRequest, res: Response, next: Next
     avisarCambioTicket(ticket._id, { usuariosAnteriores: [userId] })
 
     // Quien se sale ya no puede ver el ticket: no se le devuelve
+    const actualizado = seSale ? null : await findTicketResponse(ticket._id)
     res.status(200).json({
       message: seSale ? 'Dejaste de seguir el ticket' : 'Observador quitado',
-      ticket: seSale ? null : await findTicketResponse(ticket._id)
+      ticket: actualizado && ticketParaRol(actualizado, req.user?.rol)
     })
 
   } catch (error) {

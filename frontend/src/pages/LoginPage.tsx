@@ -5,6 +5,7 @@ import { login } from '../services/authService'
 import { useAuth } from '../hooks/useAuth'
 import ThemeToggle from '../components/ThemeToggle'
 import { useToast } from '../hooks/useToast'
+import { rutaInicio } from '../utils/rutas'
 
 function LoginPage() {
   const { toast } = useToast()
@@ -29,11 +30,7 @@ function LoginPage() {
       setAuth(response.user, response.token)
       toast.success(`Bienvenido, ${response.user.nombre}`)
 
-      const rol = response.user.rol
-      if (rol === 'superadmin') navigate('/superadmin/dashboard')
-      else if (rol === 'admin') navigate('/admin/dashboard')
-      else if (rol === 'soporte') navigate('/soporte/dashboard')
-      else navigate('/usuario/dashboard')
+      navigate(rutaInicio(response.user.rol))
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const mensaje = err.response?.data?.message || 'Error al iniciar sesión'

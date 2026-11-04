@@ -33,18 +33,23 @@ function UsuarioTicketDetail() {
   const [isConfirmingReopen, setIsConfirmingReopen] = useState(false)
 
   useEffect(() => {
-    if (id) fetchData(id)
-  }, [id, versionTicket])
-
-  const fetchData = async (ticketId: string) => {
-    try {
-      setTicket(await getTicketById(ticketId))
-    } catch {
-      toast.error('No se pudo cargar el ticket')
-    } finally {
-      setIsLoading(false)
+    if (!id) return
+    let cancelado = false // si cambia el ticket, la respuesta anterior ya no aplica
+    const fetchData = async () => {
+      try {
+        const data = await getTicketById(id)
+        if (!cancelado) setTicket(data)
+      } catch {
+        if (!cancelado) toast.error('No se pudo cargar el ticket')
+      } finally {
+        if (!cancelado) setIsLoading(false)
+      }
     }
-  }
+    fetchData()
+    return () => {
+      cancelado = true
+    }
+  }, [id, versionTicket, toast])
 
   const handleReopen = async () => {
     if (!id) return
@@ -140,15 +145,9 @@ function UsuarioTicketDetail() {
               </p>
             </div>
             <div>
-              <p className="text-gray-500 dark:text-gray-400">Está en</p>
+              <p className="text-gray-500 dark:text-gray-400">Área</p>
               <p className="text-gray-800 dark:text-white font-medium">
                 {ticket.area?.nombre ?? 'Sin área'}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-500 dark:text-gray-400">Atendido por</p>
-              <p className="text-gray-800 dark:text-white font-medium">
-                {ticket.asignadoA ? ticket.asignadoA.nombre : 'Pendiente de asignación'}
               </p>
             </div>
             {ticket.fechaLimite && (

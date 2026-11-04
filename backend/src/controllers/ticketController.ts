@@ -21,6 +21,7 @@ import { storageConfigurado } from '../services/storage'
 import { avisarCambioTicket } from '../services/tiempoReal'
 import { contextoDelTicket } from '../services/catalogoOnlineBrief'
 import { subMarcaAplica } from '../utils/contextoUsuario'
+import { ticketParaRol } from '../utils/privacidadTicket'
 
 // POST /api/tickets — crear ticket (usuario). multipart/form-data: campos + archivos opcionales
 export const createTicket = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -142,7 +143,8 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
     avisarCambioTicket(ticket._id)
 
     // Populate para devolver datos completos
-    const ticketPopulado = await findTicketResponse(ticket._id)
+    const ticketCreado = await findTicketResponse(ticket._id)
+    const ticketPopulado = ticketCreado && ticketParaRol(ticketCreado, req.user?.rol)
 
     res.status(201).json({
       message: 'Ticket creado exitosamente',
@@ -176,11 +178,12 @@ export const getTickets = async (req: AuthRequest, res: Response, next: NextFunc
         consulta.skip(pag.skip).limit(pag.limit).lean(),
         Ticket.countDocuments(filtro)
       ])
-      res.status(200).json({ tickets: await conSla(tickets), pagination: armarPaginacion(pag, total) })
+      const visibles = (await conSla(tickets)).map((t) => ticketParaRol(t, req.user?.rol))
+      res.status(200).json({ tickets: visibles, pagination: armarPaginacion(pag, total) })
       return
     }
 
-    res.status(200).json({ tickets: await conSla(await consulta.lean()) })
+    res.status(200).json({ tickets: (await conSla(await consulta.lean())).map((t) => ticketParaRol(t, req.user?.rol)) })
 
   } catch (error) {
     next(error)
@@ -203,7 +206,7 @@ export const getTicketById = async (req: AuthRequest, res: Response, next: NextF
       return
     }
 
-    res.status(200).json({ ticket })
+    res.status(200).json({ ticket: ticketParaRol(ticket, req.user?.rol) })
 
   } catch (error) {
     next(error)
@@ -354,7 +357,8 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
     notificar(ticket._id, id, { tipo: 'estado', de: estadoAnterior, a: estado })
     avisarCambioTicket(ticket._id)
 
-    const ticketActualizado = await findTicketResponse(ticket._id)
+    const ticketRespuesta = await findTicketResponse(ticket._id)
+    const ticketActualizado = ticketRespuesta && ticketParaRol(ticketRespuesta, req.user?.rol)
 
     res.status(200).json({
       message: estado === 'reabierto' ? 'Ticket reabierto exitosamente' : 'Estado actualizado exitosamente',

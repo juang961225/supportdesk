@@ -54,18 +54,23 @@ function SoporteTicketDetail() {
   const [isMoveOpen, setIsMoveOpen] = useState(false)
 
   useEffect(() => {
-    if (id) fetchData(id)
-  }, [id, versionTicket])
-
-  const fetchData = async (ticketId: string) => {
-    try {
-      setTicket(await getTicketById(ticketId))
-    } catch {
-      toast.error('No se pudo cargar el ticket')
-    } finally {
-      setIsLoading(false)
+    if (!id) return
+    let cancelado = false // si cambia el ticket, la respuesta anterior ya no aplica
+    const fetchData = async () => {
+      try {
+        const data = await getTicketById(id)
+        if (!cancelado) setTicket(data)
+      } catch {
+        if (!cancelado) toast.error('No se pudo cargar el ticket')
+      } finally {
+        if (!cancelado) setIsLoading(false)
+      }
     }
-  }
+    fetchData()
+    return () => {
+      cancelado = true
+    }
+  }, [id, versionTicket, toast])
 
   const handleUpdateStatus = async (estado: EstadoTicket) => {
     if (!id) return

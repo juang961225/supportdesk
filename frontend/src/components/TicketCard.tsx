@@ -12,7 +12,7 @@ export type TicketCardData = Pick<Ticket, '_id' | 'titulo' | 'estado' | 'priorid
 interface TicketCardProps {
   ticket: TicketCardData
   onClick: () => void
-  // 'equipo' (admin/soporte): creador, área y "Sin asignar" · 'usuario': sin área y solo "Atendido por"
+  // 'equipo' (admin/soporte): creador, área y quién atiende · 'usuario': solo el área, nunca la persona
   variante?: 'equipo' | 'usuario'
   mostrarCreador?: boolean
   acciones?: React.ReactNode // botones a la derecha (ej. Asignar); sus clicks no abren el ticket
@@ -26,12 +26,10 @@ function TicketCard({ ticket, onClick, variante = 'equipo', mostrarCreador = tru
     ticket.submarca?.nombre,
     ticket.contexto?.nombre,
     ticket.categoria?.nombre,
-    esEquipo ? `Área: ${ticket.area?.nombre ?? 'Sin área'}` : undefined,
+    `Área: ${ticket.area?.nombre ?? 'Sin área'}`,
   ].filter(Boolean).join(' · ')
 
-  const atencion = ticket.asignadoA
-    ? `${esEquipo ? 'Atiende' : 'Atendido por'}: ${ticket.asignadoA.nombre}`
-    : esEquipo ? 'Sin asignar' : ''
+  const atencion = esEquipo ? (ticket.asignadoA ? `Atiende: ${ticket.asignadoA.nombre}` : 'Sin asignar') : ''
 
   const detalle = [
     atencion,
