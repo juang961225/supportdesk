@@ -8,6 +8,7 @@ import { guardarAdjuntos, firmarAdjuntos } from '../services/attachments'
 import { storageConfigurado } from '../services/storage'
 import { notificar } from '../services/notificaciones'
 import { avisarComentario } from '../services/tiempoReal'
+import { comentarioParaRol } from '../utils/privacidadTicket'
 
 // Comentario con sus adjuntos firmados (URL temporal)
 const conAdjuntosFirmados = async (comment: InstanceType<typeof Comment>) => ({
@@ -73,7 +74,7 @@ export const createComment = async (req: AuthRequest, res: Response, next: NextF
 export const getComments = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     // Verificar que el ticket existe
-    const ticket = await Ticket.findById(req.params.id)
+    const ticket = await Ticket.findById(req.params.id).populate<{ area: { _id: mongoose.Types.ObjectId; nombre: string } | null }>('area', 'nombre')
     if (!ticket) {
       res.status(404).json({ message: 'Ticket no encontrado' })
       return
@@ -90,7 +91,8 @@ export const getComments = async (req: AuthRequest, res: Response, next: NextFun
       .populate('autor', 'nombre email rol')
       .sort({ createdAt: 1 }) // más antiguos primero — orden cronológico
 
-    res.status(200).json({ comments: await Promise.all(comments.map(conAdjuntosFirmados)) })
+    const conAdjuntos = await Promise.all(comments.map(conAdjuntosFirmados))
+    res.status(200).json({ comments: conAdjuntos.map((c) => comentarioParaRol(c, req.user?.rol, ticket.area?.nombre)) })
 
   } catch (error) {
     next(error)

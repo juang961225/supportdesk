@@ -3,6 +3,7 @@ import Ticket from '../models/Ticket'
 import User from '../models/User'
 import { enviarEmail, urlFrontend } from './email'
 import { plantillaTicket, estadoLegible, prioridadLegible, DatosPlantilla } from '../utils/plantillasEmail'
+import { actorParaDestinatario } from '../utils/privacidadTicket'
 
 // Avisos por email de lo que pasa en un ticket. Quién recibe cada uno:
 //   creado     → soportes del área + admins de la marca
@@ -10,7 +11,7 @@ import { plantillaTicket, estadoLegible, prioridadLegible, DatosPlantilla } from
 //   asignado   → el soporte asignado (asignar, reasignar o pasar)
 //   estado     → creador + observadores (+ el soporte asignado si se reabre)
 //   comentario → creador + observadores + soporte asignado (o los soportes del área si está en cola)
-// Nunca a quien hizo la acción ni a usuarios inactivos.
+// Nunca a quien hizo la acción ni a usuarios inactivos. El usuario final ve el área, no quién del equipo actuó.
 
 export type EventoNotificable =
   | { tipo: 'creado' }
@@ -109,7 +110,7 @@ const procesar = async (ticketId: Id, actorId: Id, evento: EventoNotificable): P
       .populate('area', 'nombre')
       .populate('submarca', 'nombre')
       .lean<TicketNotificable>(),
-    User.findById(actorId).select('nombre').lean()
+    User.findById(actorId).select('nombre rol').lean()
   ])
   if (!ticket) return
 
@@ -117,9 +118,9 @@ const procesar = async (ticketId: Id, actorId: Id, evento: EventoNotificable): P
   if (ids.length === 0) return
 
   const destinatarios = await User.find({ _id: { $in: ids }, estado: 'activo' }).select('nombre email rol').lean<Destinatario[]>()
-  const { asunto, ...datos } = contenido(ticket, evento, actor?.nombre ?? 'Alguien')
 
   await Promise.all(destinatarios.map((d) => {
+    const { asunto, ...datos } = contenido(ticket, evento, actorParaDestinatario(actor, d.rol, ticket.area?.nombre))
     const { html, texto } = plantillaTicket({ ...datos, enlace: `${urlFrontend()}/${RUTA_POR_ROL[d.rol]}/tickets/${ticket._id}` })
     return enviarEmail({ para: { nombre: d.nombre, email: d.email }, asunto: `[SupportDesk] ${asunto}`, html, texto })
   }))

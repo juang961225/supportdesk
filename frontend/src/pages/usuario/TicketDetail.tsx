@@ -145,15 +145,9 @@ function UsuarioTicketDetail() {
               </p>
             </div>
             <div>
-              <p className="text-gray-500 dark:text-gray-400">Está en</p>
+              <p className="text-gray-500 dark:text-gray-400">Área</p>
               <p className="text-gray-800 dark:text-white font-medium">
                 {ticket.area?.nombre ?? 'Sin área'}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-500 dark:text-gray-400">Atendido por</p>
-              <p className="text-gray-800 dark:text-white font-medium">
-                {ticket.asignadoA ? ticket.asignadoA.nombre : 'Pendiente de asignación'}
               </p>
             </div>
             {ticket.fechaLimite && (
