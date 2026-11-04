@@ -30,4 +30,18 @@ describe('revisarEntorno', () => {
     })
     expect(avisos[0]).toMatch(/HTTPS/)
   })
+
+  it('con Mailchimp exige la API key y el remitente', () => {
+    const base = { MONGODB_URI: 'mongodb://x', JWT_SECRET: SECRETO_FUERTE, EMAIL_PROVEEDOR: 'mailchimp' }
+    const { errores } = revisarEntorno(base)
+    expect(errores).toHaveLength(2)
+    expect(errores[0]).toMatch(/MAILCHIMP_API_KEY/)
+    expect(errores[1]).toMatch(/EMAIL_REMITENTE/)
+    expect(revisarEntorno({ ...base, MAILCHIMP_API_KEY: 'k', EMAIL_REMITENTE: 'a@b.com' }).errores).toEqual([])
+  })
+
+  it('avisa si en producción los correos solo se imprimen', () => {
+    const { avisos } = revisarEntorno({ MONGODB_URI: 'mongodb://x', JWT_SECRET: SECRETO_FUERTE, NODE_ENV: 'production', FRONTEND_URL: 'https://app.empresa.com' })
+    expect(avisos[0]).toMatch(/consola/)
+  })
 })

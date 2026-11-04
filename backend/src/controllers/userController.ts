@@ -11,13 +11,16 @@ import { registrarEvento } from '../services/ticketEvents'
 import { revocarTodos } from '../services/sesion'
 import { invalidarSesion } from '../middlewares/auth'
 import { avisarCambioTicket, desconectarUsuario } from '../services/tiempoReal'
+import SubMarca from '../models/SubMarca'
+import { catalogoDeMarca } from '../services/catalogoOnlineBrief'
+import { CONTEXTO_VACIO, ContextoUsuario, limpiarContexto } from '../utils/contextoUsuario'
 
 const ROLES_EDITABLES: IUser['rol'][] = ['admin', 'soporte', 'usuario']
 const ESTADOS_VALIDOS: IUser['estado'][] = ['activo', 'inactivo']
 
 // Devuelve el usuario con el mismo formato que el listado: _id, sin password, marca y áreas pobladas
 const findUserResponse = (id: mongoose.Types.ObjectId | string) =>
-  User.findById(id).select('-password').populate('marca', 'nombre').populate('areas', 'nombre')
+  User.findById(id).select('-password').populate('marca', 'nombre').populate('areas', 'nombre').populate('submarcas', 'nombre')
 
 // Todas las áreas deben existir, ser de la marca y estar activas
 const areasValidas = async (areaIds: string[], marca: mongoose.Types.ObjectId | string | undefined): Promise<boolean> => {
@@ -52,6 +55,51 @@ const liberarTickets = async (
   }
 }
 
+// Las sub-marcas deben existir, ser de la marca y estar activas
+const submarcasValidas = async (ids: string[], marca: mongoose.Types.ObjectId | string | undefined): Promise<boolean> => {
+  if (ids.length === 0) return true
+  const unicas = [...new Set(ids.map(String))]
+  const encontradas = await SubMarca.countDocuments({ _id: { $in: unicas }, marca, activo: true })
+  return encontradas === unicas.length
+}
+
+interface CamposContexto {
+  organizacionIds?: number[]
+  sedes?: string[]
+  todosConcesionarios?: boolean
+  todosImportadores?: boolean
+}
+
+// Contexto final de un usuario: lo que llegó sobre lo que tenía, validado contra el catálogo de su marca.
+// Si la marca no usa el catálogo, o este no está disponible, no se exige nada.
+const contextoAGuardar = async (
+  marca: mongoose.Types.ObjectId | string | undefined,
+  campos: CamposContexto,
+  actual: ContextoUsuario,
+  exigirOrganizacion: boolean
+): Promise<{ ok: true; contexto: ContextoUsuario } | { ok: false; mensaje: string }> => {
+  const llegoAlgo = [campos.organizacionIds, campos.sedes, campos.todosConcesionarios, campos.todosImportadores].some((c) => c !== undefined)
+  const catalogo = await catalogoDeMarca(marca)
+  if (!catalogo) {
+    return llegoAlgo ? { ok: false, mensaje: 'El catálogo de Online Brief no está disponible para esta marca' } : { ok: true, contexto: actual }
+  }
+  if (!llegoAlgo && !exigirOrganizacion) return { ok: true, contexto: actual }
+
+  const resultado = limpiarContexto(
+    {
+      organizaciones: campos.organizacionIds ?? actual.organizaciones,
+      sedes: campos.sedes ?? actual.sedes,
+      todosConcesionarios: campos.todosConcesionarios ?? actual.todosConcesionarios,
+      todosImportadores: campos.todosImportadores ?? actual.todosImportadores
+    },
+    catalogo
+  )
+  if (resultado.ok && resultado.contexto.organizaciones.length === 0) {
+    return { ok: false, mensaje: 'Asigna al menos una organización al usuario' }
+  }
+  return resultado
+}
+
 const hashPassword = async (password: string): Promise<string> => {
   const salt = await bcrypt.genSalt(10)
   return bcrypt.hash(password, salt)
@@ -68,6 +116,7 @@ export const getUsers = async (req: AuthRequest, res: Response, next: NextFuncti
       .select('-password') // excluye el password de la respuesta
       .populate('marca', 'nombre')
       .populate('areas', 'nombre')
+      .populate('submarcas', 'nombre')
       .sort({ createdAt: -1, _id: -1 })
 
     const pag = leerPaginacion(req.query)
@@ -91,7 +140,7 @@ export const getUsers = async (req: AuthRequest, res: Response, next: NextFuncti
 // admin crea soportes y usuarios de su marca
 export const createUser = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { nombre, email, password, rol, marcaId, areaIds } = req.body || {}
+    const { nombre, email, password, rol, marcaId, areaIds, submarcaIds, organizacionIds, sedes, todosConcesionarios, todosImportadores } = req.body || {}
 
     if (!nombre || !email || !password || !rol) {
       res.status(400).json({ message: 'Nombre, email, password y rol son obligatorios' })
@@ -132,13 +181,35 @@ export const createUser = async (req: AuthRequest, res: Response, next: NextFunc
       return
     }
 
+    // Sub-marcas: solo para usuario. El admin debe asignarlas al crearlo; el superadmin deja eso al admin
+    const submarcasFinales: string[] = rol === 'usuario' && Array.isArray(submarcaIds) ? submarcaIds : []
+    if (req.user?.rol === 'admin' && rol === 'usuario' && submarcasFinales.length === 0) {
+      res.status(400).json({ message: 'Asigna al menos una sub-marca al usuario' })
+      return
+    }
+    if (!(await submarcasValidas(submarcasFinales, marcaFinal))) {
+      res.status(400).json({ message: 'Alguna de las sub-marcas no existe, no es de la marca o está inactiva' })
+      return
+    }
+
+    // Contexto: solo para usuario. Igual que las sub-marcas, el admin lo asigna al crearlo; el superadmin lo deja al admin
+    const contexto = rol === 'usuario'
+      ? await contextoAGuardar(marcaFinal, { organizacionIds, sedes, todosConcesionarios, todosImportadores }, CONTEXTO_VACIO, req.user?.rol === 'admin')
+      : { ok: true as const, contexto: CONTEXTO_VACIO }
+    if (!contexto.ok) {
+      res.status(400).json({ message: contexto.mensaje })
+      return
+    }
+
     const user = await User.create({
       nombre,
       email,
       password: await hashPassword(password),
       rol,
       marca: marcaFinal || undefined,
-      areas: areasFinales
+      areas: areasFinales,
+      submarcas: submarcasFinales,
+      ...contexto.contexto
     })
 
     if (rol === 'admin' && marcaFinal) {
@@ -160,7 +231,7 @@ export const createUser = async (req: AuthRequest, res: Response, next: NextFunc
 export const updateUser = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id: actorId, rol: actorRol, marca: actorMarca } = req.user!
-    const { nombre, email, password, estado, rol, marcaId, areaIds } = req.body || {}
+    const { nombre, email, password, estado, rol, marcaId, areaIds, submarcaIds, organizacionIds, sedes, todosConcesionarios, todosImportadores } = req.body || {}
 
     const target = await User.findById(req.params.id)
     if (!target) {
@@ -249,6 +320,39 @@ export const updateUser = async (req: AuthRequest, res: Response, next: NextFunc
     }
     const areasQuitadas = areasAnteriores.filter((a) => !areasFinales.includes(a))
 
+    // Sub-marcas finales: solo un usuario tiene; cambiar de marca las vacía (eran de la otra marca)
+    let submarcasFinales = target.submarcas.map(String)
+    if (rolFinal !== 'usuario' || cambiaMarca) submarcasFinales = []
+    if (rolFinal === 'usuario' && Array.isArray(submarcaIds)) {
+      if (submarcaIds.length === 0) {
+        res.status(400).json({ message: 'Asigna al menos una sub-marca al usuario' })
+        return
+      }
+      if (!(await submarcasValidas(submarcaIds, marcaFinal))) {
+        res.status(400).json({ message: 'Alguna de las sub-marcas no existe, no es de la marca o está inactiva' })
+        return
+      }
+      submarcasFinales = submarcaIds.map(String)
+    }
+
+    // Contexto final: solo un usuario tiene; cambiar de rol o de marca lo vacía. Los actuales sin organización
+    // siguen funcionando hasta que el admin se la asigne
+    const contextoActual: ContextoUsuario = rolFinal === 'usuario' && !cambiaMarca
+      ? {
+          organizaciones: target.organizaciones ?? [],
+          sedes: target.sedes ?? [],
+          todosConcesionarios: target.todosConcesionarios ?? false,
+          todosImportadores: target.todosImportadores ?? false
+        }
+      : CONTEXTO_VACIO
+    const contexto = rolFinal === 'usuario'
+      ? await contextoAGuardar(marcaFinal, { organizacionIds, sedes, todosConcesionarios, todosImportadores }, contextoActual, false)
+      : { ok: true as const, contexto: CONTEXTO_VACIO }
+    if (!contexto.ok) {
+      res.status(400).json({ message: contexto.mensaje })
+      return
+    }
+
     if (nombre) target.nombre = nombre
     if (email) target.email = email
     if (password) target.password = await hashPassword(password)
@@ -256,6 +360,8 @@ export const updateUser = async (req: AuthRequest, res: Response, next: NextFunc
     if (cambiaRol) target.rol = rol
     if (cambiaMarca) target.marca = marcaId
     target.areas = areasFinales.map((a) => new mongoose.Types.ObjectId(a))
+    target.submarcas = submarcasFinales.map((s) => new mongoose.Types.ObjectId(s))
+    target.set(contexto.contexto)
 
     await target.save()
     invalidarSesion(String(target._id)) // rol, áreas, marca o estado pudieron cambiar

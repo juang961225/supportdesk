@@ -13,6 +13,7 @@ const ticket = (extra: Partial<TicketExportable> = {}): TicketExportable => ({
   creadoPor: { nombre: 'Ana' },
   asignadoA: { nombre: 'Luis' },
   marca: { nombre: 'BMW' },
+  submarca: { nombre: 'MINI' },
   ...extra
 })
 
@@ -20,7 +21,7 @@ describe('armarFilas', () => {
   it('traduce estado, prioridad y SLA y calcula el tiempo laboral', () => {
     const [fila] = armarFilas([ticket()], new Map([['t1', { minutosLaborales: 570, sla: 'vencido' as const, minutosJornada: 480 }]]))
     expect(fila).toMatchObject({
-      titulo: 'Impresora', estado: 'En progreso', prioridad: 'Crítica', area: 'Redes', marca: 'BMW',
+      titulo: 'Impresora', estado: 'En progreso', prioridad: 'Crítica', area: 'Redes', marca: 'BMW', submarca: 'MINI',
       asignadoA: 'Luis', tiempoLaboral: '1 día y 1 h 30 min', horasLaborales: 9.5, sla: 'Vencido', vencido: true, cerrado: null
     })
   })
@@ -30,6 +31,7 @@ describe('armarFilas', () => {
       [ticket({ _id: 'a', asignadoA: null, area: null, fechaCierre: bog('2026-10-28T10:00') }), ticket({ _id: 'c', estado: 'cerrado', fechaCierre: bog('2026-10-28T10:00') })],
       new Map()
     )
+    expect(armarFilas([ticket({ _id: 's', submarca: null })], new Map())[0].submarca).toBe('Sin sub-marca')
     expect(abierto).toMatchObject({ asignadoA: 'Sin asignar', area: 'Sin área', cerrado: null, sla: 'Sin fecha límite', tiempoLaboral: '0 min' })
     expect(cerrado.cerrado).toEqual(bog('2026-10-28T10:00'))
   })

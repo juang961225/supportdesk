@@ -16,6 +16,8 @@ export interface TicketExportable {
   fechaCierre?: Date
   area?: { nombre: string } | null
   categoria?: { nombre: string } | null
+  submarca?: { nombre: string } | null
+  contexto?: { organizacion?: string; nombre?: string } | null
   creadoPor?: { nombre: string } | null
   asignadoA?: { nombre: string } | null
   marca?: { nombre: string } | null
@@ -26,6 +28,9 @@ export interface FilaExportacion {
   estado: string
   prioridad: string
   marca: string
+  submarca: string
+  organizacion: string
+  sede: string
   area: string
   categoria: string
   creadoPor: string
@@ -53,6 +58,9 @@ const COLUMNAS_EXCEL: Columna[] = [
   { clave: 'estado', titulo: 'Estado', ancho: 13 },
   { clave: 'prioridad', titulo: 'Prioridad', ancho: 10 },
   { clave: 'marca', titulo: 'Marca', ancho: 16 },
+  { clave: 'submarca', titulo: 'Sub-marca', ancho: 14 },
+  { clave: 'organizacion', titulo: 'Organización', ancho: 12 },
+  { clave: 'sede', titulo: 'Concesionario / importador', ancho: 30 },
   { clave: 'area', titulo: 'Área', ancho: 18 },
   { clave: 'categoria', titulo: 'Categoría', ancho: 18 },
   { clave: 'creadoPor', titulo: 'Creado por', ancho: 20 },
@@ -66,16 +74,17 @@ const COLUMNAS_EXCEL: Columna[] = [
 ]
 
 const COLUMNAS_PDF: Columna[] = [
-  { clave: 'titulo', titulo: 'Título', ancho: 21 },
-  { clave: 'estado', titulo: 'Estado', ancho: 8.5 },
-  { clave: 'prioridad', titulo: 'Prioridad', ancho: 6.5 },
-  { clave: 'marca', titulo: 'Marca', ancho: 10.5 },
-  { clave: 'area', titulo: 'Área', ancho: 10 },
-  { clave: 'asignadoA', titulo: 'Asignado a', ancho: 11 },
-  { clave: 'creado', titulo: 'Creado', ancho: 10.5 },
-  { clave: 'fechaLimite', titulo: 'Fecha límite', ancho: 10.5 },
-  { clave: 'tiempoLaboral', titulo: 'Tiempo laboral', ancho: 13.5 },
-  { clave: 'sla', titulo: 'SLA', ancho: 11 }
+  { clave: 'titulo', titulo: 'Título', ancho: 13.5 },
+  { clave: 'estado', titulo: 'Estado', ancho: 7 },
+  { clave: 'prioridad', titulo: 'Prioridad', ancho: 5.8 },
+  { clave: 'marca', titulo: 'Marca', ancho: 8.5 },
+  { clave: 'submarca', titulo: 'Sub-marca', ancho: 8.5 },
+  { clave: 'area', titulo: 'Área', ancho: 8 },
+  { clave: 'asignadoA', titulo: 'Asignado a', ancho: 9 },
+  { clave: 'creado', titulo: 'Creado', ancho: 10 },
+  { clave: 'fechaLimite', titulo: 'Fecha límite', ancho: 10 },
+  { clave: 'tiempoLaboral', titulo: 'Tiempo laboral', ancho: 12 },
+  { clave: 'sla', titulo: 'SLA', ancho: 9.5 }
 ]
 
 // La columna "Marca" solo tiene sentido para el superadmin (el admin ve una sola)
@@ -93,6 +102,9 @@ export const armarFilas = (
       estado: estadoLegible[t.estado] ?? t.estado,
       prioridad: prioridadLegible[t.prioridad] ?? t.prioridad,
       marca: t.marca?.nombre ?? '',
+      submarca: t.submarca?.nombre ?? 'Sin sub-marca',
+      organizacion: t.contexto?.organizacion ?? '',
+      sede: t.contexto?.nombre ?? '',
       area: t.area?.nombre ?? 'Sin área',
       categoria: t.categoria?.nombre ?? '',
       creadoPor: t.creadoPor?.nombre ?? '',

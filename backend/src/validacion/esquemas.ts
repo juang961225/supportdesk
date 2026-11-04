@@ -45,13 +45,26 @@ export const esquemaLogin = z.object({
 export const esquemaRegistro = z.object({ nombre: texto('El nombre', 100), email, password: passwordNueva })
 
 // ── Usuarios ────────────────────────────────────────────────
+const CLAVE_SEDE = /^[ci]:\d+:\d+$/
+const organizacionesIds = z.array(z.number({ error: 'Las organizaciones no son válidas' }).int().min(0), { error: 'Las organizaciones no son válidas' }).max(10)
+
+// Contexto del usuario según Online Brief (ver utils/contextoUsuario)
+const camposContexto = {
+  organizacionIds: organizacionesIds.optional(),
+  sedes: z.array(z.string().regex(CLAVE_SEDE, 'El concesionario o importador no es válido'), { error: 'Los concesionarios e importadores no son válidos' }).max(300).optional(),
+  todosConcesionarios: z.boolean({ error: 'Indica si ve todos los concesionarios' }).optional(),
+  todosImportadores: z.boolean({ error: 'Indica si ve todos los importadores' }).optional()
+}
+
 export const esquemaCrearUsuario = z.object({
   nombre: texto('El nombre', 100),
   email,
   password: passwordNueva,
   rol: z.enum(ROLES, { error: 'Rol inválido. Debe ser admin, soporte o usuario' }),
   marcaId: idOpcional('La marca', true),
-  areaIds: z.array(objectId('El área', true), { error: 'Las áreas no son válidas' }).max(50).optional()
+  areaIds: z.array(objectId('El área', true), { error: 'Las áreas no son válidas' }).max(50).optional(),
+  submarcaIds: z.array(objectId('La sub-marca', true), { error: 'Las sub-marcas no son válidas' }).max(50).optional(),
+  ...camposContexto
 })
 
 export const esquemaEditarUsuario = z.object({
@@ -62,7 +75,9 @@ export const esquemaEditarUsuario = z.object({
   estado: z.enum(ESTADOS_CUENTA, { error: 'Estado inválido. Debe ser activo o inactivo' }).optional(),
   rol: z.enum(ROLES, { error: 'Rol inválido. Debe ser admin, soporte o usuario' }).optional(),
   marcaId: idOpcional('La marca', true),
-  areaIds: z.array(objectId('El área', true), { error: 'Las áreas no son válidas' }).max(50).optional()
+  areaIds: z.array(objectId('El área', true), { error: 'Las áreas no son válidas' }).max(50).optional(),
+  submarcaIds: z.array(objectId('La sub-marca', true), { error: 'Las sub-marcas no son válidas' }).max(50).optional(),
+  ...camposContexto
 })
 
 // ── Marcas, áreas y categorías ──────────────────────────────
@@ -76,6 +91,9 @@ export const esquemaAsignarAdmin = z.object({ adminId: objectId('El admin') })
 export const esquemaArea = z.object({ nombre: texto('El nombre del área', 100), descripcion: textoOpcional('La descripción', 500) })
 export const esquemaEditarArea = z.object({ nombre: texto('El nombre del área', 100).optional(), descripcion: textoOpcional('La descripción', 500) })
 export const esquemaEstadoArea = z.object({ activo: z.boolean({ error: 'Indica si el área queda activa' }) })
+
+export const esquemaSubMarca = z.object({ nombre: texto('El nombre de la sub-marca', 100), organizaciones: organizacionesIds.optional() })
+export const esquemaEstadoSubMarca = z.object({ activo: z.boolean({ error: 'Indica si la sub-marca queda activa' }) })
 
 export const esquemaCrearCategoria = z.object({
   nombre: texto('El nombre de la categoría', 100),
@@ -95,6 +113,8 @@ export const esquemaCrearTicket = z.object({
   descripcion: texto('La descripción', 5000, true),
   prioridad: z.enum(PRIORIDADES, { error: 'Prioridad inválida' }),
   categoriaId: objectId('La categoría', true),
+  submarcaId: objectId('La sub-marca', true),
+  sede: z.string().regex(/^(corporativo|[ci]:\d+:\d+)$/, 'El concesionario o importador no es válido').optional(),
   observadorIds: z.union([objectId('El observador'), z.array(objectId('El observador')).max(20, 'Máximo 20 observadores')]).optional()
 })
 

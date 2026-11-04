@@ -85,6 +85,8 @@ function TendenciasAdmin() {
   const creados = (datos?.creados ?? []).map((c) => ({ etiqueta: formatFechaCorta(c.fecha), valor: c.total }))
   const porEstado = (datos?.porEstado ?? []).map((e) => ({ etiqueta: estadoLabel[e.estado], valor: e.total }))
   const porArea = conOtras((datos?.porArea ?? []).map((a) => ({ etiqueta: a.nombre, valor: a.total })))
+  const porSubmarca = conOtras((datos?.porSubmarca ?? []).map((s) => ({ etiqueta: s.nombre, valor: s.total })))
+  const porSede = conOtras((datos?.porSede ?? []).map((s) => ({ etiqueta: s.nombre, valor: s.total })))
   const porCategoria = conOtras((datos?.porCategoria ?? []).map((c) => ({ etiqueta: c.nombre, valor: c.total })))
   const sla = datos?.sla ?? []
   const tiempoPromedio = [...sla]
@@ -174,6 +176,26 @@ function TendenciasAdmin() {
           </ChartCard>
 
           <ChartCard
+            titulo="Por sub-marca"
+            subtitulo="Tickets creados en el periodo"
+            vacio={sinTickets}
+            tabla={{ columnaEtiqueta: 'Sub-marca', columnaValor: 'Tickets', filas: filasDe(porSubmarca) }}
+          >
+            <BarrasHorizontales datos={porSubmarca} />
+          </ChartCard>
+
+          {porSede.length > 0 && (
+            <ChartCard
+              titulo="Por concesionario / importador"
+              subtitulo="Tickets creados en el periodo que tienen ese dato"
+              vacio={sinTickets}
+              tabla={{ columnaEtiqueta: 'Concesionario / importador', columnaValor: 'Tickets', filas: filasDe(porSede) }}
+            >
+              <BarrasHorizontales datos={porSede} />
+            </ChartCard>
+          )}
+
+          <ChartCard
             titulo="Tiempo promedio por área"
             subtitulo="Tramos terminados (movidos o cerrados) en el periodo · horario laboral"
             vacio={sla.length === 0}
@@ -183,7 +205,6 @@ function TendenciasAdmin() {
           </ChartCard>
 
           <ChartCard
-            className="lg:col-span-2"
             titulo="Tramos vencidos por área"
             subtitulo="% de tramos terminados en el periodo que pasaron su fecha límite"
             vacio={sla.length === 0}

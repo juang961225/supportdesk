@@ -11,6 +11,11 @@ export interface UpdateUserData {
   rol?: User['rol']
   marcaId?: string
   areaIds?: string[]
+  submarcaIds?: string[]
+  organizacionIds?: number[]
+  sedes?: string[]
+  todosConcesionarios?: boolean
+  todosImportadores?: boolean
 }
 
 export const getUsers = async (): Promise<User[]> => {
@@ -30,6 +35,11 @@ export const createUser = async (data: {
   rol: string
   marcaId?: string
   areaIds?: string[]
+  submarcaIds?: string[]
+  organizacionIds?: number[]
+  sedes?: string[]
+  todosConcesionarios?: boolean
+  todosImportadores?: boolean
 }): Promise<User> => {
   const response = await api.post('/users', data)
   return response.data.user

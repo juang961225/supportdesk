@@ -9,6 +9,9 @@ import TicketFilters from '../../components/TicketFilters'
 import { getTicketsPage, exportarTickets, mensajeDeErrorBlob } from '../../services/ticketService'
 import type { FormatoExportacion } from '../../services/ticketService'
 import { getAreas } from '../../services/areaService'
+import { getSubMarcas } from '../../services/subMarcaService'
+import { getFiltrosContexto } from '../../services/catalogoService'
+import type { FiltrosContexto } from '../../types'
 import { getUsers } from '../../services/userService'
 import { getBrands } from '../../services/brandService'
 import { useTicketFilters } from '../../hooks/useTicketFilters'
@@ -48,6 +51,8 @@ function TicketsPage() {
 
   // Opciones de los filtros: admin filtra por área y asignado; superadmin por marca
   const [areas, setAreas] = useState<AreaRef[]>()
+  const [submarcas, setSubmarcas] = useState<AreaRef[]>()
+  const [contexto, setContexto] = useState<FiltrosContexto>()
   const [soportes, setSoportes] = useState<UserRef[]>()
   const [marcas, setMarcas] = useState<Brand[]>()
 
@@ -55,10 +60,14 @@ function TicketsPage() {
     const cargarOpciones = async () => {
       try {
         if (esSuperadmin) {
-          setMarcas(await getBrands())
+          const [listaMarcas, filtrosContexto] = await Promise.all([getBrands(), getFiltrosContexto()])
+          setMarcas(listaMarcas)
+          setContexto(filtrosContexto)
         } else {
-          const [listaAreas, usuarios] = await Promise.all([getAreas(), getUsers()])
+          const [listaAreas, usuarios, listaSubmarcas, filtrosContexto] = await Promise.all([getAreas(), getUsers(), getSubMarcas(), getFiltrosContexto()])
+          setContexto(filtrosContexto)
           setAreas(listaAreas)
+          setSubmarcas(listaSubmarcas)
           setSoportes(usuarios.filter(u => u.rol === 'soporte'))
         }
       } catch {
@@ -133,6 +142,8 @@ function TicketsPage() {
           onChange={setFiltro}
           onLimpiar={limpiar}
           areas={areas}
+          submarcas={submarcas}
+          contexto={contexto}
           soportes={soportes}
           marcas={marcas}
         />

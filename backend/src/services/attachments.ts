@@ -2,7 +2,9 @@ import crypto from 'crypto'
 import path from 'path'
 import mongoose, { Schema } from 'mongoose'
 import multer from 'multer'
+import { Request, Response, NextFunction } from 'express'
 import { subirArchivo, urlFirmada, storageConfigurado, prefijoStorage } from './storage'
+import { contenidoCoincide } from '../utils/firmaArchivo'
 
 // Tipos permitidos: imágenes y documentos (decisión B4)
 const MIMES_PERMITIDOS: Record<string, string[]> = {
@@ -57,6 +59,17 @@ export const uploadAdjuntos = multer({
 // multer entrega el nombre en latin1: lo pasamos a UTF-8 para conservar tildes y ñ
 const nombreOriginal = (file: Express.Multer.File): string =>
   Buffer.from(file.originalname, 'latin1').toString('utf8')
+
+// Después de multer: el contenido real de cada archivo debe coincidir con su tipo (no basta la extensión)
+export const verificarContenidoAdjuntos = (req: Request, res: Response, next: NextFunction): void => {
+  const files = (req.files as Express.Multer.File[] | undefined) ?? []
+  const falso = files.find((file) => !contenidoCoincide(file.buffer, file.mimetype))
+  if (falso) {
+    res.status(400).json({ message: `"${nombreOriginal(falso)}": el contenido no corresponde a un archivo ${path.extname(nombreOriginal(falso)).toLowerCase() || 'permitido'}` })
+    return
+  }
+  next()
+}
 
 // Sube los archivos del request y devuelve su metadata para guardarla en el documento
 export const guardarAdjuntos = async (

@@ -8,12 +8,27 @@ import ConfirmDialog from '../../components/ConfirmDialog'
 import EditUserModal from '../../components/EditUserModal'
 import AreaSelector from '../../components/AreaSelector'
 import { getAreas } from '../../services/areaService'
+import { getSubMarcas } from '../../services/subMarcaService'
+import SubMarcaSelector from '../../components/SubMarcaSelector'
+import ContextoSelector from '../../components/ContextoSelector'
+import { getCatalogoContexto } from '../../services/catalogoService'
 import { getUsersPage, createUser, updateUser } from '../../services/userService'
 import { useToast } from '../../hooks/useToast'
 import { usePaginatedList } from '../../hooks/usePaginatedList'
 import Pagination from '../../components/Pagination'
 import { rolLabel, cuentaEstadoLabel } from '../../utils/userLabels'
-import type { User, Area } from '../../types'
+import type { User, Area, SubMarca, CatalogoContexto, ContextoUsuario } from '../../types'
+
+const CONTEXTO_INICIAL: ContextoUsuario = { organizaciones: [], sedes: [], todosConcesionarios: false, todosImportadores: false }
+
+// "MX · 3 sedes" en la fila del usuario
+const resumenContexto = (user: User, catalogo: CatalogoContexto): string => {
+  const organizaciones = catalogo.organizaciones.filter(o => user.organizaciones?.includes(o.id)).map(o => o.nombre)
+  if (organizaciones.length === 0) return 'Sin organización'
+  const todas = user.todosConcesionarios || user.todosImportadores
+  const cantidad = user.sedes?.length ?? 0
+  return `${organizaciones.join(', ')} · ${todas ? 'corporativo' : cantidad === 1 ? '1 concesionario o importador' : `${cantidad} concesionarios o importadores`}`
+}
 
 const rolColor: Record<string, string> = {
   admin: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
@@ -29,6 +44,10 @@ function AdminUsersPage() {
   } = usePaginatedList<User>(getUsersPage, () => toast.error('No se pudieron cargar los usuarios'))
   const [areas, setAreas] = useState<Area[]>([])
   const [newAreaIds, setNewAreaIds] = useState<string[]>([])
+  const [submarcas, setSubmarcas] = useState<SubMarca[]>([])
+  const [newSubmarcaIds, setNewSubmarcaIds] = useState<string[]>([])
+  const [catalogo, setCatalogo] = useState<CatalogoContexto>()
+  const [newContexto, setNewContexto] = useState<ContextoUsuario>(CONTEXTO_INICIAL)
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [formData, setFormData] = useState({
@@ -49,9 +68,12 @@ function AdminUsersPage() {
   useEffect(() => {
     const fetchAreas = async () => {
       try {
-        setAreas(await getAreas())
+        const [listaAreas, listaSubmarcas, catalogoContexto] = await Promise.all([getAreas(), getSubMarcas(), getCatalogoContexto()])
+        setCatalogo(catalogoContexto)
+        setAreas(listaAreas)
+        setSubmarcas(listaSubmarcas)
       } catch {
-        toast.error('No se pudieron cargar las áreas')
+        toast.error('No se pudieron cargar las áreas y sub-marcas')
       }
     }
     fetchAreas()
@@ -71,13 +93,35 @@ function AdminUsersPage() {
       return
     }
 
+    if (formData.rol === 'usuario' && newSubmarcaIds.length === 0) {
+      setFormError('Asigna al menos una sub-marca al usuario')
+      toast.warning('Asigna al menos una sub-marca al usuario')
+      return
+    }
+
+    const pideContexto = formData.rol === 'usuario' && catalogo?.disponible
+    if (pideContexto && newContexto.organizaciones.length === 0) {
+      setFormError('Asigna al menos una organización al usuario')
+      toast.warning('Asigna al menos una organización al usuario')
+      return
+    }
+
     setIsSubmitting(true)
     setFormError('')
 
     try {
       const newUser = await createUser({
         ...formData,
-        areaIds: formData.rol === 'soporte' ? newAreaIds : undefined
+        areaIds: formData.rol === 'soporte' ? newAreaIds : undefined,
+        submarcaIds: formData.rol === 'usuario' ? newSubmarcaIds : undefined,
+        ...(pideContexto
+          ? {
+              organizacionIds: newContexto.organizaciones,
+              sedes: newContexto.sedes,
+              todosConcesionarios: newContexto.todosConcesionarios,
+              todosImportadores: newContexto.todosImportadores,
+            }
+          : {}),
       })
       recargarDesdeInicio()
       toast.success(`Usuario "${newUser.nombre}" creado`)
@@ -141,6 +185,8 @@ function AdminUsersPage() {
     setFormData({ nombre: '', email: '', password: '', rol: 'soporte' })
     setFormError('')
     setNewAreaIds([])
+    setNewSubmarcaIds([])
+    setNewContexto(CONTEXTO_INICIAL)
   }
 
   if (isLoading) {
@@ -190,6 +236,16 @@ function AdminUsersPage() {
                     {user.rol === 'soporte' && (
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                         Áreas: {user.areas?.length ? user.areas.map(a => a.nombre).join(', ') : 'sin áreas'}
+                      </p>
+                    )}
+                    {user.rol === 'usuario' && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                        Sub-marcas: {user.submarcas?.length ? user.submarcas.map(s => s.nombre).join(', ') : 'sin sub-marcas'}
+                      </p>
+                    )}
+                    {user.rol === 'usuario' && catalogo?.disponible && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                        {resumenContexto(user, catalogo)}
                       </p>
                     )}
                   </div>
@@ -303,6 +359,12 @@ function AdminUsersPage() {
             {formData.rol === 'soporte' && (
               <AreaSelector areas={areas} selected={newAreaIds} onChange={setNewAreaIds} />
             )}
+            {formData.rol === 'usuario' && (
+              <SubMarcaSelector submarcas={submarcas} selected={newSubmarcaIds} onChange={setNewSubmarcaIds} />
+            )}
+            {formData.rol === 'usuario' && catalogo?.disponible && (
+              <ContextoSelector catalogo={catalogo} value={newContexto} onChange={setNewContexto} />
+            )}
           </div>
 
           <div className="flex gap-3 justify-end mt-6">
@@ -328,6 +390,8 @@ function AdminUsersPage() {
         user={editingUser}
         rolesPermitidos={['soporte', 'usuario']}
         areas={areas}
+        submarcas={submarcas}
+        catalogo={catalogo}
         onClose={() => setEditingUser(null)}
         onSaved={handleSaved}
       />

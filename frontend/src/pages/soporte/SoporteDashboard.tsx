@@ -8,6 +8,9 @@ import TicketList from '../../components/TicketList'
 import TicketFilters from '../../components/TicketFilters'
 import { getTickets } from '../../services/ticketService'
 import { getAreas } from '../../services/areaService'
+import { getSubMarcas } from '../../services/subMarcaService'
+import { getFiltrosContexto } from '../../services/catalogoService'
+import type { FiltrosContexto } from '../../types'
 import { useTicketFilters } from '../../hooks/useTicketFilters'
 import { useToast } from '../../hooks/useToast'
 import { useAuth } from '../../hooks/useAuth'
@@ -46,6 +49,8 @@ function SoporteDashboard() {
   const [isFetching, setIsFetching] = useState(false)
   const [vista, setVista] = useState<Vista>('cola')
   const [areas, setAreas] = useState<AreaRef[]>()
+  const [submarcas, setSubmarcas] = useState<AreaRef[]>()
+  const [contexto, setContexto] = useState<FiltrosContexto>()
   const { filtros, setFiltro, limpiar, hayFiltros, clave } = useTicketFilters()
   const enVivo = useRecargaEnVivo() // sube cuando cambia un ticket de mis áreas o asignado a mí
   const navigate = useNavigate()
@@ -77,9 +82,12 @@ function SoporteDashboard() {
   useEffect(() => {
     const fetchAreas = async () => {
       try {
-        setAreas(await getAreas())
+        const [listaAreas, listaSubmarcas, filtrosContexto] = await Promise.all([getAreas(), getSubMarcas(), getFiltrosContexto()])
+        setContexto(filtrosContexto)
+        setAreas(listaAreas)
+        setSubmarcas(listaSubmarcas)
       } catch {
-        toast.error('No se pudieron cargar las áreas')
+        toast.error('No se pudieron cargar las opciones de los filtros')
       }
     }
     fetchAreas()
@@ -132,7 +140,7 @@ function SoporteDashboard() {
           </div>
         </div>
 
-        <TicketFilters filtros={filtros} onChange={setFiltro} onLimpiar={limpiar} areas={areas} />
+        <TicketFilters filtros={filtros} onChange={setFiltro} onLimpiar={limpiar} areas={areas} submarcas={submarcas} contexto={contexto} />
 
         {/* Pestañas */}
         <div className="flex gap-2 mb-4 overflow-x-auto">

@@ -20,6 +20,7 @@ import { estadoLabel, prioridadLabel } from '../../utils/ticketLabels'
 import { formatFechaLimite } from '../../utils/fechas'
 import { useTicketEnVivo } from '../../hooks/useTiempoReal'
 import SlaBarra from '../../components/SlaBarra'
+import TicketContexto from '../../components/TicketContexto'
 
 function AdminTicketDetail() {
   const { id } = useParams<{ id: string }>()
@@ -124,6 +125,13 @@ function AdminTicketDetail() {
                 {ticket.creadoPor.nombre}
               </p>
             </div>
+            <div>
+              <p className="text-gray-500 dark:text-gray-400">Sub-marca</p>
+              <p className="text-gray-800 dark:text-white font-medium">
+                {ticket.submarca?.nombre ?? 'Sin sub-marca'}
+              </p>
+            </div>
+            <TicketContexto contexto={ticket.contexto} />
             <div>
               <p className="text-gray-500 dark:text-gray-400">Categoría</p>
               <p className="text-gray-800 dark:text-white font-medium">

@@ -13,14 +13,14 @@ import { updateFechaLimite } from '../controllers/ticketDeadlineController'
 import { getTicketTramos } from '../controllers/ticketSlaController'
 import { exportarTickets } from '../controllers/ticketExportController'
 import { authenticate, authorize } from '../middlewares/auth'
-import { uploadAdjuntos } from '../services/attachments'
+import { uploadAdjuntos, verificarContenidoAdjuntos } from '../services/attachments'
 import { validarBody } from '../validacion/validar'
 import { esquemaCrearTicket, esquemaAsignar, esquemaMover, esquemaFechaLimite, esquemaEstadoTicket, esquemaObservador } from '../validacion/esquemas'
 
 const router = Router()
 
 // Crear ticket — solo usuarios
-router.post('/', authenticate, authorize('usuario'), uploadAdjuntos, validarBody(esquemaCrearTicket), createTicket)
+router.post('/', authenticate, authorize('usuario'), uploadAdjuntos, verificarContenidoAdjuntos, validarBody(esquemaCrearTicket), createTicket)
 
 // Listar tickets — todos los roles
 router.get('/', authenticate, authorize('superadmin', 'admin', 'soporte', 'usuario'), getTickets)

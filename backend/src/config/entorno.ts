@@ -32,5 +32,14 @@ export const revisarEntorno = (env: Record<string, string | undefined>): Revisio
     avisos.push('COOKIE_SAMESITE=none exige HTTPS: FRONTEND_URL tiene un origen http://')
   }
 
+  const proveedorEmail = (env.EMAIL_PROVEEDOR || 'consola').toLowerCase()
+  if (proveedorEmail === 'mailchimp') {
+    if (!env.MAILCHIMP_API_KEY) errores.push('Falta MAILCHIMP_API_KEY: EMAIL_PROVEEDOR=mailchimp la necesita')
+    if (!env.EMAIL_REMITENTE) errores.push('Falta EMAIL_REMITENTE: EMAIL_PROVEEDOR=mailchimp necesita un remitente de un dominio verificado')
+  }
+  if (produccion && proveedorEmail === 'consola') {
+    avisos.push('EMAIL_PROVEEDOR=consola en producción: los correos solo se imprimen, no se envían')
+  }
+
   return { errores, avisos }
 }

@@ -23,6 +23,7 @@ import { transicionesSoporte } from '../../utils/ticketStatus'
 import type { EstadoTicket } from '../../utils/ticketStatus'
 import { useTicketEnVivo } from '../../hooks/useTiempoReal'
 import SlaBarra from '../../components/SlaBarra'
+import TicketContexto from '../../components/TicketContexto'
 
 // Texto y color del botón según el estado destino
 const accionEstado: Record<EstadoTicket, { label: string; className: string }> = {
@@ -184,6 +185,13 @@ function SoporteTicketDetail() {
                 {ticket.creadoPor.nombre}
               </p>
             </div>
+            <div>
+              <p className="text-gray-500 dark:text-gray-400">Sub-marca</p>
+              <p className="text-gray-800 dark:text-white font-medium">
+                {ticket.submarca?.nombre ?? 'Sin sub-marca'}
+              </p>
+            </div>
+            <TicketContexto contexto={ticket.contexto} />
             <div>
               <p className="text-gray-500 dark:text-gray-400">Categoría</p>
               <p className="text-gray-800 dark:text-white font-medium">

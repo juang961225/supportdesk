@@ -12,6 +12,7 @@ import TicketsPage from './pages/admin/TicketsPage'
 import CategoriesPage from './pages/admin/CategoriesPage'
 import AreasPage from './pages/admin/AreasPage'
 import HorarioPage from './pages/admin/HorarioPage'
+import SubMarcasPage from './pages/admin/SubMarcasPage'
 import AdminUsersPage from './pages/admin/UsersPage'
 import SoporteTicketDetail from './pages/soporte/TicketDetail'
 import NewTicketPage from './pages/usuario/NewTicketPage'
@@ -95,6 +96,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AreasPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/submarcas"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <SubMarcasPage />
             </ProtectedRoute>
           }
         />
