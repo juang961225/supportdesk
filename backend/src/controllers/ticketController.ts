@@ -19,11 +19,13 @@ import { buscarObservadorValido } from './ticketObserverController'
 import { guardarAdjuntos } from '../services/attachments'
 import { storageConfigurado } from '../services/storage'
 import { avisarCambioTicket } from '../services/tiempoReal'
+import { contextoDelTicket } from '../services/catalogoOnlineBrief'
+import { subMarcaAplica } from '../utils/contextoUsuario'
 
 // POST /api/tickets — crear ticket (usuario). multipart/form-data: campos + archivos opcionales
 export const createTicket = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { titulo, descripcion, prioridad, categoriaId, submarcaId, observadorIds } = req.body || {}
+    const { titulo, descripcion, prioridad, categoriaId, submarcaId, sede, observadorIds } = req.body || {}
 
     if (!titulo || !descripcion || !prioridad || !categoriaId) {
       res.status(400).json({ message: 'Título, descripción, prioridad y categoría son obligatorios' })
@@ -55,8 +57,8 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
 
     // La sub-marca debe estar activa, ser de la marca y estar entre las del usuario
     const [submarca, creador] = await Promise.all([
-      SubMarca.findOne({ _id: submarcaId, marca: marcaId, activo: true }).select('_id'),
-      User.findById(req.user?.id).select('submarcas')
+      SubMarca.findOne({ _id: submarcaId, marca: marcaId, activo: true }).select('_id organizaciones onlineBriefId'),
+      User.findById(req.user?.id).select('submarcas organizaciones sedes todosConcesionarios todosImportadores')
     ])
     if (!submarca) {
       res.status(404).json({ message: 'Sub-marca no encontrada o inactiva' })
@@ -64,6 +66,16 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
     }
     if (!creador?.submarcas.some((s) => String(s) === String(submarca._id))) {
       res.status(403).json({ message: 'No puedes crear tickets de esa sub-marca' })
+      return
+    }
+    if (!subMarcaAplica(submarca.organizaciones, creador.organizaciones)) {
+      res.status(403).json({ message: 'Esa sub-marca no aplica a tu organización' })
+      return
+    }
+
+    const contexto = await contextoDelTicket(marcaId, creador, sede, submarca.onlineBriefId)
+    if (!contexto.ok) {
+      res.status(400).json({ message: contexto.mensaje })
       return
     }
 
@@ -95,6 +107,7 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       prioridad,
       categoria: categoriaId,
       submarca: submarca._id,
+      contexto: contexto.contexto,
       marca: marcaId,
       area: categoria.area, // el ticket entra a la cola del área de su categoría
       creadoPor: req.user?.id,

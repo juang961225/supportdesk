@@ -15,6 +15,7 @@ import areaRoutes from './routes/areaRoutes'
 import dashboardRoutes from './routes/dashboardRoutes'
 import horarioRoutes from './routes/horarioRoutes'
 import subMarcaRoutes from './routes/subMarcaRoutes'
+import catalogoRoutes from './routes/catalogoRoutes'
 import { origenesFrontend } from './config/origenes'
 import { iniciarTiempoReal } from './services/tiempoReal'
 import { configurarMedicion, medirPeticiones } from './middlewares/medicion'
@@ -54,6 +55,7 @@ app.use('/api/areas', areaRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/horario', horarioRoutes)
 app.use('/api/submarcas', subMarcaRoutes)
+app.use('/api/catalogos', catalogoRoutes)
 app.use('/api/brands', brandRoutes)
 app.use('/api/categories', categoryRoutes)
 app.use('/api/tickets', ticketRoutes)

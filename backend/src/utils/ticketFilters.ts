@@ -26,7 +26,7 @@ const fecha = (valor: unknown): Date | null => {
 const esPrioridad = (valor: unknown): valor is ITicket['prioridad'] =>
   typeof valor === 'string' && (PRIORIDADES as string[]).includes(valor)
 
-// Condiciones de los filtros de la lista (?q, ?estado, ?prioridad, ?area, ?submarca, ?asignado, ?marca, ?desde, ?hasta, ?vencimiento).
+// Condiciones de los filtros de la lista (?q, ?estado, ?prioridad, ?area, ?submarca, ?organizacion, ?sede, ?asignado, ?marca, ?desde, ?hasta, ?vencimiento).
 // Se combinan con $and sobre el filtro del rol, así que ningún filtro amplía lo que el usuario puede ver.
 // Los valores inválidos se ignoran.
 export const leerFiltrosTicket = (query: Record<string, unknown>): Record<string, unknown>[] => {
@@ -49,6 +49,12 @@ export const leerFiltrosTicket = (query: Record<string, unknown>): Record<string
 
   const submarca = objectId(query.submarca)
   if (submarca) condiciones.push({ submarca })
+
+  // Por nombre: reúne las entradas de un concesionario en las distintas sub-marcas
+  const organizacion = texto(query.organizacion)
+  if (organizacion) condiciones.push({ 'contexto.organizacion': organizacion })
+  const sede = texto(query.sede)
+  if (sede) condiciones.push({ 'contexto.nombre': sede })
 
   if (query.asignado === 'sin_asignar') {
     condiciones.push({ asignadoA: null })

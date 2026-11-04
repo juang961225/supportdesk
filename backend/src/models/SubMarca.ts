@@ -7,6 +7,7 @@ export interface ISubMarca extends Document {
   marca: mongoose.Types.ObjectId
   activo: boolean
   onlineBriefId?: number // id en Online Brief (brand_id), para sincronizar usuarios
+  organizaciones: number[] // organizaciones donde aplica; vacío = todas (BMWi: solo México)
 }
 
 const SubMarcaSchema = new Schema<ISubMarca>(
@@ -27,6 +28,10 @@ const SubMarcaSchema = new Schema<ISubMarca>(
     },
     onlineBriefId: {
       type: Number
+    },
+    organizaciones: {
+      type: [Number],
+      default: []
     }
   },
   {

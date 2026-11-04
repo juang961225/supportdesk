@@ -17,6 +17,10 @@ const migrarMarca = async (marcaId: mongoose.Types.ObjectId, marcaNombre: string
   for (const inicial of iniciales) {
     const existe = await SubMarca.exists({ marca: marcaId, nombre: inicial.nombre })
     if (!existe) await SubMarca.create({ ...inicial, marca: marcaId })
+    // Las creadas antes de existir este campo: si el admin ya lo configuró, no se toca
+    else if (inicial.organizaciones) {
+      await SubMarca.updateOne({ marca: marcaId, nombre: inicial.nombre, organizaciones: { $exists: false } }, { organizaciones: inicial.organizaciones })
+    }
   }
 
   const porDefecto = await SubMarca.findOne({ marca: marcaId, nombre: iniciales[0].nombre })

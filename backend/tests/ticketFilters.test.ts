@@ -31,6 +31,9 @@ describe('leerFiltrosTicket', () => {
   it('sub-marca', () => {
     expect(String((leerFiltrosTicket({ submarca: ID })[0] as { submarca: unknown }).submarca)).toBe(ID)
     expect(leerFiltrosTicket({ submarca: 'no-es-id' })).toEqual([])
+    expect(leerFiltrosTicket({ organizacion: 'MX' })).toEqual([{ 'contexto.organizacion': 'MX' }])
+    expect(leerFiltrosTicket({ sede: 'Centro BMW' })).toEqual([{ 'contexto.nombre': 'Centro BMW' }])
+    expect(leerFiltrosTicket({ sede: { $ne: 'x' } })).toEqual([])
   })
 
   it('área, asignado, marca y "sin asignar"', () => {

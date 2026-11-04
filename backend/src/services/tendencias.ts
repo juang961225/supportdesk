@@ -29,6 +29,7 @@ export interface Tendencias {
   porCategoria: { id: string | null; nombre: string; total: number }[]
   porArea: { id: string | null; nombre: string; total: number }[]
   porSubmarca: { id: string | null; nombre: string; total: number }[]
+  porSede: { nombre: string; total: number }[] // concesionario o importador; solo tickets que lo tienen
   sla: SlaArea[]
   minutosJornada: number // para mostrar el tiempo promedio en días laborales
 }
@@ -70,7 +71,7 @@ export const tendenciasDeMarca = async (marcaId: string, dias: Periodo): Promise
     { $group: { _id: campo, total: { $sum: 1 } } }
   ])
 
-  const [porFecha, porEstado, porCategoria, porArea, porSubmarca, categorias, areas, submarcas, sla] = await Promise.all([
+  const [porFecha, porEstado, porCategoria, porArea, porSubmarca, porSede, categorias, areas, submarcas, sla] = await Promise.all([
     Ticket.aggregate<Conteo>([
       { $match: match },
       {
@@ -90,6 +91,7 @@ export const tendenciasDeMarca = async (marcaId: string, dias: Periodo): Promise
     agrupar('$categoria'),
     agrupar('$area'),
     agrupar('$submarca'),
+    agrupar('$contexto.nombre'),
     TicketCategory.find({ marca: marcaId }).select('nombre').lean(),
     Area.find({ marca: marcaId }).select('nombre').lean(),
     SubMarca.find({ marca: marcaId }).select('nombre').lean(),
@@ -108,6 +110,10 @@ export const tendenciasDeMarca = async (marcaId: string, dias: Periodo): Promise
     porCategoria: conNombres(porCategoria, new Map(categorias.map((c) => [String(c._id), c.nombre])), 'Sin categoría'),
     porArea: conNombres(porArea, new Map(areas.map((a) => [String(a._id), a.nombre])), 'Sin área'),
     porSubmarca: conNombres(porSubmarca, new Map(submarcas.map((s) => [String(s._id), s.nombre])), 'Sin sub-marca'),
+    porSede: porSede
+      .filter((c) => c._id)
+      .map((c) => ({ nombre: String(c._id), total: c.total }))
+      .sort((a, b) => b.total - a.total || a.nombre.localeCompare(b.nombre, 'es')),
     sla,
     minutosJornada: minutosJornada(await horarioDeMarca(marcaId))
   }

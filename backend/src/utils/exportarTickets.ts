@@ -17,6 +17,7 @@ export interface TicketExportable {
   area?: { nombre: string } | null
   categoria?: { nombre: string } | null
   submarca?: { nombre: string } | null
+  contexto?: { organizacion?: string; nombre?: string } | null
   creadoPor?: { nombre: string } | null
   asignadoA?: { nombre: string } | null
   marca?: { nombre: string } | null
@@ -28,6 +29,8 @@ export interface FilaExportacion {
   prioridad: string
   marca: string
   submarca: string
+  organizacion: string
+  sede: string
   area: string
   categoria: string
   creadoPor: string
@@ -56,6 +59,8 @@ const COLUMNAS_EXCEL: Columna[] = [
   { clave: 'prioridad', titulo: 'Prioridad', ancho: 10 },
   { clave: 'marca', titulo: 'Marca', ancho: 16 },
   { clave: 'submarca', titulo: 'Sub-marca', ancho: 14 },
+  { clave: 'organizacion', titulo: 'Organización', ancho: 12 },
+  { clave: 'sede', titulo: 'Concesionario / importador', ancho: 30 },
   { clave: 'area', titulo: 'Área', ancho: 18 },
   { clave: 'categoria', titulo: 'Categoría', ancho: 18 },
   { clave: 'creadoPor', titulo: 'Creado por', ancho: 20 },
@@ -98,6 +103,8 @@ export const armarFilas = (
       prioridad: prioridadLegible[t.prioridad] ?? t.prioridad,
       marca: t.marca?.nombre ?? '',
       submarca: t.submarca?.nombre ?? 'Sin sub-marca',
+      organizacion: t.contexto?.organizacion ?? '',
+      sede: t.contexto?.nombre ?? '',
       area: t.area?.nombre ?? 'Sin área',
       categoria: t.categoria?.nombre ?? '',
       creadoPor: t.creadoPor?.nombre ?? '',

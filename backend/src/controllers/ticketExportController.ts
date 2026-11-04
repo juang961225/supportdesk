@@ -47,6 +47,8 @@ const describirFiltros = async (query: Record<string, unknown>): Promise<string[
   if (area) filtros.push(`Área: ${area}`)
   const submarca = await nombreDe('submarca', query.submarca)
   if (submarca) filtros.push(`Sub-marca: ${submarca}`)
+  if (typeof query.organizacion === 'string' && query.organizacion.trim()) filtros.push(`Organización: ${query.organizacion.trim()}`)
+  if (typeof query.sede === 'string' && query.sede.trim()) filtros.push(`Concesionario / importador: ${query.sede.trim()}`)
   if (query.asignado === 'sin_asignar') filtros.push('Asignado: Sin asignar')
   else {
     const asignado = await nombreDe('usuario', query.asignado)
@@ -87,7 +89,7 @@ export const exportarTickets = async (req: AuthRequest, res: Response, next: Nex
     }
 
     const leidos = await Ticket.find(filtro)
-      .select('titulo estado prioridad createdAt fechaLimite fechaCierre area categoria submarca creadoPor asignadoA marca')
+      .select('titulo estado prioridad createdAt fechaLimite fechaCierre area categoria submarca contexto creadoPor asignadoA marca')
       .populate('area', 'nombre')
       .populate('categoria', 'nombre')
       .populate('submarca', 'nombre')

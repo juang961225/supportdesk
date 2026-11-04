@@ -29,6 +29,7 @@ interface TicketNotificable {
   marca: mongoose.Types.ObjectId
   area?: { _id: mongoose.Types.ObjectId; nombre: string } | null
   submarca?: { nombre: string } | null
+  contexto?: { nombre?: string } | null
   creadoPor: mongoose.Types.ObjectId
   asignadoA?: mongoose.Types.ObjectId | null
   observadores?: mongoose.Types.ObjectId[]
@@ -79,7 +80,7 @@ const idsDestinatarios = async (ticket: TicketNotificable, evento: EventoNotific
 
 const contenido = (ticket: TicketNotificable, evento: EventoNotificable, actor: string): Omit<DatosPlantilla, 'enlace'> & { asunto: string } => {
   const area = ticket.area?.nombre ?? 'Sin área'
-  const base = { ticketTitulo: ticket.titulo, detalle: `${ticket.submarca ? `Sub-marca: ${ticket.submarca.nombre} · ` : ''}Área: ${area} · Prioridad: ${prioridadLegible[ticket.prioridad] ?? ticket.prioridad}` }
+  const base = { ticketTitulo: ticket.titulo, detalle: `${ticket.submarca ? `Sub-marca: ${ticket.submarca.nombre} · ` : ''}${ticket.contexto?.nombre ? `${ticket.contexto.nombre} · ` : ''}Área: ${area} · Prioridad: ${prioridadLegible[ticket.prioridad] ?? ticket.prioridad}` }
   switch (evento.tipo) {
     case 'creado':
       return { ...base, asunto: `Nuevo ticket: ${ticket.titulo}`, resumen: `${actor} creó un ticket en ${area}.`, extracto: ticket.descripcion }
@@ -104,7 +105,7 @@ const contenido = (ticket: TicketNotificable, evento: EventoNotificable, actor: 
 const procesar = async (ticketId: Id, actorId: Id, evento: EventoNotificable): Promise<void> => {
   const [ticket, actor] = await Promise.all([
     Ticket.findById(ticketId)
-      .select('titulo descripcion prioridad marca area submarca creadoPor asignadoA observadores')
+      .select('titulo descripcion prioridad marca area submarca contexto creadoPor asignadoA observadores')
       .populate('area', 'nombre')
       .populate('submarca', 'nombre')
       .lean<TicketNotificable>(),

@@ -2,9 +2,11 @@ import { Response, NextFunction } from 'express'
 import SubMarca from '../models/SubMarca'
 import User from '../models/User'
 import { AuthRequest } from '../middlewares/auth'
+import { catalogoDeMarca } from '../services/catalogoOnlineBrief'
+import { subMarcaAplica } from '../utils/contextoUsuario'
 
 // GET /api/submarcas — superadmin: todas (solo lectura) · admin: las de su marca
-// soporte: las activas de su marca · usuario: las suyas activas
+// soporte: las activas de su marca · usuario: las suyas activas que apliquen a su organización
 export const getSubMarcas = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { rol, marca, id } = req.user!
@@ -17,8 +19,11 @@ export const getSubMarcas = async (req: AuthRequest, res: Response, next: NextFu
 
     const filtro: Record<string, unknown> = rol === 'admin' ? { marca } : { marca, activo: true }
     if (rol === 'usuario') {
-      const usuario = await User.findById(id).select('submarcas').lean()
+      const usuario = await User.findById(id).select('submarcas organizaciones').lean()
       filtro._id = { $in: usuario?.submarcas ?? [] }
+      const suyas = await SubMarca.find(filtro).sort({ nombre: 1 })
+      res.status(200).json({ submarcas: suyas.filter((s) => subMarcaAplica(s.organizaciones, usuario?.organizaciones)) })
+      return
     }
 
     const submarcas = await SubMarca.find(filtro).sort({ nombre: 1 })
@@ -32,8 +37,13 @@ export const getSubMarcas = async (req: AuthRequest, res: Response, next: NextFu
 // POST /api/submarcas — crear sub-marca (admin)
 export const createSubMarca = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { nombre } = req.body
+    const { nombre, organizaciones } = req.body
     const marca = req.user?.marca
+
+    if (organizaciones && !(await organizacionesValidas(organizaciones, marca))) {
+      res.status(400).json({ message: 'Alguna de las organizaciones no existe' })
+      return
+    }
 
     const existing = await SubMarca.findOne({ marca, nombre })
     if (existing) {
@@ -41,7 +51,7 @@ export const createSubMarca = async (req: AuthRequest, res: Response, next: Next
       return
     }
 
-    const submarca = await SubMarca.create({ nombre, marca })
+    const submarca = await SubMarca.create({ nombre, marca, organizaciones: organizaciones ?? [] })
     res.status(201).json({ message: 'Sub-marca creada exitosamente', submarca })
 
   } catch (error) {
@@ -49,11 +59,22 @@ export const createSubMarca = async (req: AuthRequest, res: Response, next: Next
   }
 }
 
-// PUT /api/submarcas/:id — renombrar (admin)
+// Si la marca no usa el catálogo de Online Brief no hay organizaciones que configurar
+const organizacionesValidas = async (organizaciones: number[], marca: string | undefined): Promise<boolean> => {
+  const catalogo = await catalogoDeMarca(marca)
+  return organizaciones.every((o) => catalogo?.organizaciones.some((org) => org.id === o))
+}
+
+// PUT /api/submarcas/:id — renombrar y definir en qué organizaciones aplica (admin)
 export const updateSubMarca = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { nombre } = req.body
+    const { nombre, organizaciones } = req.body
     const marca = req.user?.marca
+
+    if (organizaciones && !(await organizacionesValidas(organizaciones, marca))) {
+      res.status(400).json({ message: 'Alguna de las organizaciones no existe' })
+      return
+    }
 
     const submarca = await SubMarca.findOne({ _id: req.params.id, marca })
     if (!submarca) {
@@ -68,6 +89,7 @@ export const updateSubMarca = async (req: AuthRequest, res: Response, next: Next
     }
 
     submarca.nombre = nombre
+    if (organizaciones) submarca.organizaciones = organizaciones
     await submarca.save()
     res.status(200).json({ message: 'Sub-marca actualizada exitosamente', submarca })
 
