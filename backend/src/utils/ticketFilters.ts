@@ -26,7 +26,7 @@ const fecha = (valor: unknown): Date | null => {
 const esPrioridad = (valor: unknown): valor is ITicket['prioridad'] =>
   typeof valor === 'string' && (PRIORIDADES as string[]).includes(valor)
 
-// Condiciones de los filtros de la lista (?q, ?estado, ?prioridad, ?area, ?asignado, ?marca, ?desde, ?hasta, ?vencimiento).
+// Condiciones de los filtros de la lista (?q, ?estado, ?prioridad, ?area, ?submarca, ?asignado, ?marca, ?desde, ?hasta, ?vencimiento).
 // Se combinan con $and sobre el filtro del rol, así que ningún filtro amplía lo que el usuario puede ver.
 // Los valores inválidos se ignoran.
 export const leerFiltrosTicket = (query: Record<string, unknown>): Record<string, unknown>[] => {
@@ -46,6 +46,9 @@ export const leerFiltrosTicket = (query: Record<string, unknown>): Record<string
 
   const area = objectId(query.area)
   if (area) condiciones.push({ area })
+
+  const submarca = objectId(query.submarca)
+  if (submarca) condiciones.push({ submarca })
 
   if (query.asignado === 'sin_asignar') {
     condiciones.push({ asignadoA: null })

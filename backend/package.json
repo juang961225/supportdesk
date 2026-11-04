@@ -10,7 +10,8 @@
     "test": "jest",
     "migrate:areas": "ts-node src/scripts/migrateAreas.ts",
     "carga:datos": "ts-node -P tsconfig.test.json carga/datos.ts",
-    "carga:prueba": "ts-node -P tsconfig.test.json carga/prueba.ts"
+    "carga:prueba": "ts-node -P tsconfig.test.json carga/prueba.ts",
+    "migrate:submarcas": "ts-node src/scripts/migrateSubmarcas.ts"
   },
   "keywords": [],
   "author": "",

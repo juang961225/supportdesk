@@ -12,6 +12,7 @@ export interface ITicket extends Document {
   asignadoA?: mongoose.Types.ObjectId
   marca: mongoose.Types.ObjectId
   observadores: mongoose.Types.ObjectId[] // usuarios que siguen el ticket (ven y comentan)
+  submarca?: mongoose.Types.ObjectId
   area?: mongoose.Types.ObjectId // área actual (puede diferir de la de su categoría tras moverlo)
   fechaLimite?: Date
   fechaCierre?: Date
@@ -71,6 +72,11 @@ const TicketSchema = new Schema<ITicket>(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Area'
     },
+    // Obligatoria al crear (validacion/esquemas); opcional aquí por los tickets anteriores a la migración
+    submarca: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'SubMarca'
+    },
     fechaLimite: {
       type: Date
     },
@@ -94,5 +100,6 @@ TicketSchema.index({ marca: 1, createdAt: -1 })
 TicketSchema.index({ creadoPor: 1, createdAt: -1 })
 TicketSchema.index({ asignadoA: 1, estado: 1 })
 TicketSchema.index({ marca: 1, updatedAt: -1 })
+TicketSchema.index({ marca: 1, submarca: 1 })
 
 export default mongoose.model<ITicket>('Ticket', TicketSchema)

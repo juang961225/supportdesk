@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express'
 import mongoose from 'mongoose'
 import Ticket from '../models/Ticket'
 import TicketCategory from '../models/TicketCategory'
+import SubMarca from '../models/SubMarca'
 import User from '../models/User'
 import TicketEvent, { TipoEvento } from '../models/TicketEvent'
 import { esEstadoValido, puedeTransicionar, aplicarEstado } from '../utils/ticketStatus'
@@ -22,7 +23,7 @@ import { avisarCambioTicket } from '../services/tiempoReal'
 // POST /api/tickets — crear ticket (usuario). multipart/form-data: campos + archivos opcionales
 export const createTicket = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { titulo, descripcion, prioridad, categoriaId, observadorIds } = req.body || {}
+    const { titulo, descripcion, prioridad, categoriaId, submarcaId, observadorIds } = req.body || {}
 
     if (!titulo || !descripcion || !prioridad || !categoriaId) {
       res.status(400).json({ message: 'Título, descripción, prioridad y categoría son obligatorios' })
@@ -49,6 +50,20 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
     })
     if (!categoria) {
       res.status(404).json({ message: 'Categoría no encontrada o inactiva' })
+      return
+    }
+
+    // La sub-marca debe estar activa, ser de la marca y estar entre las del usuario
+    const [submarca, creador] = await Promise.all([
+      SubMarca.findOne({ _id: submarcaId, marca: marcaId, activo: true }).select('_id'),
+      User.findById(req.user?.id).select('submarcas')
+    ])
+    if (!submarca) {
+      res.status(404).json({ message: 'Sub-marca no encontrada o inactiva' })
+      return
+    }
+    if (!creador?.submarcas.some((s) => String(s) === String(submarca._id))) {
+      res.status(403).json({ message: 'No puedes crear tickets de esa sub-marca' })
       return
     }
 
@@ -79,6 +94,7 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       descripcion,
       prioridad,
       categoria: categoriaId,
+      submarca: submarca._id,
       marca: marcaId,
       area: categoria.area, // el ticket entra a la cola del área de su categoría
       creadoPor: req.user?.id,
@@ -137,6 +153,7 @@ export const getTickets = async (req: AuthRequest, res: Response, next: NextFunc
       .populate('asignadoA', 'nombre email')
       .populate('marca', 'nombre')
       .populate('area', 'nombre')
+      .populate('submarca', 'nombre')
       .sort({ createdAt: -1, _id: -1 }) // _id desempata para que las páginas no se solapen
 
     // Cada ticket va con su SLA actual (barra de plazo en las tarjetas)

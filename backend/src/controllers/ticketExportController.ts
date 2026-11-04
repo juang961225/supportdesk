@@ -4,6 +4,7 @@ import Ticket from '../models/Ticket'
 import Area from '../models/Area'
 import User from '../models/User'
 import Brand from '../models/Brand'
+import SubMarca from '../models/SubMarca'
 import { AuthRequest } from '../middlewares/auth'
 import { filtroDeLista } from '../utils/ticketFilters'
 import { resumenSla } from '../utils/tramos'
@@ -21,10 +22,12 @@ const TIPOS_CONTENIDO = {
   pdf: 'application/pdf'
 } as const
 
-const nombreDe = async (modelo: 'area' | 'usuario' | 'marca', id: unknown): Promise<string | null> => {
+const nombreDe = async (modelo: 'area' | 'usuario' | 'marca' | 'submarca', id: unknown): Promise<string | null> => {
   if (typeof id !== 'string' || !mongoose.isValidObjectId(id)) return null
   const doc = modelo === 'area'
     ? await Area.findById(id).select('nombre').lean()
+    : modelo === 'submarca'
+    ? await SubMarca.findById(id).select('nombre').lean()
     : modelo === 'usuario'
       ? await User.findById(id).select('nombre').lean()
       : await Brand.findById(id).select('nombre').lean()
@@ -42,6 +45,8 @@ const describirFiltros = async (query: Record<string, unknown>): Promise<string[
   if (marca) filtros.push(`Marca: ${marca}`)
   const area = await nombreDe('area', query.area)
   if (area) filtros.push(`Área: ${area}`)
+  const submarca = await nombreDe('submarca', query.submarca)
+  if (submarca) filtros.push(`Sub-marca: ${submarca}`)
   if (query.asignado === 'sin_asignar') filtros.push('Asignado: Sin asignar')
   else {
     const asignado = await nombreDe('usuario', query.asignado)
@@ -82,9 +87,10 @@ export const exportarTickets = async (req: AuthRequest, res: Response, next: Nex
     }
 
     const leidos = await Ticket.find(filtro)
-      .select('titulo estado prioridad createdAt fechaLimite fechaCierre area categoria creadoPor asignadoA marca')
+      .select('titulo estado prioridad createdAt fechaLimite fechaCierre area categoria submarca creadoPor asignadoA marca')
       .populate('area', 'nombre')
       .populate('categoria', 'nombre')
+      .populate('submarca', 'nombre')
       .populate('creadoPor', 'nombre')
       .populate('asignadoA', 'nombre')
       .populate('marca', 'nombre')

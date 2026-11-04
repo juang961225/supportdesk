@@ -52,7 +52,7 @@ describe('usuarios', () => {
 
 describe('tickets y comentarios', () => {
   it('crear ticket: un observador o varios, prioridad válida, largos máximos', () => {
-    const base = { titulo: 'Falla', descripcion: 'No imprime', prioridad: 'alta', categoriaId: ID }
+    const base = { titulo: 'Falla', descripcion: 'No imprime', prioridad: 'alta', categoriaId: ID, submarcaId: ID }
     expect(esquemaCrearTicket.parse({ ...base, observadorIds: ID }).observadorIds).toBe(ID)
     expect(esquemaCrearTicket.parse({ ...base, observadorIds: [ID, ID] }).observadorIds).toEqual([ID, ID])
     expect(primerError(esquemaCrearTicket.safeParse({ ...base, prioridad: 'urgentisima' }))).toBe('Prioridad inválida')
@@ -85,8 +85,21 @@ describe('áreas y categorías', () => {
 
 describe('mensajes con la concordancia correcta', () => {
   it('femenino y masculino', () => {
-    expect(primerError(esquemaCrearTicket.safeParse({ titulo: 'x', prioridad: 'alta', categoriaId: ID }))).toBe('La descripción es obligatoria')
-    expect(primerError(esquemaCrearTicket.safeParse({ descripcion: 'x', prioridad: 'alta', categoriaId: ID }))).toBe('El título es obligatorio')
-    expect(primerError(esquemaCrearTicket.safeParse({ titulo: 'x', descripcion: 'x', prioridad: 'alta' }))).toBe('La categoría es obligatoria')
+    expect(primerError(esquemaCrearTicket.safeParse({ titulo: 'x', prioridad: 'alta', categoriaId: ID, submarcaId: ID }))).toBe('La descripción es obligatoria')
+    expect(primerError(esquemaCrearTicket.safeParse({ descripcion: 'x', prioridad: 'alta', categoriaId: ID, submarcaId: ID }))).toBe('El título es obligatorio')
+    expect(primerError(esquemaCrearTicket.safeParse({ titulo: 'x', descripcion: 'x', prioridad: 'alta', submarcaId: ID }))).toBe('La categoría es obligatoria')
+  })
+})
+
+describe('sub-marcas', () => {
+  it('crear ticket exige sub-marca', () => {
+    const base = { titulo: 'x', descripcion: 'y', prioridad: 'alta', categoriaId: ID }
+    expect(primerError(esquemaCrearTicket.safeParse(base))).toBe('La sub-marca es obligatoria')
+    expect(esquemaCrearTicket.safeParse({ ...base, submarcaId: ID }).success).toBe(true)
+  })
+
+  it('usuarios: lista de sub-marcas', () => {
+    expect(esquemaEditarUsuario.parse({ submarcaIds: [ID] })).toEqual({ submarcaIds: [ID] })
+    expect(esquemaEditarUsuario.safeParse({ submarcaIds: ['abc'] }).success).toBe(false)
   })
 })

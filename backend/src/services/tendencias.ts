@@ -2,6 +2,7 @@ import mongoose from 'mongoose'
 import Ticket from '../models/Ticket'
 import TicketCategory from '../models/TicketCategory'
 import Area from '../models/Area'
+import SubMarca from '../models/SubMarca'
 import { slaPorArea, SlaArea } from './tramos'
 import { horarioDeMarca } from './horario'
 import { minutosJornada } from '../utils/horarioLaboral'
@@ -27,6 +28,7 @@ export interface Tendencias {
   porEstado: { estado: string; total: number }[]
   porCategoria: { id: string | null; nombre: string; total: number }[]
   porArea: { id: string | null; nombre: string; total: number }[]
+  porSubmarca: { id: string | null; nombre: string; total: number }[]
   sla: SlaArea[]
   minutosJornada: number // para mostrar el tiempo promedio en días laborales
 }
@@ -68,7 +70,7 @@ export const tendenciasDeMarca = async (marcaId: string, dias: Periodo): Promise
     { $group: { _id: campo, total: { $sum: 1 } } }
   ])
 
-  const [porFecha, porEstado, porCategoria, porArea, categorias, areas, sla] = await Promise.all([
+  const [porFecha, porEstado, porCategoria, porArea, porSubmarca, categorias, areas, submarcas, sla] = await Promise.all([
     Ticket.aggregate<Conteo>([
       { $match: match },
       {
@@ -87,8 +89,10 @@ export const tendenciasDeMarca = async (marcaId: string, dias: Periodo): Promise
     agrupar('$estado'),
     agrupar('$categoria'),
     agrupar('$area'),
+    agrupar('$submarca'),
     TicketCategory.find({ marca: marcaId }).select('nombre').lean(),
     Area.find({ marca: marcaId }).select('nombre').lean(),
+    SubMarca.find({ marca: marcaId }).select('nombre').lean(),
     slaPorArea(marcaId, dias)
   ])
 
@@ -103,6 +107,7 @@ export const tendenciasDeMarca = async (marcaId: string, dias: Periodo): Promise
     porEstado: ORDEN_ESTADOS.map((estado) => ({ estado, total: totalPorEstado.get(estado) ?? 0 })),
     porCategoria: conNombres(porCategoria, new Map(categorias.map((c) => [String(c._id), c.nombre])), 'Sin categoría'),
     porArea: conNombres(porArea, new Map(areas.map((a) => [String(a._id), a.nombre])), 'Sin área'),
+    porSubmarca: conNombres(porSubmarca, new Map(submarcas.map((s) => [String(s._id), s.nombre])), 'Sin sub-marca'),
     sla,
     minutosJornada: minutosJornada(await horarioDeMarca(marcaId))
   }

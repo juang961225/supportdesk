@@ -9,6 +9,7 @@ export interface IUser extends Document {
   estado: 'activo' | 'inactivo'
   marca?: mongoose.Types.ObjectId  // ← opcional, SuperAdmin no la tiene
   areas: mongoose.Types.ObjectId[] // solo soporte: áreas a las que pertenece
+  submarcas: mongoose.Types.ObjectId[] // solo usuario: sub-marcas de las que puede crear tickets
   // 'online_brief': el usuario y su contraseña se administran en Online Brief (no se cambian aquí)
   origen: 'local' | 'online_brief'
   onlineBriefId?: string // _id del usuario en Online Brief (migración / sincronización)
@@ -34,6 +35,10 @@ const UserSchema = new Schema<IUser>(
       type: String,
       required: [true, 'La contraseña es obligatoria'],
       minlength: 6
+    },
+    submarcas: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'SubMarca' }],
+      default: []
     },
     origen: {
       type: String,
