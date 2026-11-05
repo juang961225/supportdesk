@@ -1,5 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose'
 import { HorarioLaboral, HORARIO_POR_DEFECTO } from '../utils/horarioLaboral'
+import { AjustePlazos } from '../utils/fechaLimite'
+import { PlazosSchema } from './esquemaPlazos'
 
 export interface IBrand extends Document {
   nombre: string
@@ -8,6 +10,7 @@ export interface IBrand extends Document {
   estado: 'activo' | 'inactivo'
   admin?: mongoose.Types.ObjectId
   horario: HorarioLaboral // para fechas límite y SLA (lo ajusta el admin)
+  plazos?: AjustePlazos // plazos base por prioridad; sin definir usa los valores por defecto
   createdAt: Date
 }
 
@@ -48,7 +51,8 @@ const BrandSchema = new Schema<IBrand>(
         default: null
       },
       festivos: { type: [String], default: () => [] }
-    }
+    },
+    plazos: { type: PlazosSchema, default: undefined }
   },
   {
     timestamps: true

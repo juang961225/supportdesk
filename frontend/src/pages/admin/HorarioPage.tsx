@@ -4,6 +4,7 @@ import axios from 'axios'
 import Layout from '../../components/Layout'
 import { PageSkeleton } from '../../components/Skeleton'
 import EmptyState from '../../components/EmptyState'
+import PlazosMarcaForm from '../../components/PlazosMarcaForm'
 import { getHorario, updateHorario } from '../../services/horarioService'
 import { useToast } from '../../hooks/useToast'
 import { formatDuracion } from '../../utils/fechas'
@@ -135,7 +136,7 @@ function HorarioPage() {
   return (
     <Layout>
       <div className="max-w-3xl">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Horario laboral</h2>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Horario y plazos</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
           Las fechas límite cuentan solo este horario (hora Colombia). Los cambios aplican a las fechas que se
           calculen desde ahora: tickets nuevos, movidos de área o reabiertos. Las actuales no cambian.
@@ -298,6 +299,8 @@ function HorarioPage() {
             </button>
           </div>
         </form>
+
+        <PlazosMarcaForm />
       </div>
     </Layout>
   )

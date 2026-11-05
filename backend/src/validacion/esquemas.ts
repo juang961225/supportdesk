@@ -88,8 +88,16 @@ export const esquemaEditarMarca = z.object({
 })
 export const esquemaAsignarAdmin = z.object({ adminId: objectId('El admin') })
 
-export const esquemaArea = z.object({ nombre: texto('El nombre del área', 100), descripcion: textoOpcional('La descripción', 500) })
-export const esquemaEditarArea = z.object({ nombre: texto('El nombre del área', 100).optional(), descripcion: textoOpcional('La descripción', 500) })
+// Plazos por prioridad: la marca define los cuatro; el área, solo los que quiera ajustar
+const plazo = z.object({
+  valor: z.number({ error: 'El plazo debe ser un número' }).int('El plazo debe ser un número entero').min(1, 'El plazo debe ser mayor que cero').max(1000, 'El plazo es demasiado largo'),
+  unidad: z.enum(['horas', 'dias'], { error: 'La unidad debe ser horas o días' })
+}, { error: 'El plazo no es válido' })
+export const esquemaPlazos = z.object({ critica: plazo, alta: plazo, media: plazo, baja: plazo }, { error: 'Los plazos no son válidos' })
+export const esquemaAjustePlazos = esquemaPlazos.partial()
+
+export const esquemaArea = z.object({ nombre: texto('El nombre del área', 100), descripcion: textoOpcional('La descripción', 500), plazos: esquemaAjustePlazos.optional() })
+export const esquemaEditarArea = z.object({ nombre: texto('El nombre del área', 100).optional(), descripcion: textoOpcional('La descripción', 500), plazos: esquemaAjustePlazos.optional() })
 export const esquemaEstadoArea = z.object({ activo: z.boolean({ error: 'Indica si el área queda activa' }) })
 
 export const esquemaSubMarca = z.object({ nombre: texto('El nombre de la sub-marca', 100), organizaciones: organizacionesIds.optional() })

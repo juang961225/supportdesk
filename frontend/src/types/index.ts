@@ -47,7 +47,18 @@ export interface Area {
   descripcion?: string
   activo: boolean
   marca: string
+  plazos?: AjustePlazos // lo que falte viene de la marca
 }
+
+// Plazos por prioridad, en tiempo laboral
+export type Prioridad = 'critica' | 'alta' | 'media' | 'baja'
+export type UnidadPlazo = 'horas' | 'dias'
+export interface Plazo {
+  valor: number
+  unidad: UnidadPlazo
+}
+export type Plazos = Record<Prioridad, Plazo>
+export type AjustePlazos = Partial<Plazos>
 
 export interface Brand {
   _id: string

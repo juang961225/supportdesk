@@ -1,7 +1,8 @@
 import mongoose from 'mongoose'
 import Brand from '../models/Brand'
 import { HorarioLaboral, HORARIO_POR_DEFECTO } from '../utils/horarioLaboral'
-import { calcularFechaLimite } from '../utils/fechaLimite'
+import Area from '../models/Area'
+import { Plazos, calcularFechaLimite, resolverPlazos } from '../utils/fechaLimite'
 import { CacheMemoria } from './cacheMemoria'
 
 // El horario casi nunca cambia y se usa en cada lista (SLA): 60 s en memoria, se borra al guardarlo
@@ -21,9 +22,23 @@ const leerHorario = async (marcaId: mongoose.Types.ObjectId | string): Promise<H
   return { dias: horario.dias, inicio: horario.inicio, fin: horario.fin, pausa, festivos: horario.festivos ?? [] }
 }
 
-// Fecha límite de un ticket de esa marca, en tiempo laboral desde `desde`
-export const fechaLimiteDeMarca = async (
+// Plazos base de la marca. Se consultan solo al calcular una fecha límite o abrir la configuración: sin caché
+export const plazosDeMarca = async (marcaId: mongoose.Types.ObjectId | string): Promise<Plazos> => {
+  const marca = await Brand.findById(marcaId).select('plazos').lean()
+  return resolverPlazos(marca?.plazos)
+}
+
+// Fecha límite de un ticket en esa área: plazos de la marca con el ajuste del área, en tiempo laboral desde `desde`
+export const fechaLimiteDeTicket = async (
   marcaId: mongoose.Types.ObjectId | string,
+  areaId: mongoose.Types.ObjectId | string | undefined,
   prioridad: string,
   desde: Date = new Date()
-): Promise<Date> => calcularFechaLimite(prioridad, await horarioDeMarca(marcaId), desde)
+): Promise<Date> => {
+  const [horario, marca, area] = await Promise.all([
+    horarioDeMarca(marcaId),
+    Brand.findById(marcaId).select('plazos').lean(),
+    areaId ? Area.findById(areaId).select('plazos').lean() : null
+  ])
+  return calcularFechaLimite(prioridad, horario, desde, resolverPlazos(marca?.plazos, area?.plazos))
+}

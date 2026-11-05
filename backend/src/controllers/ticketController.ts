@@ -14,7 +14,7 @@ import { registrarEvento } from '../services/ticketEvents'
 import { notificar } from '../services/notificaciones'
 import { conSla } from '../services/slaActual'
 import { findTicketResponse } from '../services/ticketQueries'
-import { fechaLimiteDeMarca } from '../services/horario'
+import { fechaLimiteDeTicket } from '../services/horario'
 import { buscarObservadorValido } from './ticketObserverController'
 import { guardarAdjuntos } from '../services/attachments'
 import { storageConfigurado } from '../services/storage'
@@ -100,7 +100,7 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       observadores.push(observador)
     }
 
-    const fechaLimite = await fechaLimiteDeMarca(marcaId, prioridad)
+    const fechaLimite = await fechaLimiteDeTicket(marcaId, categoria.area, prioridad)
 
     const ticket = await Ticket.create({
       titulo,
@@ -340,7 +340,7 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
     const fechaLimiteAnterior = ticket.fechaLimite
     aplicarEstado(ticket, estado)
     if (estado === 'reabierto') {
-      ticket.fechaLimite = await fechaLimiteDeMarca(ticket.marca, ticket.prioridad)
+      ticket.fechaLimite = await fechaLimiteDeTicket(ticket.marca, ticket.area, ticket.prioridad)
     }
     await ticket.save()
 

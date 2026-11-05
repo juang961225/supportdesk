@@ -1,18 +1,53 @@
 import { HorarioLaboral, minutosJornada, sumarMinutosLaborales } from './horarioLaboral'
 
-// Plazo por prioridad en tiempo laboral: horas, o días (1 día = 1 jornada del horario de la marca)
-const PLAZOS: Record<string, { horas: number } | { dias: number }> = {
-  critica: { horas: 4 },
-  alta: { dias: 1 },
-  media: { dias: 3 },
-  baja: { dias: 5 }
+// Plazos por prioridad en tiempo laboral: horas, o días (1 día = 1 jornada del horario de la marca).
+// El admin define los de la marca y, si hace falta, los ajusta por área.
+
+export type Prioridad = 'critica' | 'alta' | 'media' | 'baja'
+
+export interface Plazo {
+  valor: number
+  unidad: 'horas' | 'dias'
 }
 
-const minutosDePlazo = (prioridad: string, horario: HorarioLaboral): number => {
-  const plazo = PLAZOS[prioridad] ?? PLAZOS.media
-  return 'horas' in plazo ? plazo.horas * 60 : plazo.dias * minutosJornada(horario)
+export type Plazos = Record<Prioridad, Plazo>
+export type AjustePlazos = Partial<Record<Prioridad, Plazo | null>>
+
+export const PLAZOS_POR_DEFECTO: Plazos = {
+  critica: { valor: 4, unidad: 'horas' },
+  alta: { valor: 1, unidad: 'dias' },
+  media: { valor: 3, unidad: 'dias' },
+  baja: { valor: 5, unidad: 'dias' }
+}
+
+const PRIORIDADES = Object.keys(PLAZOS_POR_DEFECTO) as Prioridad[]
+
+// Lo que viene de la base solo reemplaza si está completo
+const soloDefinidos = (ajuste: AjustePlazos | null | undefined): Partial<Plazos> => {
+  const definidos: Partial<Plazos> = {}
+  for (const prioridad of PRIORIDADES) {
+    const plazo = ajuste?.[prioridad]
+    if (plazo?.valor && plazo.unidad) definidos[prioridad] = { valor: plazo.valor, unidad: plazo.unidad }
+  }
+  return definidos
+}
+
+// Lo del área manda sobre lo de la marca, y lo de la marca sobre los valores por defecto
+export const resolverPlazos = (marca?: AjustePlazos | null, area?: AjustePlazos | null): Plazos => ({
+  ...PLAZOS_POR_DEFECTO,
+  ...soloDefinidos(marca),
+  ...soloDefinidos(area)
+})
+
+const minutosDePlazo = (prioridad: string, horario: HorarioLaboral, plazos: Plazos): number => {
+  const plazo = plazos[prioridad as Prioridad] ?? plazos.media
+  return plazo.unidad === 'horas' ? plazo.valor * 60 : plazo.valor * minutosJornada(horario)
 }
 
 // Calcula la fecha límite según la prioridad, contando solo el horario laboral de la marca
-export const calcularFechaLimite = (prioridad: string, horario: HorarioLaboral, desde: Date = new Date()): Date =>
-  sumarMinutosLaborales(desde, minutosDePlazo(prioridad, horario), horario)
+export const calcularFechaLimite = (
+  prioridad: string,
+  horario: HorarioLaboral,
+  desde: Date = new Date(),
+  plazos: Plazos = PLAZOS_POR_DEFECTO
+): Date => sumarMinutosLaborales(desde, minutosDePlazo(prioridad, horario, plazos), horario)

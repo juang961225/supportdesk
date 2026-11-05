@@ -21,7 +21,7 @@ const menuItems = {
     { label: 'Sub-marcas', icono: Tags, path: '/admin/submarcas' },
     { label: 'Categorías', icono: FolderTree, path: '/admin/categories' },
     { label: 'Usuarios', icono: Users, path: '/admin/users' },
-    { label: 'Horario laboral', icono: Clock, path: '/admin/horario' },
+    { label: 'Horario y plazos', icono: Clock, path: '/admin/horario' },
   ],
   soporte: [
     { label: 'Tickets', icono: Ticket, path: '/soporte/dashboard' },

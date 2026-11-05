@@ -23,7 +23,7 @@ export const getAreas = async (req: AuthRequest, res: Response, next: NextFuncti
 // POST /api/areas — crear área (admin)
 export const createArea = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { nombre, descripcion } = req.body || {}
+    const { nombre, descripcion, plazos } = req.body || {}
     const marca = req.user?.marca
 
     if (!nombre) {
@@ -37,7 +37,7 @@ export const createArea = async (req: AuthRequest, res: Response, next: NextFunc
       return
     }
 
-    const area = await Area.create({ nombre, descripcion, marca })
+    const area = await Area.create({ nombre, descripcion, marca, plazos })
 
     res.status(201).json({ message: 'Área creada exitosamente', area })
 
@@ -46,10 +46,11 @@ export const createArea = async (req: AuthRequest, res: Response, next: NextFunc
   }
 }
 
-// PUT /api/areas/:id — editar nombre y descripción (admin)
+// PUT /api/areas/:id — editar nombre, descripción y ajuste de plazos (admin).
+// Los plazos reemplazan el ajuste anterior y valen para las fechas que se calculen desde ahora
 export const updateArea = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { nombre, descripcion } = req.body || {}
+    const { nombre, descripcion, plazos } = req.body || {}
     const marca = req.user?.marca
 
     const area = await Area.findOne({ _id: req.params.id, marca })
@@ -67,6 +68,7 @@ export const updateArea = async (req: AuthRequest, res: Response, next: NextFunc
       area.nombre = nombre
     }
     if (descripcion !== undefined) area.descripcion = descripcion
+    if (plazos !== undefined) area.plazos = plazos
 
     await area.save()
 
