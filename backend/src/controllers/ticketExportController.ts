@@ -86,10 +86,11 @@ export const exportarTickets = async (req: AuthRequest, res: Response, next: Nex
     }
 
     const leidos = await Ticket.find(filtro)
-      .select('titulo estado prioridad createdAt fechaLimite fechaCierre fechaLimiteArea area categoria submarca contexto creadoPor asignadoA marca')
+      .select('titulo estado prioridad createdAt fechaLimite fechaCierre fechaLimiteArea area categoria submarca submarcasRelacionadas contexto creadoPor asignadoA marca')
       .populate('area', 'nombre')
       .populate('categoria', 'nombre')
       .populate('submarca', 'nombre')
+      .populate('submarcasRelacionadas', 'nombre')
       .populate('creadoPor', 'nombre')
       .populate('asignadoA', 'nombre')
       .populate('marca', 'nombre')

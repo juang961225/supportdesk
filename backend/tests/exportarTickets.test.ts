@@ -32,6 +32,8 @@ describe('armarFilas', () => {
       new Map()
     )
     expect(armarFilas([ticket({ _id: 's', submarca: null })], new Map())[0].submarca).toBe('Sin sub-marca')
+    expect(armarFilas([ticket({ submarcasRelacionadas: [{ nombre: 'BMW' }, { nombre: 'BMWi' }] })], new Map())[0].submarcasRelacionadas).toBe('BMW, BMWi')
+    expect(abierto.submarcasRelacionadas).toBe('')
     expect(abierto).toMatchObject({ asignadoA: 'Sin asignar', area: 'Sin área', cerrado: null, sla: 'Sin fecha límite', tiempoLaboral: '0 min' })
     expect(cerrado.cerrado).toEqual(bog('2026-10-28T10:00'))
   })

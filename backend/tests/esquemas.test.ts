@@ -1,5 +1,5 @@
 import {
-  passwordNueva, esquemaLogin, esquemaCrearUsuario, esquemaEditarUsuario, esquemaCrearTicket,
+  passwordNueva, esquemaLogin, esquemaCrearUsuario, esquemaEditarUsuario, esquemaCrearTicket, esquemaSubmarcasTicket,
   esquemaComentario, esquemaFechaLimite, esquemaEstadoArea, esquemaEditarCategoria
 } from '../src/validacion/esquemas'
 
@@ -96,6 +96,15 @@ describe('sub-marcas', () => {
     const base = { titulo: 'x', descripcion: 'y', prioridad: 'alta', categoriaId: ID }
     expect(primerError(esquemaCrearTicket.safeParse(base))).toBe('La sub-marca es obligatoria')
     expect(esquemaCrearTicket.safeParse({ ...base, submarcaId: ID }).success).toBe(true)
+  })
+
+  it('relacionadas: una o varias al crear, y la lista al corregir', () => {
+    const base = { titulo: 'x', descripcion: 'y', prioridad: 'alta', categoriaId: ID, submarcaId: ID }
+    expect(esquemaCrearTicket.parse({ ...base, submarcaRelacionadaIds: ID }).submarcaRelacionadaIds).toBe(ID)
+    expect(esquemaCrearTicket.parse({ ...base, submarcaRelacionadaIds: [ID] }).submarcaRelacionadaIds).toEqual([ID])
+    expect(esquemaCrearTicket.safeParse({ ...base, submarcaRelacionadaIds: 'abc' }).success).toBe(false)
+    expect(esquemaSubmarcasTicket.parse({ submarcaIds: [] })).toEqual({ submarcaIds: [] })
+    expect(esquemaSubmarcasTicket.safeParse({}).success).toBe(false)
   })
 
   it('usuarios: lista de sub-marcas', () => {

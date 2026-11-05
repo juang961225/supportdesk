@@ -26,7 +26,7 @@ import { ticketParaRol } from '../utils/privacidadTicket'
 // POST /api/tickets — crear ticket (usuario). multipart/form-data: campos + archivos opcionales
 export const createTicket = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { titulo, descripcion, prioridad, categoriaId, submarcaId, sede, observadorIds } = req.body || {}
+    const { titulo, descripcion, prioridad, categoriaId, submarcaId, submarcaRelacionadaIds, sede, observadorIds } = req.body || {}
 
     if (!titulo || !descripcion || !prioridad || !categoriaId) {
       res.status(400).json({ message: 'Título, descripción, prioridad y categoría son obligatorios' })
@@ -74,6 +74,19 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       return
     }
 
+    // Relacionadas opcionales: otras sub-marcas del usuario, activas y de su organización (en multipart, una sola llega como string)
+    const relacionadasPedidas = [...new Set(([] as unknown[]).concat(submarcaRelacionadaIds ?? []).map(String))].filter((id) => id !== String(submarca._id))
+    const relacionadas = relacionadasPedidas.length === 0
+      ? []
+      : await SubMarca.find({ _id: { $in: relacionadasPedidas }, marca: marcaId, activo: true }).select('_id organizaciones')
+    const relacionadasValidas = relacionadas.filter((s) =>
+      creador.submarcas.some((propia) => String(propia) === String(s._id)) && subMarcaAplica(s.organizaciones, creador.organizaciones)
+    )
+    if (relacionadasValidas.length !== relacionadasPedidas.length) {
+      res.status(403).json({ message: 'Solo puedes relacionar sub-marcas activas que tengas asignadas' })
+      return
+    }
+
     const contexto = await contextoDelTicket(marcaId, creador, sede, submarca.onlineBriefId)
     if (!contexto.ok) {
       res.status(400).json({ message: contexto.mensaje })
@@ -111,6 +124,7 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       prioridad,
       categoria: categoriaId,
       submarca: submarca._id,
+      submarcasRelacionadas: relacionadasValidas.map((s) => s._id),
       contexto: contexto.contexto,
       marca: marcaId,
       area: categoria.area, // el ticket entra a la cola del área de su categoría
@@ -173,6 +187,7 @@ export const getTickets = async (req: AuthRequest, res: Response, next: NextFunc
       .populate('marca', 'nombre')
       .populate('area', 'nombre')
       .populate('submarca', 'nombre')
+      .populate('submarcasRelacionadas', 'nombre')
       .sort({ createdAt: -1, _id: -1 }) // _id desempata para que las páginas no se solapen
 
     // Cada ticket va con su SLA actual (barra de plazo en las tarjetas)

@@ -30,6 +30,7 @@ function NewTicketPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [observadores, setObservadores] = useState<UserRef[]>([])
   const [archivos, setArchivos] = useState<File[]>([])
+  const [relacionadas, setRelacionadas] = useState<string[]>([])
 
   const [formData, setFormData] = useState({
     titulo: '',
@@ -79,6 +80,7 @@ function NewTicketPage() {
   ) => {
     // Al cambiar de sub-marca, la sede elegida puede dejar de aplicar
     const cambios = e.target.name === 'submarcaId' ? { sede: '' } : {}
+    if (e.target.name === 'submarcaId') setRelacionadas((prev) => prev.filter((id) => id !== e.target.value))
     setFormData({ ...formData, ...cambios, [e.target.name]: e.target.value })
   }
 
@@ -98,7 +100,7 @@ function NewTicketPage() {
     setIsSubmitting(true)
 
     try {
-      await createTicket({ ...formData, observadorIds: observadores.map(o => o._id), archivos })
+      await createTicket({ ...formData, submarcaRelacionadaIds: relacionadas, observadorIds: observadores.map(o => o._id), archivos })
       toast.success(`Ticket "${formData.titulo}" creado correctamente`)
       navigate('/usuario/dashboard')
     } catch (err) {
@@ -191,6 +193,37 @@ function NewTicketPage() {
                     </select>
                   )}
                 </div>
+
+                {submarcas.length > 1 && formData.submarcaId && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      ¿Afecta también a otras sub-marcas? <span className="font-normal text-gray-400">(opcional)</span>
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {submarcas.filter((s) => s._id !== formData.submarcaId).map((s) => {
+                        const marcada = relacionadas.includes(s._id)
+                        return (
+                          <button
+                            key={s._id}
+                            type="button"
+                            aria-pressed={marcada}
+                            onClick={() => setRelacionadas((prev) => (marcada ? prev.filter((id) => id !== s._id) : [...prev, s._id]))}
+                            className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                              marcada
+                                ? 'bg-blue-600 border-blue-600 text-white'
+                                : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            }`}
+                          >
+                            {s.nombre}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      El ticket se cuenta en la sub-marca de arriba; estas solo ayudan a encontrarlo.
+                    </p>
+                  </div>
+                )}
 
                 {miContexto.aplica && formData.submarcaId && (sedesDisponibles.length > 0 || miContexto.todas) && (
                   <div>

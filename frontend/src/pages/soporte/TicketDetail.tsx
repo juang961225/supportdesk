@@ -12,6 +12,8 @@ import TicketTramos from '../../components/TicketTramos'
 import AssignTicketModal from '../../components/AssignTicketModal'
 import MoveAreaModal from '../../components/MoveAreaModal'
 import CategoriaTicketModal from '../../components/CategoriaTicketModal'
+import SubmarcasTicketModal from '../../components/SubmarcasTicketModal'
+import TicketSubmarcas from '../../components/TicketSubmarcas'
 import PrioridadTicketModal from '../../components/PrioridadTicketModal'
 import { getTicketById, updateTicketStatus, takeTicket, releaseTicket } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
@@ -58,6 +60,7 @@ function SoporteTicketDetail() {
   const [isPassOpen, setIsPassOpen] = useState(false)
   const [isMoveOpen, setIsMoveOpen] = useState(false)
   const [isCategoriaOpen, setIsCategoriaOpen] = useState(false)
+  const [isSubmarcasOpen, setIsSubmarcasOpen] = useState(false)
   const [isPrioridadOpen, setIsPrioridadOpen] = useState(false)
 
   useEffect(() => {
@@ -201,12 +204,7 @@ function SoporteTicketDetail() {
                     {ticket.creadoPor.nombre}
                   </p>
                 </div>
-                <div>
-                  <p className="text-gray-500 dark:text-gray-400">Sub-marca</p>
-                  <p className="text-gray-800 dark:text-white font-medium">
-                    {ticket.submarca?.nombre ?? 'Sin sub-marca'}
-                  </p>
-                </div>
+                <TicketSubmarcas ticket={ticket} onCorregir={() => setIsSubmarcasOpen(true)} />
                 <TicketContexto contexto={ticket.contexto} />
                 <div>
                   <p className="text-gray-500 dark:text-gray-400">Categoría</p>
@@ -429,6 +427,15 @@ function SoporteTicketDetail() {
         onUpdated={(updated) => {
           setTicket(updated)
           setIsCategoriaOpen(false)
+        }}
+      />
+
+      <SubmarcasTicketModal
+        ticket={isSubmarcasOpen ? ticket : null}
+        onClose={() => setIsSubmarcasOpen(false)}
+        onUpdated={(updated) => {
+          setTicket(updated)
+          setIsSubmarcasOpen(false)
         }}
       />
     </Layout>

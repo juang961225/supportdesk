@@ -8,7 +8,7 @@ import { formatFechaCorta } from '../utils/fechas'
 
 // Lo mínimo para pintar una card; creador y categoría no llegan en todas las listas (ej. urgentes del dashboard)
 export type TicketCardData = Pick<Ticket, '_id' | 'titulo' | 'estado' | 'prioridad' | 'fechaLimite' | 'area' | 'asignadoA'> &
-  Partial<Pick<Ticket, 'creadoPor' | 'categoria' | 'sla' | 'submarca' | 'contexto'>>
+  Partial<Pick<Ticket, 'creadoPor' | 'categoria' | 'sla' | 'submarca' | 'submarcasRelacionadas' | 'contexto'>>
 
 interface TicketCardProps {
   ticket: TicketCardData
@@ -24,7 +24,7 @@ function TicketCard({ ticket, onClick, variante = 'equipo', mostrarCreador = tru
 
   const meta = [
     mostrarCreador ? ticket.creadoPor?.nombre : undefined,
-    ticket.submarca?.nombre,
+    ticket.submarca && `${ticket.submarca.nombre}${ticket.submarcasRelacionadas?.length ? ` +${ticket.submarcasRelacionadas.length}` : ''}`,
     ticket.contexto?.nombre,
     ticket.categoria?.nombre,
     `Área: ${ticket.area?.nombre ?? 'Sin área'}`,

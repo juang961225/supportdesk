@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express'
 import Ticket from '../models/Ticket'
 import TicketCategory from '../models/TicketCategory'
+import SubMarca from '../models/SubMarca'
 import { AuthRequest } from '../middlewares/auth'
 import { registrarEvento } from '../services/ticketEvents'
 import { findTicketResponse } from '../services/ticketQueries'
@@ -95,6 +96,63 @@ export const updateTicketCategoria = async (req: AuthRequest, res: Response, nex
     avisarCambioTicket(ticket._id)
 
     res.status(200).json({ message: `Categoría cambiada a ${nueva.nombre}`, ticket: await findTicketResponse(ticket._id) })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const nombresDe = (lista: { nombre: string }[]): string => lista.map((s) => s.nombre).sort((a, b) => a.localeCompare(b, 'es')).join(', ')
+
+// PUT /api/tickets/:id/submarcas — admin y soporte corrigen las sub-marcas relacionadas.
+// La principal no cambia: de ella dependen las gráficas, los totales y el concesionario
+export const updateTicketSubmarcas = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const ids: string[] = [...new Set((req.body.submarcaIds as string[]).map(String))]
+    const marca = req.user?.marca
+
+    const ticket = await Ticket.findOne({ _id: req.params.id, marca })
+    if (!ticket) {
+      res.status(404).json({ message: 'Ticket no encontrado' })
+      return
+    }
+    if (!puedeVerTicket(req.user!, ticket)) {
+      res.status(403).json({ message: 'No tienes acceso a este ticket' })
+      return
+    }
+    if (ticket.submarca && ids.includes(String(ticket.submarca))) {
+      res.status(400).json({ message: 'La sub-marca principal no puede ser también relacionada' })
+      return
+    }
+
+    const actuales = ticket.submarcasRelacionadas.map(String)
+    // Las que ya tenía se pueden conservar aunque luego se hayan desactivado; las nuevas deben estar activas
+    const [nuevas, anteriores] = await Promise.all([
+      SubMarca.find({ _id: { $in: ids }, marca, $or: [{ activo: true }, { _id: { $in: actuales } }] }).select('nombre'),
+      SubMarca.find({ _id: { $in: actuales } }).select('nombre')
+    ])
+    if (nuevas.length !== ids.length) {
+      res.status(400).json({ message: 'Alguna sub-marca no existe, no es de tu marca o está inactiva' })
+      return
+    }
+    if (ids.length === actuales.length && ids.every((id) => actuales.includes(id))) {
+      res.status(400).json({ message: 'El ticket ya tiene esas sub-marcas relacionadas' })
+      return
+    }
+
+    ticket.submarcasRelacionadas = nuevas.map((s) => s._id)
+    await ticket.save()
+
+    await registrarEvento({
+      ticket: ticket._id,
+      marca: ticket.marca,
+      tipo: 'submarcas',
+      autor: req.user!.id,
+      deNombre: nombresDe(anteriores),
+      aNombre: nombresDe(nuevas)
+    })
+    avisarCambioTicket(ticket._id)
+
+    res.status(200).json({ message: 'Sub-marcas relacionadas actualizadas', ticket: await findTicketResponse(ticket._id) })
   } catch (error) {
     next(error)
   }

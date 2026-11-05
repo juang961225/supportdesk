@@ -28,8 +28,10 @@ describe('leerFiltrosTicket', () => {
     expect(leerFiltrosTicket({ estado: 'activos' })).toEqual([{ estado: { $ne: 'cerrado' } }])
   })
 
-  it('sub-marca', () => {
-    expect(String((leerFiltrosTicket({ submarca: ID })[0] as { submarca: unknown }).submarca)).toBe(ID)
+  it('sub-marca: encuentra la principal y las relacionadas', () => {
+    const [condicion] = leerFiltrosTicket({ submarca: ID }) as { $or: Record<string, unknown>[] }[]
+    expect(condicion.$or.map((c) => Object.keys(c)[0])).toEqual(['submarca', 'submarcasRelacionadas'])
+    expect(condicion.$or.map((c) => String(Object.values(c)[0]))).toEqual([ID, ID])
     expect(leerFiltrosTicket({ submarca: 'no-es-id' })).toEqual([])
     expect(leerFiltrosTicket({ organizacion: 'MX' })).toEqual([{ 'contexto.organizacion': 'MX' }])
     expect(leerFiltrosTicket({ sede: 'Centro BMW' })).toEqual([{ 'contexto.nombre': 'Centro BMW' }])

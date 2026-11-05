@@ -98,6 +98,8 @@ const crearTickets = async (
     const creador = usuarios[(i + Math.floor(i / usuarios.length)) % usuarios.length]
     const propias = submarcas.filter((s) => creador.submarcas.some((id) => id.equals(s._id)) && subMarcaAplica(s.organizaciones, creador.contexto.organizaciones))
     const submarca = propias[i % propias.length]
+    // Uno de cada siete afecta también a otra sub-marca del creador (A5: principal + relacionadas)
+    const relacionadas = i % 7 === 3 ? propias.filter((s) => !s._id.equals(submarca._id)).slice(0, 1).map((s) => s._id) : []
     const categoria = categorias[i % categorias.length]
     const creado = new Date(ahora - t.diasAtras * DIA_MS - HORA_MS)
     const fechaLimite = calcularFechaLimite(t.prioridad, HORARIO_POR_DEFECTO, creado)
@@ -121,6 +123,7 @@ const crearTickets = async (
       categoria: categoria._id,
       area: categoria.area,
       submarca: submarca._id,
+      submarcasRelacionadas: relacionadas,
       contexto,
       marca,
       creadoPor: creador._id,

@@ -47,8 +47,9 @@ export const leerFiltrosTicket = (query: Record<string, unknown>): Record<string
   const area = objectId(query.area)
   if (area) condiciones.push({ area })
 
+  // Encuentra también los tickets en los que es una sub-marca relacionada
   const submarca = objectId(query.submarca)
-  if (submarca) condiciones.push({ submarca })
+  if (submarca) condiciones.push({ $or: [{ submarca }, { submarcasRelacionadas: submarca }] })
 
   // Por nombre: reúne las entradas de un concesionario en las distintas sub-marcas
   const organizacion = texto(query.organizacion)

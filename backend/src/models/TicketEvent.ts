@@ -5,7 +5,7 @@ export type TipoEvento =
   | 'creado' | 'asignado' | 'reasignado' | 'estado' | 'desasignado'
   | 'tomado' | 'soltado' | 'pasado' | 'movido'
   | 'observador_agregado' | 'observador_quitado'
-  | 'fecha_limite' | 'editado' | 'categoria' | 'prioridad'
+  | 'fecha_limite' | 'editado' | 'categoria' | 'prioridad' | 'submarcas'
 
 export interface ITicketEvent extends Document {
   ticket: mongoose.Types.ObjectId
@@ -14,7 +14,7 @@ export interface ITicketEvent extends Document {
   autor?: mongoose.Types.ObjectId // sin autor: lo hizo el sistema (cierres automáticos)
   de?: string       // id o estado anterior
   a?: string        // id o estado nuevo
-  deNombre?: string // nombres del momento: se conservan aunque luego cambien
+  deNombre?: string // nombres del momento: se conservan aunque luego cambien (en 'submarcas': la lista separada por comas)
   aNombre?: string
   motivo?: string
   fechaLimiteAnterior?: Date // en 'movido', 'fecha_limite' y 'prioridad': para calcular tramos por área (F2-4)
@@ -30,7 +30,7 @@ const TicketEventSchema = new Schema<ITicketEvent>(
     marca: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand', required: true },
     tipo: {
       type: String,
-      enum: ['creado', 'asignado', 'reasignado', 'estado', 'desasignado', 'tomado', 'soltado', 'pasado', 'movido', 'observador_agregado', 'observador_quitado', 'fecha_limite', 'editado', 'categoria', 'prioridad'],
+      enum: ['creado', 'asignado', 'reasignado', 'estado', 'desasignado', 'tomado', 'soltado', 'pasado', 'movido', 'observador_agregado', 'observador_quitado', 'fecha_limite', 'editado', 'categoria', 'prioridad', 'submarcas'],
       required: true
     },
     autor: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

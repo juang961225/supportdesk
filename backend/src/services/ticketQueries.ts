@@ -13,6 +13,7 @@ export const findTicketResponse = async (id: mongoose.Types.ObjectId | string) =
     .populate('marca', 'nombre')
     .populate('area', 'nombre')
     .populate('submarca', 'nombre')
+    .populate('submarcasRelacionadas', 'nombre')
     .populate('observadores', 'nombre email')
 
   if (!ticket) return null

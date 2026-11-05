@@ -10,13 +10,13 @@ import {
 import { takeTicket, releaseTicket, moveTicket, getTicketRecorrido } from '../controllers/ticketQueueController'
 import { addObserver, removeObserver } from '../controllers/ticketObserverController'
 import { updateFechaLimite } from '../controllers/ticketDeadlineController'
-import { editTicket, updateTicketCategoria, updateTicketPrioridad } from '../controllers/ticketEditController'
+import { editTicket, updateTicketCategoria, updateTicketPrioridad, updateTicketSubmarcas } from '../controllers/ticketEditController'
 import { getTicketTramos } from '../controllers/ticketSlaController'
 import { exportarTickets } from '../controllers/ticketExportController'
 import { authenticate, authorize } from '../middlewares/auth'
 import { uploadAdjuntos, verificarContenidoAdjuntos } from '../services/attachments'
 import { validarBody } from '../validacion/validar'
-import { esquemaCrearTicket, esquemaEditarTicket, esquemaCategoriaTicket, esquemaPrioridadTicket, esquemaAsignar, esquemaMover, esquemaFechaLimite, esquemaEstadoTicket, esquemaObservador } from '../validacion/esquemas'
+import { esquemaCrearTicket, esquemaEditarTicket, esquemaCategoriaTicket, esquemaSubmarcasTicket, esquemaPrioridadTicket, esquemaAsignar, esquemaMover, esquemaFechaLimite, esquemaEstadoTicket, esquemaObservador } from '../validacion/esquemas'
 
 const router = Router()
 
@@ -37,6 +37,7 @@ router.put('/:id', authenticate, authorize('usuario'), validarBody(esquemaEditar
 
 // Corregir la categoría — admin y soporte (no cambia el área ni la fecha límite)
 router.put('/:id/categoria', authenticate, authorize('admin', 'soporte'), validarBody(esquemaCategoriaTicket), updateTicketCategoria)
+router.put('/:id/submarcas', authenticate, authorize('admin', 'soporte'), validarBody(esquemaSubmarcasTicket), updateTicketSubmarcas)
 
 // Corregir la prioridad — admin y soporte, con motivo (recalcula la fecha límite)
 router.put('/:id/prioridad', authenticate, authorize('admin', 'soporte'), validarBody(esquemaPrioridadTicket), updateTicketPrioridad)

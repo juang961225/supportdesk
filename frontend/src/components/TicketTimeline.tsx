@@ -63,6 +63,8 @@ const describirEvento = (evento: TicketEvent): string => {
         `${evento.fechaLimiteNueva ? `; nueva fecha límite ${formatFechaLimite(evento.fechaLimiteNueva)}` : ''}${evento.motivo ? ` (${evento.motivo})` : ''}`
     case 'categoria':
       return `${autor} corrigió la categoría: ${evento.deNombre ?? 'sin categoría'} → ${evento.aNombre}`
+    case 'submarcas':
+      return `${autor} cambió las sub-marcas relacionadas: ${evento.deNombre || 'ninguna'} → ${evento.aNombre || 'ninguna'}`
   }
 }
 
@@ -82,6 +84,7 @@ const dotColor: Record<TicketEvent['tipo'], string> = {
   editado: 'bg-gray-400',
   categoria: 'bg-purple-500',
   prioridad: 'bg-orange-500',
+  submarcas: 'bg-purple-500',
 }
 
 // Historial interno del ticket — solo admin, soporte y superadmin

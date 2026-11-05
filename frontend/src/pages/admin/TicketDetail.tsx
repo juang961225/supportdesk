@@ -12,6 +12,8 @@ import TicketTramos from '../../components/TicketTramos'
 import AssignTicketModal from '../../components/AssignTicketModal'
 import MoveAreaModal from '../../components/MoveAreaModal'
 import CategoriaTicketModal from '../../components/CategoriaTicketModal'
+import SubmarcasTicketModal from '../../components/SubmarcasTicketModal'
+import TicketSubmarcas from '../../components/TicketSubmarcas'
 import PrioridadTicketModal from '../../components/PrioridadTicketModal'
 import FechaLimiteModal from '../../components/FechaLimiteModal'
 import { getTicketById } from '../../services/ticketService'
@@ -43,6 +45,7 @@ function AdminTicketDetail() {
   const [isAssignOpen, setIsAssignOpen] = useState(false)
   const [isMoveOpen, setIsMoveOpen] = useState(false)
   const [isCategoriaOpen, setIsCategoriaOpen] = useState(false)
+  const [isSubmarcasOpen, setIsSubmarcasOpen] = useState(false)
   const [isPrioridadOpen, setIsPrioridadOpen] = useState(false)
   const [isFechaOpen, setIsFechaOpen] = useState(false)
 
@@ -70,6 +73,7 @@ function AdminTicketDetail() {
     setIsAssignOpen(false)
     setIsMoveOpen(false)
     setIsCategoriaOpen(false)
+    setIsSubmarcasOpen(false)
     setIsPrioridadOpen(false)
     setIsFechaOpen(false)
   }
@@ -150,12 +154,7 @@ function AdminTicketDetail() {
                     {ticket.creadoPor.nombre}
                   </p>
                 </div>
-                <div>
-                  <p className="text-gray-500 dark:text-gray-400">Sub-marca</p>
-                  <p className="text-gray-800 dark:text-white font-medium">
-                    {ticket.submarca?.nombre ?? 'Sin sub-marca'}
-                  </p>
-                </div>
+                <TicketSubmarcas ticket={ticket} onCorregir={canAssign ? () => setIsSubmarcasOpen(true) : undefined} />
                 <TicketContexto contexto={ticket.contexto} />
                 <div>
                   <p className="text-gray-500 dark:text-gray-400">Categoría</p>
@@ -280,6 +279,12 @@ function AdminTicketDetail() {
       <CategoriaTicketModal
         ticket={isCategoriaOpen ? ticket : null}
         onClose={() => setIsCategoriaOpen(false)}
+        onUpdated={handleUpdated}
+      />
+
+      <SubmarcasTicketModal
+        ticket={isSubmarcasOpen ? ticket : null}
+        onClose={() => setIsSubmarcasOpen(false)}
         onUpdated={handleUpdated}
       />
 
