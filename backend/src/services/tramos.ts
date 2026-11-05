@@ -3,10 +3,11 @@ import Ticket from '../models/Ticket'
 import TicketEvent, { TipoEvento } from '../models/TicketEvent'
 import Area from '../models/Area'
 import { horarioDeMarca } from './horario'
-import { calcularTramos, EventoParaTramos, TicketParaTramos, Tramo } from '../utils/tramos'
+import { calcularTramos, EstadoSla, EventoParaTramos, resumenSla, slaDelTicket, TicketParaTramos, Tramo } from '../utils/tramos'
+import { relojDe } from '../utils/fechaLimite'
 
-const TIPOS_RELEVANTES: TipoEvento[] = ['movido', 'estado', 'fecha_limite', 'prioridad']
-const CAMPOS_EVENTO = 'ticket tipo createdAt de a deNombre aNombre fechaLimiteAnterior'
+const TIPOS_RELEVANTES: TipoEvento[] = ['movido', 'estado', 'fecha_limite', 'prioridad', 'soltado', 'desasignado']
+const CAMPOS_EVENTO = 'ticket tipo createdAt de a deNombre aNombre fechaLimiteAnterior fechaLimiteAreaAnterior'
 
 // Forma de los eventos que trae CAMPOS_EVENTO con .lean()
 interface EventoLean extends EventoParaTramos {
@@ -19,6 +20,8 @@ interface TicketLean {
   estado: string
   fechaCierre?: Date
   fechaLimite?: Date
+  fechaLimiteArea?: Date
+  prioridad?: string
   area?: { _id: mongoose.Types.ObjectId; nombre: string } | null
 }
 
@@ -27,12 +30,15 @@ const aTicketParaTramos = (t: TicketLean): TicketParaTramos => ({
   estado: t.estado,
   fechaCierre: t.fechaCierre,
   fechaLimite: t.fechaLimite,
+  fechaLimiteArea: t.fechaLimiteArea,
+  prioridad: t.prioridad,
   areaId: t.area ? String(t.area._id) : undefined,
   areaNombre: t.area?.nombre
 })
 
-const aEvento = (e: { tipo: string; createdAt: Date; de?: string; a?: string; deNombre?: string; aNombre?: string; fechaLimiteAnterior?: Date }): EventoParaTramos => ({
-  tipo: e.tipo, createdAt: e.createdAt, de: e.de, a: e.a, deNombre: e.deNombre, aNombre: e.aNombre, fechaLimiteAnterior: e.fechaLimiteAnterior
+const aEvento = (e: EventoParaTramos): EventoParaTramos => ({
+  tipo: e.tipo, createdAt: e.createdAt, de: e.de, a: e.a, deNombre: e.deNombre, aNombre: e.aNombre,
+  fechaLimiteAnterior: e.fechaLimiteAnterior, fechaLimiteAreaAnterior: e.fechaLimiteAreaAnterior
 })
 
 // Tramos de un ticket (ya validado el acceso), con el horario de su marca
@@ -57,10 +63,18 @@ const eventosEnLote = async (ticketIds: mongoose.Types.ObjectId[]): Promise<Map<
   return porTicket
 }
 
-// Tramos de muchos tickets (pueden ser de varias marcas: cada uno con el horario de la suya)
-export const tramosEnLote = async (
+export interface ResumenTicket {
+  minutosLaborales: number
+  sla: EstadoSla // frente a lo que se le prometió al cliente
+  slaSinAjuste: EstadoSla // lo mismo, sin contar lo que el admin amplió a mano
+  slaArea: EstadoSla // vencido si se venció en el plazo de algún área
+  minutosJornada: number // 0 en Crítica: su tiempo son horas seguidas
+}
+
+// Resumen para reportes de muchos tickets (pueden ser de varias marcas: cada uno con el horario de la suya)
+export const resumenesEnLote = async (
   tickets: (TicketLean & { marca: mongoose.Types.ObjectId | { _id: mongoose.Types.ObjectId } })[]
-): Promise<Map<string, Tramo[]>> => {
+): Promise<Map<string, ResumenTicket>> => {
   const idMarca = (t: (typeof tickets)[number]) => String('_id' in t.marca ? t.marca._id : t.marca)
   const marcas = [...new Set(tickets.map(idMarca))]
   const [eventosPorTicket, horarios] = await Promise.all([
@@ -69,11 +83,19 @@ export const tramosEnLote = async (
   ])
   const horarioPorMarca = new Map(horarios)
 
-  const resultado = new Map<string, Tramo[]>()
+  const resultado = new Map<string, ResumenTicket>()
   for (const ticket of tickets) {
     const horario = horarioPorMarca.get(idMarca(ticket))
     if (!horario) continue
-    resultado.set(String(ticket._id), calcularTramos(aTicketParaTramos(ticket), eventosPorTicket.get(String(ticket._id)) ?? [], horario))
+    const paraTramos = aTicketParaTramos(ticket)
+    const eventos = eventosPorTicket.get(String(ticket._id)) ?? []
+    const porArea = resumenSla(calcularTramos(paraTramos, eventos, horario))
+    resultado.set(String(ticket._id), {
+      minutosLaborales: porArea.minutosLaborales,
+      ...slaDelTicket(paraTramos, eventos),
+      slaArea: porArea.sla,
+      minutosJornada: relojDe(ticket.prioridad, horario).minutosJornada
+    })
   }
   return resultado
 }
@@ -95,7 +117,7 @@ export const slaPorArea = async (marcaId: string, dias: number): Promise<SlaArea
 
   // Un tramo que terminó en la ventana deja el ticket actualizado en la ventana
   const tickets = await Ticket.find({ marca: marcaId, updatedAt: { $gte: desde } })
-    .select('createdAt estado fechaCierre fechaLimite area')
+    .select('createdAt estado prioridad fechaCierre fechaLimite fechaLimiteArea area')
     .populate('area', 'nombre')
     .lean<TicketLean[]>()
 

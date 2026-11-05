@@ -5,8 +5,17 @@ export const estadoLabel: Record<Ticket['estado'], string> = {
   abierto: 'Abierto',
   en_progreso: 'En progreso',
   en_revision: 'En revisión',
+  esperando_usuario: 'Esperando al usuario',
+  resuelto: 'Resuelto',
   cerrado: 'Cerrado',
   reabierto: 'Reabierto',
+}
+
+// El usuario final lee los estados desde su lado: lo que le toca hacer queda claro
+export const estadoLabelUsuario: Record<Ticket['estado'], string> = {
+  ...estadoLabel,
+  esperando_usuario: 'Esperando tu respuesta',
+  resuelto: 'Resuelto: por confirmar',
 }
 
 // Para valores que llegan como string sin tipar (ej. eventos del historial)

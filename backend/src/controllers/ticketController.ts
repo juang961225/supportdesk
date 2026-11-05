@@ -5,7 +5,7 @@ import TicketCategory from '../models/TicketCategory'
 import SubMarca from '../models/SubMarca'
 import User from '../models/User'
 import TicketEvent, { TipoEvento } from '../models/TicketEvent'
-import { esEstadoValido, puedeTransicionar, aplicarEstado } from '../utils/ticketStatus'
+import { esEstadoValido, puedeTransicionar, aplicarEstado, ESTADOS_SIN_RELOJ } from '../utils/ticketStatus'
 import { AuthRequest } from '../middlewares/auth'
 import { leerPaginacion, armarPaginacion } from '../utils/pagination'
 import { filtroDeLista } from '../utils/ticketFilters'
@@ -14,7 +14,7 @@ import { registrarEvento } from '../services/ticketEvents'
 import { notificar } from '../services/notificaciones'
 import { conSla } from '../services/slaActual'
 import { findTicketResponse } from '../services/ticketQueries'
-import { fechaLimiteDeTicket } from '../services/horario'
+import { fechaLimiteDeArea, fechaLimiteDelTicket, reanudarPlazo } from '../services/horario'
 import { buscarObservadorValido } from './ticketObserverController'
 import { guardarAdjuntos } from '../services/attachments'
 import { storageConfigurado } from '../services/storage'
@@ -26,7 +26,7 @@ import { ticketParaRol } from '../utils/privacidadTicket'
 // POST /api/tickets — crear ticket (usuario). multipart/form-data: campos + archivos opcionales
 export const createTicket = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { titulo, descripcion, prioridad, categoriaId, submarcaId, sede, observadorIds } = req.body || {}
+    const { titulo, descripcion, prioridad, categoriaId, submarcaId, submarcaRelacionadaIds, sede, observadorIds } = req.body || {}
 
     if (!titulo || !descripcion || !prioridad || !categoriaId) {
       res.status(400).json({ message: 'Título, descripción, prioridad y categoría son obligatorios' })
@@ -74,6 +74,19 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       return
     }
 
+    // Relacionadas opcionales: otras sub-marcas del usuario, activas y de su organización (en multipart, una sola llega como string)
+    const relacionadasPedidas = [...new Set(([] as unknown[]).concat(submarcaRelacionadaIds ?? []).map(String))].filter((id) => id !== String(submarca._id))
+    const relacionadas = relacionadasPedidas.length === 0
+      ? []
+      : await SubMarca.find({ _id: { $in: relacionadasPedidas }, marca: marcaId, activo: true }).select('_id organizaciones')
+    const relacionadasValidas = relacionadas.filter((s) =>
+      creador.submarcas.some((propia) => String(propia) === String(s._id)) && subMarcaAplica(s.organizaciones, creador.organizaciones)
+    )
+    if (relacionadasValidas.length !== relacionadasPedidas.length) {
+      res.status(403).json({ message: 'Solo puedes relacionar sub-marcas activas que tengas asignadas' })
+      return
+    }
+
     const contexto = await contextoDelTicket(marcaId, creador, sede, submarca.onlineBriefId)
     if (!contexto.ok) {
       res.status(400).json({ message: contexto.mensaje })
@@ -100,7 +113,10 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       observadores.push(observador)
     }
 
-    const fechaLimite = await fechaLimiteDeTicket(marcaId, categoria.area, prioridad)
+    const [fechaLimite, fechaLimiteArea] = await Promise.all([
+      fechaLimiteDelTicket(marcaId, prioridad),
+      fechaLimiteDeArea(marcaId, categoria.area, prioridad)
+    ])
 
     const ticket = await Ticket.create({
       titulo,
@@ -108,12 +124,14 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       prioridad,
       categoria: categoriaId,
       submarca: submarca._id,
+      submarcasRelacionadas: relacionadasValidas.map((s) => s._id),
       contexto: contexto.contexto,
       marca: marcaId,
       area: categoria.area, // el ticket entra a la cola del área de su categoría
       creadoPor: req.user?.id,
       observadores: observadores.map((o) => o._id),
-      fechaLimite
+      fechaLimite,
+      fechaLimiteArea
     })
 
     // Los adjuntos se guardan bajo el id del ticket, por eso se suben después de crearlo
@@ -169,6 +187,7 @@ export const getTickets = async (req: AuthRequest, res: Response, next: NextFunc
       .populate('marca', 'nombre')
       .populate('area', 'nombre')
       .populate('submarca', 'nombre')
+      .populate('submarcasRelacionadas', 'nombre')
       .sort({ createdAt: -1, _id: -1 }) // _id desempata para que las páginas no se solapen
 
     // Cada ticket va con su SLA actual (barra de plazo en las tarjetas)
@@ -307,13 +326,14 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
       return
     }
 
-    if (rol === 'usuario' && estado !== 'reabierto') {
-      res.status(403).json({ message: 'Solo puedes reabrir un ticket' })
+    // El usuario confirma o reabre lo resuelto; lo demás es del soporte
+    if (rol === 'usuario' && estado !== 'reabierto' && estado !== 'cerrado') {
+      res.status(403).json({ message: 'Solo puedes confirmar o reabrir un ticket resuelto' })
       return
     }
 
-    if (rol === 'soporte' && estado === 'reabierto') {
-      res.status(403).json({ message: 'Solo el usuario creador puede reabrir un ticket' })
+    if (rol === 'soporte' && (estado === 'reabierto' || estado === 'cerrado')) {
+      res.status(403).json({ message: 'Solo el usuario creador puede confirmar o reabrir un ticket resuelto' })
       return
     }
 
@@ -334,14 +354,12 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
       return
     }
 
-    // Al reabrir se conserva asignadoA: vuelve al soporte que lo cerró.
-    // Recibe una fecha límite nueva desde la reapertura (si no, nacería vencido)
+    // Al reabrir se conserva asignadoA: vuelve al soporte que lo resolvió.
+    // Al salir de una pausa el ticket conserva el tiempo que le quedaba (la fecha límite se corre)
     const estadoAnterior = ticket.estado
-    const fechaLimiteAnterior = ticket.fechaLimite
+    const saleDePausa = !ESTADOS_SIN_RELOJ.includes(estado)
+    const cambioDePlazo = saleDePausa ? await reanudarPlazo(ticket) : {}
     aplicarEstado(ticket, estado)
-    if (estado === 'reabierto') {
-      ticket.fechaLimite = await fechaLimiteDeTicket(ticket.marca, ticket.area, ticket.prioridad)
-    }
     await ticket.save()
 
     await registrarEvento({
@@ -351,7 +369,7 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
       autor: id,
       de: estadoAnterior,
       a: estado,
-      ...(estado === 'reabierto' && { fechaLimiteAnterior, fechaLimiteNueva: ticket.fechaLimite })
+      ...cambioDePlazo
     })
 
     notificar(ticket._id, id, { tipo: 'estado', de: estadoAnterior, a: estado })
@@ -361,7 +379,7 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
     const ticketActualizado = ticketRespuesta && ticketParaRol(ticketRespuesta, req.user?.rol)
 
     res.status(200).json({
-      message: estado === 'reabierto' ? 'Ticket reabierto exitosamente' : 'Estado actualizado exitosamente',
+      message: estado === 'reabierto' ? 'Ticket reabierto exitosamente' : estado === 'cerrado' ? 'Ticket cerrado' : 'Estado actualizado exitosamente',
       ticket: ticketActualizado
     })
 

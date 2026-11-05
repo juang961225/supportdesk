@@ -2,7 +2,7 @@ import mongoose from 'mongoose'
 import Brand from '../models/Brand'
 import { HorarioLaboral, HORARIO_POR_DEFECTO } from '../utils/horarioLaboral'
 import Area from '../models/Area'
-import { Plazos, calcularFechaLimite, resolverPlazos } from '../utils/fechaLimite'
+import { Plazos, calcularFechaLimite, fechaTrasPausa, resolverPlazos } from '../utils/fechaLimite'
 import { CacheMemoria } from './cacheMemoria'
 
 // El horario casi nunca cambia y se usa en cada lista (SLA): 60 s en memoria, se borra al guardarlo
@@ -28,8 +28,18 @@ export const plazosDeMarca = async (marcaId: mongoose.Types.ObjectId | string): 
   return resolverPlazos(marca?.plazos)
 }
 
-// Fecha límite de un ticket en esa área: plazos de la marca con el ajuste del área, en tiempo laboral desde `desde`
-export const fechaLimiteDeTicket = async (
+// Plazo del ticket: lo que se promete al cliente, con los plazos de la marca
+export const fechaLimiteDelTicket = async (
+  marcaId: mongoose.Types.ObjectId | string,
+  prioridad: string,
+  desde: Date = new Date()
+): Promise<Date> => {
+  const [horario, plazos] = await Promise.all([horarioDeMarca(marcaId), plazosDeMarca(marcaId)])
+  return calcularFechaLimite(prioridad, horario, desde, plazos)
+}
+
+// Plazo del tramo: los de la marca con el ajuste del área
+export const fechaLimiteDeArea = async (
   marcaId: mongoose.Types.ObjectId | string,
   areaId: mongoose.Types.ObjectId | string | undefined,
   prioridad: string,
@@ -41,4 +51,42 @@ export const fechaLimiteDeTicket = async (
     areaId ? Area.findById(areaId).select('plazos').lean() : null
   ])
   return calcularFechaLimite(prioridad, horario, desde, resolverPlazos(marca?.plazos, area?.plazos))
+}
+
+export interface CambioPorPausa {
+  fechaLimiteAnterior?: Date
+  fechaLimiteAreaAnterior?: Date
+  fechaLimiteNueva?: Date
+}
+
+// Corre los dos plazos al salir de una pausa. Devuelve lo que cambió, para registrarlo en el historial
+export const reanudarPlazo = async (ticket: {
+  marca: mongoose.Types.ObjectId
+  prioridad: string
+  fechaLimite?: Date
+  fechaLimiteArea?: Date
+  pausadoDesde?: Date
+}): Promise<CambioPorPausa> => {
+  const { fechaLimite, fechaLimiteArea, pausadoDesde, prioridad } = ticket
+  ticket.pausadoDesde = undefined
+  if (!pausadoDesde) return {}
+  const horario = await horarioDeMarca(ticket.marca)
+  const ahora = new Date()
+  const cambio: CambioPorPausa = {}
+  if (fechaLimite) {
+    const nueva = fechaTrasPausa(fechaLimite, pausadoDesde, ahora, horario, prioridad)
+    if (nueva.getTime() !== fechaLimite.getTime()) {
+      ticket.fechaLimite = nueva
+      cambio.fechaLimiteAnterior = fechaLimite
+      cambio.fechaLimiteNueva = nueva
+    }
+  }
+  if (fechaLimiteArea) {
+    const nueva = fechaTrasPausa(fechaLimiteArea, pausadoDesde, ahora, horario, prioridad)
+    if (nueva.getTime() !== fechaLimiteArea.getTime()) {
+      ticket.fechaLimiteArea = nueva
+      cambio.fechaLimiteAreaAnterior = fechaLimiteArea
+    }
+  }
+  return cambio
 }

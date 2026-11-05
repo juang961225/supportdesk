@@ -65,7 +65,7 @@ describe('ticketsDemo', () => {
   })
 
   it('cubre todos los estados y prioridades', () => {
-    expect(new Set(tickets.map((t) => t.estado)).size).toBe(5)
+    expect(new Set(tickets.map((t) => t.estado)).size).toBe(7)
     expect(new Set(tickets.map((t) => t.prioridad)).size).toBe(4)
   })
 

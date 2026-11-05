@@ -85,7 +85,7 @@ export interface Ticket {
   _id: string
   titulo: string
   descripcion: string
-  estado: 'abierto' | 'en_progreso' | 'en_revision' | 'cerrado' | 'reabierto'
+  estado: 'abierto' | 'en_progreso' | 'en_revision' | 'esperando_usuario' | 'resuelto' | 'cerrado' | 'reabierto'
   prioridad: 'baja' | 'media' | 'alta' | 'critica'
   categoria: {
     _id: string
@@ -108,9 +108,12 @@ export interface Ticket {
   area?: AreaRef // área actual (cola donde está)
   observadores?: UserRef[] // usuarios que siguen el ticket
   archivos: Attachment[]
-  fechaLimite?: string
-  sla?: SlaActual | null // null si está cerrado o no tiene fecha límite
-  submarca?: AreaRef | null // null solo en tickets anteriores a la migración
+  fechaLimite?: string // plazo del ticket: lo que se promete al cliente
+  fechaLimiteArea?: string // plazo del tramo en el área; solo lo recibe el equipo. Sin valor: vale fechaLimite
+  sla?: SlaActual | null // null si está cerrado, en pausa o no tiene fecha límite
+  slaArea?: SlaActual | null
+  submarca?: AreaRef | null // la principal; null solo en tickets anteriores a la migración
+  submarcasRelacionadas?: AreaRef[] // otras a las que también afecta (solo para encontrarlo al filtrar)
   contexto?: ContextoTicket | null // copia al crear; solo marcas ligadas a Online Brief
   sinAtender?: boolean // solo usuario final: nadie lo atiende aún, puede editarlo
   updatedAt?: string
@@ -136,6 +139,7 @@ export interface TicketEvent {
     | 'editado'
     | 'categoria'
     | 'prioridad'
+    | 'submarcas'
   autor?: {
     _id: string
     nombre: string

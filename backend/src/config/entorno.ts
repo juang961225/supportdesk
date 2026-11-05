@@ -41,5 +41,9 @@ export const revisarEntorno = (env: Record<string, string | undefined>): Revisio
     avisos.push('EMAIL_PROVEEDOR=consola en producción: los correos solo se imprimen, no se envían')
   }
 
+  if (produccion && env.TAREAS_PROGRAMADAS === 'off') {
+    avisos.push('TAREAS_PROGRAMADAS=off en producción: no habrá avisos de plazo, recordatorios ni cierres automáticos')
+  }
+
   return { errores, avisos }
 }

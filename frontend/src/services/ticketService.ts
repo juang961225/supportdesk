@@ -27,6 +27,7 @@ export const createTicket = async (data: {
   prioridad: string
   categoriaId: string
   submarcaId: string
+  submarcaRelacionadaIds?: string[]
   sede?: string
   observadorIds?: string[]
   archivos?: File[]
@@ -37,6 +38,7 @@ export const createTicket = async (data: {
   form.append('prioridad', data.prioridad)
   form.append('categoriaId', data.categoriaId)
   form.append('submarcaId', data.submarcaId)
+  data.submarcaRelacionadaIds?.forEach((id) => form.append('submarcaRelacionadaIds', id))
   if (data.sede) form.append('sede', data.sede)
   data.observadorIds?.forEach((id) => form.append('observadorIds', id))
   data.archivos?.forEach((archivo) => form.append('archivos', archivo))
@@ -72,6 +74,12 @@ export const editTicket = async (ticketId: string, data: { titulo: string; descr
 // Admin y soporte: solo cambia la clasificación (no el área ni la fecha límite)
 export const updateTicketCategoria = async (ticketId: string, categoriaId: string): Promise<Ticket> => {
   const response = await api.put(`/tickets/${ticketId}/categoria`, { categoriaId })
+  return response.data.ticket
+}
+
+// Admin y soporte: otras sub-marcas a las que afecta el ticket (la principal no cambia)
+export const updateTicketSubmarcas = async (ticketId: string, submarcaIds: string[]): Promise<Ticket> => {
+  const response = await api.put(`/tickets/${ticketId}/submarcas`, { submarcaIds })
   return response.data.ticket
 }
 

@@ -1,4 +1,4 @@
-import { Layers } from 'lucide-react'
+import { Layers, Plus } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
@@ -159,9 +159,10 @@ function AreasPage() {
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Áreas</h2>
           <button
             onClick={handleOpenCreate}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
           >
-            + Nueva Área
+            <Plus className="w-4 h-4" aria-hidden="true" />
+            Nueva Área
           </button>
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
@@ -175,7 +176,7 @@ function AreasPage() {
                 icon={Layers}
                 title="No hay áreas creadas"
                 description="Crea al menos un área para poder enrutar los tickets por categoría."
-                action={{ label: '+ Nueva Área', onClick: handleOpenCreate }}
+                action={{ label: 'Nueva Área', icono: Plus, onClick: handleOpenCreate }}
               />
             ) : (
               areas.map((area) => (
@@ -186,7 +187,7 @@ function AreasPage() {
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{area.descripcion}</p>
                     )}
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                      {resumenAjuste(area.plazos, prioridadLabel) ? `Plazos propios: ${resumenAjuste(area.plazos, prioridadLabel)}` : 'Usa los plazos de la marca'}
+                      {resumenAjuste(area.plazos, prioridadLabel) ? `Plazos internos: ${resumenAjuste(area.plazos, prioridadLabel)}` : 'Usa los plazos de la marca'}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -251,9 +252,9 @@ function AreasPage() {
             </div>
             {plazosMarca && (
               <div>
-                <p className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Plazos de esta área (opcional)</p>
+                <p className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Plazos internos de esta área (opcional)</p>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
-                  Deja vacío lo que deba usar el plazo de la marca, que aparece de ejemplo en gris.
+                  Miden cada paso del ticket por esta área; no cambian lo prometido al cliente. Deja vacío lo que deba usar el plazo de la marca, que aparece de ejemplo en gris.
                 </p>
                 <PlazosEditor value={plazosArea} onChange={setPlazosArea} base={plazosMarca} />
               </div>

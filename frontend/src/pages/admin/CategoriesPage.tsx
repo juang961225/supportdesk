@@ -1,4 +1,4 @@
-import { AlertTriangle, FolderTree } from 'lucide-react'
+import { AlertTriangle, FolderTree, Plus } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
@@ -162,9 +162,10 @@ function CategoriesPage() {
           </h2>
           <button
             onClick={handleOpenCreate}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
           >
-            + Nueva Categoría
+            <Plus className="w-4 h-4" aria-hidden="true" />
+            Nueva Categoría
           </button>
         </div>
 
@@ -178,7 +179,7 @@ function CategoriesPage() {
                 icon={FolderTree}
                 title="No hay categorías creadas"
                 description="Los usuarios eligen una categoría al crear un ticket; cada una lo envía a un área."
-                action={{ label: '+ Nueva Categoría', onClick: handleOpenCreate }}
+                action={{ label: 'Nueva Categoría', icono: Plus, onClick: handleOpenCreate }}
               />
             ) : (
               categories.map((category) => (

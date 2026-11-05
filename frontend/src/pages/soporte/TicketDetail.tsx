@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Pencil } from 'lucide-react'
+import { useParams } from 'react-router-dom'
+import { Pencil } from 'lucide-react'
 import Layout from '../../components/Layout'
+import { useTituloPagina } from '../../hooks/useTituloPagina'
+import { BotonVolver, TicketNoEncontrado } from '../../components/NavegacionTicket'
 import { PageSkeleton } from '../../components/Skeleton'
 import CommentThread from '../../components/CommentThread'
 import AttachmentList from '../../components/AttachmentList'
@@ -12,6 +14,8 @@ import TicketTramos from '../../components/TicketTramos'
 import AssignTicketModal from '../../components/AssignTicketModal'
 import MoveAreaModal from '../../components/MoveAreaModal'
 import CategoriaTicketModal from '../../components/CategoriaTicketModal'
+import SubmarcasTicketModal from '../../components/SubmarcasTicketModal'
+import TicketSubmarcas from '../../components/TicketSubmarcas'
 import PrioridadTicketModal from '../../components/PrioridadTicketModal'
 import { getTicketById, updateTicketStatus, takeTicket, releaseTicket } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
@@ -22,7 +26,7 @@ import { formatFechaLimite } from '../../utils/fechas'
 import type { Ticket } from '../../types'
 import { TicketTimeBadge } from '../../components/TicketTimeBadge'
 import ConfirmDialog from '../../components/ConfirmDialog'
-import { transicionesSoporte } from '../../utils/ticketStatus'
+import { estaEnPausa, transicionesSoporte } from '../../utils/ticketStatus'
 import type { EstadoTicket } from '../../utils/ticketStatus'
 import { useTicketEnVivo } from '../../hooks/useTiempoReal'
 import SlaBarra from '../../components/SlaBarra'
@@ -33,6 +37,8 @@ const accionEstado: Record<EstadoTicket, { label: string; className: string }> =
   en_progreso: { label: 'En progreso', className: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' },
   en_revision: { label: 'En revisión', className: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' },
   cerrado: { label: 'Cerrar ticket', className: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' },
+  esperando_usuario: { label: 'Esperar al usuario', className: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
+  resuelto: { label: 'Marcar resuelto', className: 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400' },
   abierto: { label: 'Abierto', className: '' },
   reabierto: { label: 'Reabrir', className: '' },
 }
@@ -41,11 +47,11 @@ function SoporteTicketDetail() {
   const { id } = useParams<{ id: string }>()
   // Tiempo real: sube cuando otra persona cambia este ticket
   const { versionTicket } = useTicketEnVivo(id)
-  const navigate = useNavigate()
   const { toast } = useToast()
   const { user } = useAuth()
 
   const [ticket, setTicket] = useState<Ticket | null>(null)
+  useTituloPagina(ticket?.titulo)
   const [isLoading, setIsLoading] = useState(true)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [isConfirmingClose, setIsConfirmingClose] = useState(false)
@@ -56,6 +62,7 @@ function SoporteTicketDetail() {
   const [isPassOpen, setIsPassOpen] = useState(false)
   const [isMoveOpen, setIsMoveOpen] = useState(false)
   const [isCategoriaOpen, setIsCategoriaOpen] = useState(false)
+  const [isSubmarcasOpen, setIsSubmarcasOpen] = useState(false)
   const [isPrioridadOpen, setIsPrioridadOpen] = useState(false)
 
   useEffect(() => {
@@ -83,7 +90,7 @@ function SoporteTicketDetail() {
     try {
       const updated = await updateTicketStatus(id, estado)
       setTicket(updated)
-      toast.success(`Ticket marcado como ${accionEstado[estado].label.toLowerCase()}`)
+      toast.success(`Estado: ${estadoLabel[estado]}`)
     } catch (err) {
       const apiMsg = axios.isAxiosError(err) ? err.response?.data?.message : undefined
       toast.error(apiMsg || 'No se pudo actualizar el estado del ticket')
@@ -93,9 +100,9 @@ function SoporteTicketDetail() {
     }
   }
 
-  // Cerrar pide confirmación; el resto de transiciones es directo
+  // Resolver pide confirmación; el resto de transiciones es directo
   const handleClickEstado = (estado: EstadoTicket) => {
-    if (estado === 'cerrado') {
+    if (estado === 'resuelto') {
       setIsConfirmingClose(true)
     } else {
       handleUpdateStatus(estado)
@@ -149,7 +156,7 @@ function SoporteTicketDetail() {
   if (!ticket) {
     return (
       <Layout>
-        <p className="text-gray-500 dark:text-gray-400">Ticket no encontrado</p>
+        <TicketNoEncontrado destino="/soporte/dashboard" />
       </Layout>
     )
   }
@@ -161,13 +168,7 @@ function SoporteTicketDetail() {
     <Layout>
       <div className="max-w-7xl">
         {/* Botón volver */}
-        <button
-          onClick={() => navigate('/soporte/dashboard')}
-          className="text-sm text-blue-600 dark:text-blue-400 hover:underline mb-6 flex items-center gap-1"
-        >
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          Volver
-        </button>
+        <BotonVolver destino="/soporte/dashboard" />
 
         {/* En pantallas grandes: el ticket y su hilo a la izquierda; lo que solo ve el equipo, al lado */}
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-x-4 items-start">
@@ -183,7 +184,7 @@ function SoporteTicketDetail() {
                 </span>
               </div>
 
-              <p className="text-gray-600 dark:text-gray-300 mb-4">
+              <p className="text-gray-600 dark:text-gray-300 mb-4 whitespace-pre-line break-words">
                 {ticket.descripcion}
               </p>
               {ticket.archivos.length > 0 && (
@@ -199,12 +200,7 @@ function SoporteTicketDetail() {
                     {ticket.creadoPor.nombre}
                   </p>
                 </div>
-                <div>
-                  <p className="text-gray-500 dark:text-gray-400">Sub-marca</p>
-                  <p className="text-gray-800 dark:text-white font-medium">
-                    {ticket.submarca?.nombre ?? 'Sin sub-marca'}
-                  </p>
-                </div>
+                <TicketSubmarcas ticket={ticket} onCorregir={() => setIsSubmarcasOpen(true)} />
                 <TicketContexto contexto={ticket.contexto} />
                 <div>
                   <p className="text-gray-500 dark:text-gray-400">Categoría</p>
@@ -247,12 +243,23 @@ function SoporteTicketDetail() {
                 </div>
                 {ticket.fechaLimite && (
                   <div>
-                    <p className="text-gray-500 dark:text-gray-400">Fecha límite</p>
+                    <p className="text-gray-500 dark:text-gray-400">Fecha límite del ticket</p>
                     <p className="text-gray-800 dark:text-white font-medium">
                       {formatFechaLimite(ticket.fechaLimite)}
                     </p>
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Hora Colombia</p>
+                    {estaEnPausa(ticket.estado) && <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Plazo detenido</p>}
                     <SlaBarra sla={ticket.sla} />
+                  </div>
+                )}
+                {(ticket.fechaLimiteArea ?? ticket.fechaLimite) && (
+                  <div>
+                    <p className="text-gray-500 dark:text-gray-400">Plazo del área</p>
+                    <p className="text-gray-800 dark:text-white font-medium">
+                      {formatFechaLimite((ticket.fechaLimiteArea ?? ticket.fechaLimite) as string)}
+                    </p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Interno: mide este paso por {ticket.area?.nombre ?? 'el área'}</p>
+                    <SlaBarra sla={ticket.slaArea} />
                   </div>
                 )}
               </div>
@@ -267,13 +274,13 @@ function SoporteTicketDetail() {
                     <button
                       onClick={handleTake}
                       disabled={isActing}
-                      className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                      className="text-sm px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
                     >
                       {isActing ? 'Tomando...' : 'Tomar ticket'}
                     </button>
                     <button
                       onClick={() => setIsMoveOpen(true)}
-                      className="text-xs px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      className="text-sm px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     >
                       Mover de área
                     </button>
@@ -281,7 +288,22 @@ function SoporteTicketDetail() {
                 </div>
               )}
 
-              {ticket.estado !== 'cerrado' && esMio && (
+              {ticket.estado === 'resuelto' && esMio && (
+                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                    Esperando que el usuario confirme la solución o reabra el ticket; se cerrará solo en 3 días laborales. Si fue un error, puedes volverlo a atención.
+                  </p>
+                  <button
+                    onClick={() => handleUpdateStatus('en_progreso')}
+                    disabled={isUpdatingStatus}
+                    className={`text-sm px-4 py-2 rounded hover:opacity-80 transition-opacity disabled:opacity-50 ${accionEstado.en_progreso.className}`}
+                  >
+                    Volver a En progreso
+                  </button>
+                </div>
+              )}
+
+              {ticket.estado !== 'cerrado' && ticket.estado !== 'resuelto' && esMio && (
                 <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-4">
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Cambiar estado:</p>
@@ -291,7 +313,7 @@ function SoporteTicketDetail() {
                           key={estado}
                           onClick={() => handleClickEstado(estado)}
                           disabled={isUpdatingStatus}
-                          className={`text-xs px-3 py-1 rounded hover:opacity-80 transition-opacity disabled:opacity-50 ${accionEstado[estado].className}`}
+                          className={`text-sm px-4 py-2 rounded hover:opacity-80 transition-opacity disabled:opacity-50 ${accionEstado[estado].className}`}
                         >
                           {accionEstado[estado].label}
                         </button>
@@ -301,19 +323,19 @@ function SoporteTicketDetail() {
                   <div className="flex gap-2 flex-wrap">
                     <button
                       onClick={() => setIsPassOpen(true)}
-                      className="text-xs px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      className="text-sm px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     >
                       Pasar a compañero
                     </button>
                     <button
                       onClick={() => setIsMoveOpen(true)}
-                      className="text-xs px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      className="text-sm px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     >
                       Mover de área
                     </button>
                     <button
                       onClick={() => setIsConfirmingRelease(true)}
-                      className="text-xs px-3 py-1 border border-red-300 text-red-600 dark:border-red-700 dark:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      className="text-sm px-4 py-2 border border-red-300 text-red-600 dark:border-red-700 dark:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     >
                       Soltar
                     </button>
@@ -354,11 +376,11 @@ function SoporteTicketDetail() {
 
       <ConfirmDialog
         isOpen={isConfirmingClose}
-        title="Cerrar ticket"
-        message="El ticket quedará cerrado. Solo el usuario que lo creó podrá reabrirlo."
-        confirmLabel="Cerrar ticket"
+        title="Marcar resuelto"
+        message="El usuario podrá confirmarlo o reabrirlo; si no responde en 3 días laborales, se cerrará solo. Mientras tanto, el plazo queda detenido."
+        confirmLabel="Marcar resuelto"
         isLoading={isUpdatingStatus}
-        onConfirm={() => handleUpdateStatus('cerrado')}
+        onConfirm={() => handleUpdateStatus('resuelto')}
         onCancel={() => setIsConfirmingClose(false)}
       />
 
@@ -401,6 +423,15 @@ function SoporteTicketDetail() {
         onUpdated={(updated) => {
           setTicket(updated)
           setIsCategoriaOpen(false)
+        }}
+      />
+
+      <SubmarcasTicketModal
+        ticket={isSubmarcasOpen ? ticket : null}
+        onClose={() => setIsSubmarcasOpen(false)}
+        onUpdated={(updated) => {
+          setTicket(updated)
+          setIsSubmarcasOpen(false)
         }}
       />
     </Layout>

@@ -7,12 +7,9 @@ import Brand from '../models/Brand'
 import SubMarca from '../models/SubMarca'
 import { AuthRequest } from '../middlewares/auth'
 import { filtroDeLista } from '../utils/ticketFilters'
-import { resumenSla } from '../utils/tramos'
 import { estadoLegible, prioridadLegible } from '../utils/etiquetas'
 import { armarFilas, columnasExportacion, formatFecha, formatFechaHora, nombreArchivo, TicketExportable } from '../utils/exportarTickets'
-import { tramosEnLote } from '../services/tramos'
-import { horarioDeMarca } from '../services/horario'
-import { minutosJornada } from '../utils/horarioLaboral'
+import { resumenesEnLote } from '../services/tramos'
 import { generarExcel, generarPdf } from '../services/exportacion'
 
 const MAX_TICKETS = 5000 // protege al servidor: con más, hay que ajustar los filtros
@@ -89,26 +86,18 @@ export const exportarTickets = async (req: AuthRequest, res: Response, next: Nex
     }
 
     const leidos = await Ticket.find(filtro)
-      .select('titulo estado prioridad createdAt fechaLimite fechaCierre area categoria submarca contexto creadoPor asignadoA marca')
+      .select('titulo estado prioridad createdAt fechaLimite fechaCierre fechaLimiteArea area categoria submarca submarcasRelacionadas contexto creadoPor asignadoA marca')
       .populate('area', 'nombre')
       .populate('categoria', 'nombre')
       .populate('submarca', 'nombre')
+      .populate('submarcasRelacionadas', 'nombre')
       .populate('creadoPor', 'nombre')
       .populate('asignadoA', 'nombre')
       .populate('marca', 'nombre')
       .sort({ createdAt: -1, _id: -1 })
       .lean<TicketLeido[]>()
 
-    const tramos = await tramosEnLote(leidos)
-    // Jornada de la marca de cada ticket (el superadmin exporta varias marcas)
-    const jornadas = new Map(await Promise.all(
-      [...new Set(leidos.map((t) => String(t.marca._id)))].map(async (m) => [m, minutosJornada(await horarioDeMarca(m))] as const)
-    ))
-    const resumenes = new Map(leidos.map((t) => [
-      String(t._id),
-      { ...resumenSla(tramos.get(String(t._id)) ?? []), minutosJornada: jornadas.get(String(t.marca._id)) ?? 0 }
-    ]))
-    const filas = armarFilas(leidos, resumenes)
+    const filas = armarFilas(leidos, await resumenesEnLote(leidos))
     const esSuperadmin = req.user!.rol === 'superadmin'
     const columnas = columnasExportacion(formato, esSuperadmin)
 

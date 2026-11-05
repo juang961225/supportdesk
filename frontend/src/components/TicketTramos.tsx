@@ -55,7 +55,7 @@ function TicketTramos({ ticketId, refreshKey }: TicketTramosProps) {
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-4">
       <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-1">Tiempo por área</h3>
       <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
-        En horario laboral; no cuenta el tiempo cerrado. Solo visible para admin y soporte
+        En horario laboral (Crítica, en horas seguidas); no cuenta el tiempo en pausa. Solo visible para admin y soporte
       </p>
 
       {isLoading ? (

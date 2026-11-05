@@ -1,13 +1,14 @@
+import { estaEnPausa } from '../utils/ticketStatus'
 import type { Ticket } from '../types'
 import { TicketTimeBadge } from './TicketTimeBadge'
 import SlaBarra from './SlaBarra'
 import { prioridadColor, estadoColor } from '../utils/ticketColors'
-import { estadoLabel, prioridadLabel } from '../utils/ticketLabels'
+import { estadoLabel, estadoLabelUsuario, prioridadLabel } from '../utils/ticketLabels'
 import { formatFechaCorta } from '../utils/fechas'
 
 // Lo mínimo para pintar una card; creador y categoría no llegan en todas las listas (ej. urgentes del dashboard)
 export type TicketCardData = Pick<Ticket, '_id' | 'titulo' | 'estado' | 'prioridad' | 'fechaLimite' | 'area' | 'asignadoA'> &
-  Partial<Pick<Ticket, 'creadoPor' | 'categoria' | 'sla' | 'submarca' | 'contexto'>>
+  Partial<Pick<Ticket, 'creadoPor' | 'categoria' | 'sla' | 'submarca' | 'submarcasRelacionadas' | 'contexto'>>
 
 interface TicketCardProps {
   ticket: TicketCardData
@@ -23,7 +24,7 @@ function TicketCard({ ticket, onClick, variante = 'equipo', mostrarCreador = tru
 
   const meta = [
     mostrarCreador ? ticket.creadoPor?.nombre : undefined,
-    ticket.submarca?.nombre,
+    ticket.submarca && `${ticket.submarca.nombre}${ticket.submarcasRelacionadas?.length ? ` +${ticket.submarcasRelacionadas.length}` : ''}`,
     ticket.contexto?.nombre,
     ticket.categoria?.nombre,
     `Área: ${ticket.area?.nombre ?? 'Sin área'}`,
@@ -33,7 +34,7 @@ function TicketCard({ ticket, onClick, variante = 'equipo', mostrarCreador = tru
 
   const detalle = [
     atencion,
-    ticket.fechaLimite && ticket.estado !== 'cerrado' ? `Límite: ${formatFechaCorta(ticket.fechaLimite)}` : '',
+    ticket.fechaLimite && ticket.estado !== 'cerrado' && !estaEnPausa(ticket.estado) ? `Límite: ${formatFechaCorta(ticket.fechaLimite)}` : '',
   ].filter(Boolean).join(' · ')
 
   return (
@@ -45,7 +46,7 @@ function TicketCard({ ticket, onClick, variante = 'equipo', mostrarCreador = tru
         <div className="flex items-start justify-between gap-3">
           <p className="font-medium text-gray-800 dark:text-white truncate">{ticket.titulo}</p>
           <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full ${estadoColor[ticket.estado]}`}>
-            {estadoLabel[ticket.estado]}
+            {(esEquipo ? estadoLabel : estadoLabelUsuario)[ticket.estado]}
           </span>
         </div>
         {meta && <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate">{meta}</p>}

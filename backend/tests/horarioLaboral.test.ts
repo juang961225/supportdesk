@@ -1,4 +1,4 @@
-import { calcularFechaLimite } from '../src/utils/fechaLimite'
+import { calcularFechaLimite, PLAZOS_POR_DEFECTO } from '../src/utils/fechaLimite'
 import {
   HORARIO_POR_DEFECTO,
   HorarioLaboral,
@@ -15,14 +15,23 @@ const lunASab: HorarioLaboral = { dias: [1, 2, 3, 4, 5, 6], inicio: '08:00', fin
 // 08:30–17:00 con almuerzo 12:30–13:00 → jornada de 8 h
 const conAlmuerzo: HorarioLaboral = { ...HORARIO_POR_DEFECTO, inicio: '08:30', fin: '17:00', pausa: { inicio: '12:30', fin: '13:00' } }
 
+// Plazo de 4 h en una prioridad que cuenta horario laboral (Crítica corre 24/7: ver plazosT2b.test.ts)
+const cuatroHoras = (horario: HorarioLaboral, desde: Date): Date =>
+  calcularFechaLimite('media', horario, desde, { ...PLAZOS_POR_DEFECTO, media: { valor: 4, unidad: 'horas' } })
+
 describe('calcularFechaLimite (tiempo laboral)', () => {
   it.each([
-    ['crítica dentro de la jornada', 'critica', '2026-10-26T10:00', '2026-10-26T14:00'],
-    ['crítica al final del día pasa a la mañana siguiente', 'critica', '2026-10-26T17:00', '2026-10-27T11:00'],
-    ['crítica justo al cierre', 'critica', '2026-10-26T18:00', '2026-10-27T12:00'],
-    ['crítica antes de abrir empieza a contar a las 08:00', 'critica', '2026-10-26T06:00', '2026-10-26T12:00'],
+    ['4 h dentro de la jornada', '2026-10-26T10:00', '2026-10-26T14:00'],
+    ['al final del día pasa a la mañana siguiente', '2026-10-26T17:00', '2026-10-27T11:00'],
+    ['justo al cierre', '2026-10-26T18:00', '2026-10-27T12:00'],
+    ['antes de abrir empieza a contar a las 08:00', '2026-10-26T06:00', '2026-10-26T12:00'],
+    ['un sábado empieza el lunes', '2026-10-31T10:00', '2026-11-02T12:00']
+  ])('%s', (_caso, desde, esperado) => {
+    expect(cuatroHoras(HORARIO_POR_DEFECTO, bog(desde))).toEqual(bog(esperado))
+  })
+
+  it.each([
     ['alta un viernes por la tarde salta el fin de semana', 'alta', '2026-10-30T17:00', '2026-11-02T17:00'],
-    ['crítica un sábado empieza el lunes', 'critica', '2026-10-31T10:00', '2026-11-02T12:00'],
     ['media = 3 jornadas', 'media', '2026-10-28T09:00', '2026-11-02T09:00'],
     ['baja = 5 jornadas', 'baja', '2026-10-28T09:00', '2026-11-04T09:00']
   ])('%s', (_caso, prioridad, desde, esperado) => {
@@ -30,11 +39,11 @@ describe('calcularFechaLimite (tiempo laboral)', () => {
   })
 
   it('se salta un festivo', () => {
-    expect(calcularFechaLimite('critica', conFestivo('2026-11-02'), bog('2026-10-30T17:00'))).toEqual(bog('2026-11-03T11:00'))
+    expect(cuatroHoras(conFestivo('2026-11-02'), bog('2026-10-30T17:00'))).toEqual(bog('2026-11-03T11:00'))
   })
 
   it('respeta un horario con sábados y jornada corta', () => {
-    expect(calcularFechaLimite('critica', lunASab, bog('2026-11-01T23:30'))).toEqual(bog('2026-11-02T12:00'))
+    expect(cuatroHoras(lunASab, bog('2026-11-01T23:30'))).toEqual(bog('2026-11-02T12:00'))
     // 1 día = 1 jornada de 4 h
     expect(calcularFechaLimite('alta', lunASab, bog('2026-10-31T11:00'))).toEqual(bog('2026-11-02T11:00'))
   })
@@ -116,9 +125,9 @@ describe('pausa de almuerzo', () => {
 
   it('la fecha límite salta el almuerzo', () => {
     // Crítico a las 10:00: 10:00–12:30 (2 h 30) + 13:00–14:30 (1 h 30) → 14:30
-    expect(calcularFechaLimite('critica', conAlmuerzo, bog('2026-10-26T10:00'))).toEqual(bog('2026-10-26T14:30'))
+    expect(cuatroHoras(conAlmuerzo, bog('2026-10-26T10:00'))).toEqual(bog('2026-10-26T14:30'))
     // Creado durante el almuerzo: empieza a contar a las 13:00
-    expect(calcularFechaLimite('critica', conAlmuerzo, bog('2026-10-26T12:45'))).toEqual(bog('2026-10-26T17:00'))
+    expect(cuatroHoras(conAlmuerzo, bog('2026-10-26T12:45'))).toEqual(bog('2026-10-26T17:00'))
     // Alta = 1 jornada de 8 h
     expect(calcularFechaLimite('alta', conAlmuerzo, bog('2026-10-26T10:00'))).toEqual(bog('2026-10-27T10:00'))
   })

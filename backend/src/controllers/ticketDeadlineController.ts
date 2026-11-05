@@ -58,7 +58,11 @@ export const updateFechaLimite = async (req: AuthRequest, res: Response, next: N
       return
     }
 
+    // Ampliar vale para el ticket y para el tramo en curso; los reportes conservan la fecha original
+    const anteriorArea = ticket.fechaLimiteArea ?? anterior
     ticket.fechaLimite = nueva
+    ticket.fechaLimiteArea = nueva
+    if (ticket.pausadoDesde) ticket.pausadoDesde = new Date() // la fecha nueva empieza a contar al reanudar
     await ticket.save()
 
     await registrarEvento({
@@ -68,6 +72,7 @@ export const updateFechaLimite = async (req: AuthRequest, res: Response, next: N
       autor: id,
       motivo: motivoLimpio,
       fechaLimiteAnterior: anterior,
+      fechaLimiteAreaAnterior: anteriorArea,
       fechaLimiteNueva: nueva
     })
 

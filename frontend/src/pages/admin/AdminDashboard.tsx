@@ -68,12 +68,13 @@ function AdminDashboard() {
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Dashboard</h2>
 
         {/* Contadores */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-          <StatCard label="Abiertos" value={totales.abiertos} color="text-blue-600 dark:text-blue-400" />
-          <StatCard label="En progreso" value={totales.enProgreso} color="text-yellow-600 dark:text-yellow-400" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+          <StatCard label="Sin tomar" value={totales.abiertos} color="text-blue-600 dark:text-blue-400" />
+          <StatCard label="En atención" value={totales.enAtencion} color="text-yellow-600 dark:text-yellow-400" />
+          <StatCard label="Esperando al usuario" value={totales.esperandoUsuario} color="text-amber-600 dark:text-amber-400" />
           <StatCard label="Vencidos" value={totales.vencidos} color="text-red-600 dark:text-red-400" />
           <StatCard label="Críticos abiertos" value={totales.criticos} color="text-orange-600 dark:text-orange-400" />
-          <StatCard label="Cerrados" value={totales.cerrados} color="text-green-600 dark:text-green-400" />
+          <StatCard label="Cerrados (30 días)" value={totales.cerrados} color="text-green-600 dark:text-green-400" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -88,7 +89,7 @@ function AdminDashboard() {
                   <tr>
                     <th className={thClass}>Área</th>
                     <th className={thClass}>En cola</th>
-                    <th className={thClass}>En progreso</th>
+                    <th className={thClass}>Asignados</th>
                     <th className={thClass}>Vencidos</th>
                   </tr>
                 </thead>

@@ -35,7 +35,8 @@ const formatTiempoReal = (minutos: number): string => {
 export const textoSla = (sla: SlaActual): string =>
   sla.nivel === 'vencido'
     ? `Vencido hace ${formatTiempoReal(sla.vencidoHaceMinutos)}`
-    : `Quedan ${formatTiempoLaboral(sla.restanteMinutos, sla.minutosJornada)}`
+    // Sin jornada (Crítica): son horas seguidas, no laborales
+    : `Quedan ${formatTiempoLaboral(sla.restanteMinutos, sla.minutosJornada, sla.minutosJornada > 0)}`
 
 export const etiquetaNivelSla: Record<SlaActual['nivel'], string> = {
   ok: 'A tiempo',

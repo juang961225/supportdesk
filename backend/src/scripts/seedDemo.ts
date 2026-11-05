@@ -98,6 +98,8 @@ const crearTickets = async (
     const creador = usuarios[(i + Math.floor(i / usuarios.length)) % usuarios.length]
     const propias = submarcas.filter((s) => creador.submarcas.some((id) => id.equals(s._id)) && subMarcaAplica(s.organizaciones, creador.contexto.organizaciones))
     const submarca = propias[i % propias.length]
+    // Uno de cada siete afecta también a otra sub-marca del creador (A5: principal + relacionadas)
+    const relacionadas = i % 7 === 3 ? propias.filter((s) => !s._id.equals(submarca._id)).slice(0, 1).map((s) => s._id) : []
     const categoria = categorias[i % categorias.length]
     const creado = new Date(ahora - t.diasAtras * DIA_MS - HORA_MS)
     const fechaLimite = calcularFechaLimite(t.prioridad, HORARIO_POR_DEFECTO, creado)
@@ -121,6 +123,7 @@ const crearTickets = async (
       categoria: categoria._id,
       area: categoria.area,
       submarca: submarca._id,
+      submarcasRelacionadas: relacionadas,
       contexto,
       marca,
       creadoPor: creador._id,
@@ -128,6 +131,7 @@ const crearTickets = async (
       observadores: i % 5 === 0 ? [usuarios[(i + 1) % usuarios.length]._id].filter((id) => !id.equals(creador._id)) : [],
       fechaLimite,
       fechaCierre: cerrado,
+      pausadoDesde: t.estado === 'resuelto' || t.estado === 'esperando_usuario' ? new Date(creado.getTime() + 2 * HORA_MS) : undefined,
       archivos: [],
       createdAt: creado,
       updatedAt: cerrado ?? creado
@@ -147,11 +151,11 @@ const crearTickets = async (
       lista.push({ ticket: t._id, marca, tipo: 'asignado', autor: soporte._id, a: String(soporte._id), aNombre: soporte.nombre, createdAt: new Date(base + HORA_MS) })
     }
     if (soporte && t.estado !== 'abierto') {
-      const estadoFinal = t.estado === 'reabierto' ? 'cerrado' : t.estado
+      const estadoFinal = t.estado === 'reabierto' ? 'resuelto' : t.estado
       lista.push({ ticket: t._id, marca, tipo: 'estado', autor: soporte._id, de: 'abierto', a: estadoFinal, createdAt: new Date(base + 2 * HORA_MS) })
     }
     if (t.estado === 'reabierto') {
-      lista.push({ ticket: t._id, marca, tipo: 'estado', autor: t.creadoPor, de: 'cerrado', a: 'reabierto', fechaLimiteAnterior: t.fechaLimite, fechaLimiteNueva: t.fechaLimite, createdAt: new Date(base + 3 * HORA_MS) })
+      lista.push({ ticket: t._id, marca, tipo: 'estado', autor: t.creadoPor, de: 'resuelto', a: 'reabierto', fechaLimiteAnterior: t.fechaLimite, fechaLimiteNueva: t.fechaLimite, createdAt: new Date(base + 3 * HORA_MS) })
     }
     // Algunos en cola pasaron por otra área: se ve en "Tiempo por área"
     const otra = areas.find((a) => !a._id.equals(area))

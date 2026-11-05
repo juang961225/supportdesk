@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Pencil } from 'lucide-react'
+import { useParams } from 'react-router-dom'
+import { Pencil } from 'lucide-react'
 import Layout from '../../components/Layout'
+import { useTituloPagina } from '../../hooks/useTituloPagina'
+import { BotonVolver, TicketNoEncontrado } from '../../components/NavegacionTicket'
+import { estaEnPausa } from '../../utils/ticketStatus'
 import { PageSkeleton } from '../../components/Skeleton'
 import CommentThread from '../../components/CommentThread'
 import AttachmentList from '../../components/AttachmentList'
@@ -11,6 +14,8 @@ import TicketTramos from '../../components/TicketTramos'
 import AssignTicketModal from '../../components/AssignTicketModal'
 import MoveAreaModal from '../../components/MoveAreaModal'
 import CategoriaTicketModal from '../../components/CategoriaTicketModal'
+import SubmarcasTicketModal from '../../components/SubmarcasTicketModal'
+import TicketSubmarcas from '../../components/TicketSubmarcas'
 import PrioridadTicketModal from '../../components/PrioridadTicketModal'
 import FechaLimiteModal from '../../components/FechaLimiteModal'
 import { getTicketById } from '../../services/ticketService'
@@ -29,19 +34,20 @@ function AdminTicketDetail() {
   const { id } = useParams<{ id: string }>()
   // Tiempo real: sube cuando otra persona cambia este ticket
   const { versionTicket } = useTicketEnVivo(id)
-  const navigate = useNavigate()
   const { toast } = useToast()
   const { user } = useAuth()
   // Superadmin es solo lectura en tickets
   const canAssign = user?.rol === 'admin'
 
   const [ticket, setTicket] = useState<Ticket | null>(null)
+  useTituloPagina(ticket?.titulo)
   const [isLoading, setIsLoading] = useState(true)
 
   // 🔵 ADMIN: modales de asignar, mover de área y editar fecha límite
   const [isAssignOpen, setIsAssignOpen] = useState(false)
   const [isMoveOpen, setIsMoveOpen] = useState(false)
   const [isCategoriaOpen, setIsCategoriaOpen] = useState(false)
+  const [isSubmarcasOpen, setIsSubmarcasOpen] = useState(false)
   const [isPrioridadOpen, setIsPrioridadOpen] = useState(false)
   const [isFechaOpen, setIsFechaOpen] = useState(false)
 
@@ -69,6 +75,7 @@ function AdminTicketDetail() {
     setIsAssignOpen(false)
     setIsMoveOpen(false)
     setIsCategoriaOpen(false)
+    setIsSubmarcasOpen(false)
     setIsPrioridadOpen(false)
     setIsFechaOpen(false)
   }
@@ -84,7 +91,7 @@ function AdminTicketDetail() {
   if (!ticket) {
     return (
       <Layout>
-        <p className="text-gray-500 dark:text-gray-400">Ticket no encontrado</p>
+        <TicketNoEncontrado destino="/admin/tickets" />
       </Layout>
     )
   }
@@ -93,13 +100,7 @@ function AdminTicketDetail() {
     <Layout>
       <div className="max-w-7xl">
         {/* Botón volver */}
-        <button
-          onClick={() => navigate('/admin/tickets')}
-          className="text-sm text-blue-600 dark:text-blue-400 hover:underline mb-6 flex items-center gap-1"
-        >
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          Volver a tickets
-        </button>
+        <BotonVolver destino="/admin/tickets" />
 
         {/* En pantallas grandes: el ticket y su hilo a la izquierda; lo que solo ve el equipo, al lado */}
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-x-4 items-start">
@@ -133,7 +134,7 @@ function AdminTicketDetail() {
                 </div>
               </div>
 
-              <p className="text-gray-600 dark:text-gray-300 mb-4">
+              <p className="text-gray-600 dark:text-gray-300 mb-4 whitespace-pre-line break-words">
                 {ticket.descripcion}
               </p>
               {ticket.archivos.length > 0 && (
@@ -149,12 +150,7 @@ function AdminTicketDetail() {
                     {ticket.creadoPor.nombre}
                   </p>
                 </div>
-                <div>
-                  <p className="text-gray-500 dark:text-gray-400">Sub-marca</p>
-                  <p className="text-gray-800 dark:text-white font-medium">
-                    {ticket.submarca?.nombre ?? 'Sin sub-marca'}
-                  </p>
-                </div>
+                <TicketSubmarcas ticket={ticket} onCorregir={canAssign ? () => setIsSubmarcasOpen(true) : undefined} />
                 <TicketContexto contexto={ticket.contexto} />
                 <div>
                   <p className="text-gray-500 dark:text-gray-400">Categoría</p>
@@ -184,7 +180,7 @@ function AdminTicketDetail() {
                 </div>
                 {ticket.fechaLimite && (
                   <div>
-                    <p className="text-gray-500 dark:text-gray-400">Fecha límite</p>
+                    <p className="text-gray-500 dark:text-gray-400">Fecha límite del ticket</p>
                     <p className="text-gray-800 dark:text-white font-medium">
                       {formatFechaLimite(ticket.fechaLimite)}
                       {canAssign && ticket.estado !== 'cerrado' && (
@@ -197,23 +193,34 @@ function AdminTicketDetail() {
                       )}
                     </p>
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Hora Colombia</p>
+                    {estaEnPausa(ticket.estado) && <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Plazo detenido</p>}
                     <SlaBarra sla={ticket.sla} />
+                  </div>
+                )}
+                {(ticket.fechaLimiteArea ?? ticket.fechaLimite) && (
+                  <div>
+                    <p className="text-gray-500 dark:text-gray-400">Plazo del área</p>
+                    <p className="text-gray-800 dark:text-white font-medium">
+                      {formatFechaLimite((ticket.fechaLimiteArea ?? ticket.fechaLimite) as string)}
+                    </p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Interno: mide este paso por {ticket.area?.nombre ?? 'el área'}</p>
+                    <SlaBarra sla={ticket.slaArea} />
                   </div>
                 )}
               </div>
 
               {/* 🔵 ADMIN: asignar y mover de área (no en cerrados; superadmin solo lectura) */}
-              {canAssign && ticket.estado !== 'cerrado' && (
+              {canAssign && ticket.estado !== 'cerrado' && ticket.estado !== 'resuelto' && (
                 <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
                   <button
                     onClick={() => setIsAssignOpen(true)}
-                    className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    className="text-sm px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                   >
                     {ticket.asignadoA ? 'Reasignar' : 'Asignar'}
                   </button>
                   <button
                     onClick={() => setIsMoveOpen(true)}
-                    className="text-xs px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    className="text-sm px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
                     Mover de área
                   </button>
@@ -268,6 +275,12 @@ function AdminTicketDetail() {
       <CategoriaTicketModal
         ticket={isCategoriaOpen ? ticket : null}
         onClose={() => setIsCategoriaOpen(false)}
+        onUpdated={handleUpdated}
+      />
+
+      <SubmarcasTicketModal
+        ticket={isSubmarcasOpen ? ticket : null}
+        onClose={() => setIsSubmarcasOpen(false)}
         onUpdated={handleUpdated}
       />
 

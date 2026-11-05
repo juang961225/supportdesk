@@ -6,7 +6,7 @@ import TicketEvent from '../models/TicketEvent'
 import { AuthRequest } from '../middlewares/auth'
 import { puedeVerTicket } from '../utils/ticketAccess'
 import { puedeTransicionar, aplicarEstado } from '../utils/ticketStatus'
-import { fechaLimiteDeTicket } from '../services/horario'
+import { fechaLimiteDeArea, reanudarPlazo } from '../services/horario'
 import { registrarEvento } from '../services/ticketEvents'
 import { notificar } from '../services/notificaciones'
 import { findTicketResponse } from '../services/ticketQueries'
@@ -72,13 +72,14 @@ export const releaseTicket = async (req: AuthRequest, res: Response, next: NextF
       return
     }
 
-    if (ticket.estado === 'cerrado') {
-      res.status(400).json({ message: 'No se puede soltar un ticket cerrado' })
+    if (ticket.estado === 'cerrado' || ticket.estado === 'resuelto') {
+      res.status(400).json({ message: 'No se puede soltar un ticket resuelto o cerrado' })
       return
     }
 
     // Acción de sistema: vuelve a la cola aunque no sea una transición del flujo
     const estadoAnterior = ticket.estado
+    const cambioDePlazo = await reanudarPlazo(ticket)
     ticket.asignadoA = undefined
     ticket.estado = 'abierto'
     await ticket.save()
@@ -87,6 +88,7 @@ export const releaseTicket = async (req: AuthRequest, res: Response, next: NextF
       ticket: ticket._id,
       marca: ticket.marca,
       tipo: 'soltado',
+      ...cambioDePlazo,
       autor: id,
       de: estadoAnterior,
       a: 'abierto'
@@ -120,8 +122,8 @@ export const moveTicket = async (req: AuthRequest, res: Response, next: NextFunc
       return
     }
 
-    if (ticket.estado === 'cerrado') {
-      res.status(400).json({ message: 'No se puede mover un ticket cerrado' })
+    if (ticket.estado === 'cerrado' || ticket.estado === 'resuelto') {
+      res.status(400).json({ message: 'No se puede mover un ticket resuelto o cerrado' })
       return
     }
 
@@ -146,12 +148,14 @@ export const moveTicket = async (req: AuthRequest, res: Response, next: NextFunc
     }
 
     const origen = ticket.area ? await Area.findById(ticket.area).select('nombre') : null
-    const fechaLimiteAnterior = ticket.fechaLimite
+    // El plazo del ticket sigue corriendo (solo se corre si estaba en pausa); el del tramo empieza de nuevo en el área destino
+    const limiteDelTramo = ticket.fechaLimiteArea ?? ticket.fechaLimite
+    const cambioDePlazo = await reanudarPlazo(ticket)
 
     ticket.area = destino._id
     ticket.asignadoA = undefined
     ticket.estado = 'abierto'
-    ticket.fechaLimite = await fechaLimiteDeTicket(ticket.marca, destino._id, ticket.prioridad)
+    ticket.fechaLimiteArea = await fechaLimiteDeArea(ticket.marca, destino._id, ticket.prioridad)
     await ticket.save()
 
     await registrarEvento({
@@ -163,7 +167,8 @@ export const moveTicket = async (req: AuthRequest, res: Response, next: NextFunc
       deNombre: origen?.nombre,
       a: String(destino._id),
       aNombre: destino.nombre,
-      fechaLimiteAnterior
+      ...cambioDePlazo,
+      fechaLimiteAreaAnterior: limiteDelTramo
     })
 
     notificar(ticket._id, id, { tipo: 'movido' })

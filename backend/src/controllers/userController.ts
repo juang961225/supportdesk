@@ -8,12 +8,14 @@ import Area from '../models/Area'
 import { AuthRequest } from '../middlewares/auth'
 import { leerPaginacion, armarPaginacion } from '../utils/pagination'
 import { registrarEvento } from '../services/ticketEvents'
+import { reanudarPlazo } from '../services/horario'
 import { revocarTodos } from '../services/sesion'
 import { invalidarSesion } from '../middlewares/auth'
 import { avisarCambioTicket, desconectarUsuario } from '../services/tiempoReal'
 import SubMarca from '../models/SubMarca'
 import { catalogoDeMarca } from '../services/catalogoOnlineBrief'
 import { CONTEXTO_VACIO, ContextoUsuario, limpiarContexto } from '../utils/contextoUsuario'
+import { filtroDeUsuarios } from '../utils/filtroUsuarios'
 
 const ROLES_EDITABLES: IUser['rol'][] = ['admin', 'soporte', 'usuario']
 const ESTADOS_VALIDOS: IUser['estado'][] = ['activo', 'inactivo']
@@ -37,8 +39,10 @@ const liberarTickets = async (
   motivo: string,
   autorId: string
 ): Promise<void> => {
-  const tickets = await Ticket.find({ asignadoA: soporteId, estado: { $ne: 'cerrado' }, ...filtroExtra })
+  // Los resueltos ya no necesitan a nadie: solo esperan la confirmación del usuario
+  const tickets = await Ticket.find({ asignadoA: soporteId, estado: { $nin: ['cerrado', 'resuelto'] }, ...filtroExtra })
   for (const ticket of tickets) {
+    const cambioDePlazo = await reanudarPlazo(ticket)
     ticket.asignadoA = undefined
     ticket.estado = 'abierto'
     await ticket.save()
@@ -46,6 +50,7 @@ const liberarTickets = async (
       ticket: ticket._id,
       marca: ticket.marca,
       tipo: 'desasignado',
+      ...cambioDePlazo,
       autor: autorId,
       de: String(soporteId),
       deNombre: soporteNombre,
@@ -110,7 +115,7 @@ export const getUsers = async (req: AuthRequest, res: Response, next: NextFuncti
   try {
     const { rol, marca } = req.user!
 
-    const filtro: Record<string, unknown> = rol === 'admin' ? { marca } : {}
+    const filtro: Record<string, unknown> = { ...(rol === 'admin' ? { marca } : {}), ...filtroDeUsuarios(req.query) }
 
     const consulta = User.find(filtro)
       .select('-password') // excluye el password de la respuesta

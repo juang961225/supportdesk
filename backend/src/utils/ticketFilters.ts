@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 import { ITicket } from '../models/Ticket'
-import { esEstadoValido } from './ticketStatus'
+import { ESTADOS_SIN_RELOJ, esEstadoValido } from './ticketStatus'
 
 const PRIORIDADES: ITicket['prioridad'][] = ['baja', 'media', 'alta', 'critica']
 const MAX_BUSQUEDA = 100
@@ -47,8 +47,9 @@ export const leerFiltrosTicket = (query: Record<string, unknown>): Record<string
   const area = objectId(query.area)
   if (area) condiciones.push({ area })
 
+  // Encuentra también los tickets en los que es una sub-marca relacionada
   const submarca = objectId(query.submarca)
-  if (submarca) condiciones.push({ submarca })
+  if (submarca) condiciones.push({ $or: [{ submarca }, { submarcasRelacionadas: submarca }] })
 
   // Por nombre: reúne las entradas de un concesionario en las distintas sub-marcas
   const organizacion = texto(query.organizacion)
@@ -74,10 +75,10 @@ export const leerFiltrosTicket = (query: Record<string, unknown>): Record<string
 
   const ahora = new Date()
   if (query.vencimiento === 'vencidos') {
-    condiciones.push({ estado: { $ne: 'cerrado' }, fechaLimite: { $lt: ahora } })
+    condiciones.push({ estado: { $nin: ESTADOS_SIN_RELOJ }, fechaLimite: { $lt: ahora } })
   } else if (query.vencimiento === 'pronto') {
     condiciones.push({
-      estado: { $ne: 'cerrado' },
+      estado: { $nin: ESTADOS_SIN_RELOJ },
       fechaLimite: { $gte: ahora, $lte: new Date(ahora.getTime() + HORAS_24_MS) }
     })
   }

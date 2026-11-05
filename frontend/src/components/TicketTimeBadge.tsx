@@ -1,3 +1,4 @@
+import { estaEnPausa } from '../utils/ticketStatus'
 import { getTicketTimeStatus } from '../utils/ticketTime'
 import type { TicketTimeStatus } from '../utils/ticketTime'
 import type { SlaActual, Ticket } from '../types'
@@ -30,8 +31,8 @@ const styles: Record<TicketTimeStatus, string> = {
 }
 
 export function TicketTimeBadge({ fechaLimite, estado, sla }: TicketTimeBadgeProps) {
-  // Un ticket cerrado ya no vence
-  if (estado === 'cerrado') return null
+  // Cerrado o en pausa: no se vence
+  if (estado === 'cerrado' || estaEnPausa(estado)) return null
 
   const status = sla !== undefined ? statusDesdeSla(sla) : getTicketTimeStatus(fechaLimite)
 

@@ -41,7 +41,7 @@ export const elegirSedesDemo = (catalogo: Catalogo): { bmw: Sede[]; mini: Sede[]
   }
 }
 
-export type EstadoDemo = 'abierto' | 'en_progreso' | 'en_revision' | 'cerrado' | 'reabierto'
+export type EstadoDemo = 'abierto' | 'en_progreso' | 'en_revision' | 'esperando_usuario' | 'resuelto' | 'cerrado' | 'reabierto'
 export type PrioridadDemo = 'baja' | 'media' | 'alta' | 'critica'
 
 export interface TicketDemo {
@@ -63,7 +63,7 @@ const TEMAS: [string, string][] = [
   ['Lentitud en horas pico', 'El sistema tarda varios segundos al abrir cada pantalla.']
 ]
 
-const ESTADOS: EstadoDemo[] = ['abierto', 'en_progreso', 'cerrado', 'en_revision', 'abierto', 'cerrado', 'reabierto', 'en_progreso']
+const ESTADOS: EstadoDemo[] = ['abierto', 'en_progreso', 'cerrado', 'en_revision', 'abierto', 'resuelto', 'reabierto', 'esperando_usuario']
 const PRIORIDADES: PrioridadDemo[] = ['media', 'alta', 'baja', 'critica', 'alta', 'media']
 
 // Siempre los mismos: cada corrida deja la demo igual. Incluye de hoy y de hace meses

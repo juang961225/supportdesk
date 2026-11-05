@@ -1,22 +1,33 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Building2, Clock, FolderTree, Layers, LayoutDashboard, LogOut, Menu, PlusCircle, Tags, Ticket, Users } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import ThemeToggle from './ThemeToggle'
 import { rolLabel } from '../utils/userLabels'
 import { useConexionPerdida } from '../hooks/useTiempoReal'
 
+interface ItemMenu {
+  label: string
+  icono: LucideIcon
+  path: string
+  activoEn?: (ruta: string) => boolean // también queda marcado en estas rutas (p. ej., dentro de un ticket)
+}
+
+const dentroDe = (prefijo: string, excepto: string[] = []) => (ruta: string) =>
+  ruta.startsWith(prefijo) && !excepto.includes(ruta)
+
 // Definimos los items del menú según el rol
-const menuItems = {
+const menuItems: Record<string, ItemMenu[]> = {
   superadmin: [
     { label: 'Dashboard', icono: LayoutDashboard, path: '/superadmin/dashboard' },
-    { label: 'Tickets', icono: Ticket, path: '/admin/tickets' },
+    { label: 'Tickets', icono: Ticket, path: '/admin/tickets', activoEn: dentroDe('/admin/tickets/') },
     { label: 'Marcas', icono: Building2, path: '/superadmin/brands' },
     { label: 'Usuarios', icono: Users, path: '/superadmin/users' },
   ],
   admin: [
     { label: 'Dashboard', icono: LayoutDashboard, path: '/admin/dashboard' },
-    { label: 'Tickets', icono: Ticket, path: '/admin/tickets' },
+    { label: 'Tickets', icono: Ticket, path: '/admin/tickets', activoEn: dentroDe('/admin/tickets/') },
     { label: 'Áreas', icono: Layers, path: '/admin/areas' },
     { label: 'Sub-marcas', icono: Tags, path: '/admin/submarcas' },
     { label: 'Categorías', icono: FolderTree, path: '/admin/categories' },
@@ -24,10 +35,10 @@ const menuItems = {
     { label: 'Horario y plazos', icono: Clock, path: '/admin/horario' },
   ],
   soporte: [
-    { label: 'Tickets', icono: Ticket, path: '/soporte/dashboard' },
+    { label: 'Tickets', icono: Ticket, path: '/soporte/dashboard', activoEn: dentroDe('/soporte/tickets/') },
   ],
   usuario: [
-    { label: 'Mis Tickets', icono: Ticket, path: '/usuario/dashboard' },
+    { label: 'Mis Tickets', icono: Ticket, path: '/usuario/dashboard', activoEn: dentroDe('/usuario/tickets/', ['/usuario/tickets/new']) },
     { label: 'Nuevo Ticket', icono: PlusCircle, path: '/usuario/tickets/new' },
   ],
 }
@@ -46,7 +57,14 @@ function Layout({ children }: { children: React.ReactNode }) {
   }
 
   // Obtiene el menú según el rol del usuario
-  const items = menuItems[user?.rol as keyof typeof menuItems] || []
+  const items = menuItems[user?.rol ?? ''] ?? []
+  const estaActivo = (item: ItemMenu) => location.pathname === item.path || (item.activoEn?.(location.pathname) ?? false)
+  const seccion = items.find(estaActivo)?.label
+
+  // Título de la pestaña: la sección actual (el detalle de un ticket lo cambia por su título)
+  useEffect(() => {
+    document.title = seccion ? `${seccion} · SupportDesk` : 'SupportDesk'
+  }, [seccion])
 
   return (
     <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors">
@@ -81,7 +99,7 @@ function Layout({ children }: { children: React.ReactNode }) {
         <nav className="flex-1 p-4">
           <ul className="space-y-1">
             {items.map((item) => {
-              const isActive = location.pathname === item.path
+              const isActive = estaActivo(item)
               return (
                 <li key={item.path}>
                   <button

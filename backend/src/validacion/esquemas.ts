@@ -32,7 +32,7 @@ export const passwordNueva = z.string({ error: 'La contraseña es obligatoria' }
   .regex(/\d/, 'La contraseña debe tener al menos un número')
 
 const PRIORIDADES = ['baja', 'media', 'alta', 'critica'] as const
-const ESTADOS_TICKET = ['abierto', 'en_progreso', 'en_revision', 'cerrado', 'reabierto'] as const
+const ESTADOS_TICKET = ['abierto', 'en_progreso', 'en_revision', 'esperando_usuario', 'resuelto', 'cerrado', 'reabierto'] as const
 const ROLES = ['admin', 'soporte', 'usuario'] as const
 const ESTADOS_CUENTA = ['activo', 'inactivo'] as const
 
@@ -122,6 +122,7 @@ export const esquemaCrearTicket = z.object({
   prioridad: z.enum(PRIORIDADES, { error: 'Prioridad inválida' }),
   categoriaId: objectId('La categoría', true),
   submarcaId: objectId('La sub-marca', true),
+  submarcaRelacionadaIds: z.union([objectId('La sub-marca relacionada'), z.array(objectId('La sub-marca relacionada')).max(20)]).optional(),
   sede: z.string().regex(/^(corporativo|[ci]:\d+:\d+)$/, 'El concesionario o importador no es válido').optional(),
   observadorIds: z.union([objectId('El observador'), z.array(objectId('El observador')).max(20, 'Máximo 20 observadores')]).optional()
 })
@@ -132,6 +133,10 @@ export const esquemaEditarTicket = z.object({
 })
 
 export const esquemaCategoriaTicket = z.object({ categoriaId: objectId('La categoría', true) })
+
+export const esquemaSubmarcasTicket = z.object({
+  submarcaIds: z.array(objectId('La sub-marca relacionada', true), { error: 'Las sub-marcas no son válidas' }).max(20)
+})
 
 export const esquemaPrioridadTicket = z.object({
   prioridad: z.enum(PRIORIDADES, { error: 'Prioridad inválida' }),

@@ -1,4 +1,4 @@
-import { AlertTriangle, X } from 'lucide-react'
+import { AlertTriangle, Plus, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
@@ -260,9 +260,10 @@ function HorarioPage() {
                 type="button"
                 onClick={agregarFestivo}
                 disabled={!nuevoFestivo}
-                className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
               >
-                + Agregar
+                <Plus className="w-4 h-4" aria-hidden="true" />
+                Agregar
               </button>
             </div>
             {horario.festivos.length === 0 ? (
