@@ -14,7 +14,8 @@ import AttachmentDropZone from '../../components/AttachmentDropZone'
 import type { Category, UserRef } from '../../types'
 import { getSubMarcas } from '../../services/subMarcaService'
 import { getMiContexto } from '../../services/catalogoService'
-import type { MiContexto, SubMarca } from '../../types'
+import { DESCRIPCION_PRIORIDAD } from '../../utils/ticketLabels'
+import type { MiContexto, SubMarca, Ticket } from '../../types'
 
 const SIN_CONTEXTO: MiContexto = { aplica: false, todas: false, sedes: [] }
 
@@ -248,6 +249,9 @@ function NewTicketPage() {
                       <option value="alta">Alta</option>
                       <option value="critica">Crítica</option>
                     </select>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      {DESCRIPCION_PRIORIDAD[formData.prioridad as Ticket['prioridad']]}
+                    </p>
                   </div>
                 </div>
 

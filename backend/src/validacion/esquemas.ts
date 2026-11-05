@@ -88,8 +88,16 @@ export const esquemaEditarMarca = z.object({
 })
 export const esquemaAsignarAdmin = z.object({ adminId: objectId('El admin') })
 
-export const esquemaArea = z.object({ nombre: texto('El nombre del área', 100), descripcion: textoOpcional('La descripción', 500) })
-export const esquemaEditarArea = z.object({ nombre: texto('El nombre del área', 100).optional(), descripcion: textoOpcional('La descripción', 500) })
+// Plazos por prioridad: la marca define los cuatro; el área, solo los que quiera ajustar
+const plazo = z.object({
+  valor: z.number({ error: 'El plazo debe ser un número' }).int('El plazo debe ser un número entero').min(1, 'El plazo debe ser mayor que cero').max(1000, 'El plazo es demasiado largo'),
+  unidad: z.enum(['horas', 'dias'], { error: 'La unidad debe ser horas o días' })
+}, { error: 'El plazo no es válido' })
+export const esquemaPlazos = z.object({ critica: plazo, alta: plazo, media: plazo, baja: plazo }, { error: 'Los plazos no son válidos' })
+export const esquemaAjustePlazos = esquemaPlazos.partial()
+
+export const esquemaArea = z.object({ nombre: texto('El nombre del área', 100), descripcion: textoOpcional('La descripción', 500), plazos: esquemaAjustePlazos.optional() })
+export const esquemaEditarArea = z.object({ nombre: texto('El nombre del área', 100).optional(), descripcion: textoOpcional('La descripción', 500), plazos: esquemaAjustePlazos.optional() })
 export const esquemaEstadoArea = z.object({ activo: z.boolean({ error: 'Indica si el área queda activa' }) })
 
 export const esquemaSubMarca = z.object({ nombre: texto('El nombre de la sub-marca', 100), organizaciones: organizacionesIds.optional() })
@@ -125,8 +133,15 @@ export const esquemaEditarTicket = z.object({
 
 export const esquemaCategoriaTicket = z.object({ categoriaId: objectId('La categoría', true) })
 
+export const esquemaPrioridadTicket = z.object({
+  prioridad: z.enum(PRIORIDADES, { error: 'Prioridad inválida' }),
+  motivo: texto('El motivo', 300)
+})
+
 export const esquemaComentario = z.object({
-  contenido: z.string().trim().max(5000, 'El comentario no puede superar 5000 caracteres').optional().default('')
+  contenido: z.string().trim().max(5000, 'El comentario no puede superar 5000 caracteres').optional().default(''),
+  // Llega por multipart, como texto
+  interna: z.enum(['true', 'false'], { error: 'El tipo de comentario no es válido' }).optional()
 })
 
 export const esquemaAsignar = z.object({ soporterId: objectId('El soporte') })

@@ -11,6 +11,8 @@ import { actorParaDestinatario } from '../utils/privacidadTicket'
 //   asignado   → el soporte asignado (asignar, reasignar o pasar)
 //   estado     → creador + observadores (+ el soporte asignado si se reabre)
 //   comentario → creador + observadores + soporte asignado (o los soportes del área si está en cola)
+//   nota interna → soporte asignado y soportes del área; nunca el usuario final
+//   prioridad  → creador + observadores + soporte asignado
 // Nunca a quien hizo la acción ni a usuarios inactivos. El usuario final ve el área, no quién del equipo actuó.
 
 export type EventoNotificable =
@@ -18,7 +20,8 @@ export type EventoNotificable =
   | { tipo: 'movido' }
   | { tipo: 'asignado' }
   | { tipo: 'estado'; de: string; a: string }
-  | { tipo: 'comentario'; contenido: string; adjuntos: number }
+  | { tipo: 'comentario'; contenido: string; adjuntos: number; interna?: boolean }
+  | { tipo: 'prioridad'; de: string; a: string }
 
 type Id = mongoose.Types.ObjectId | string
 
@@ -74,7 +77,10 @@ const idsDestinatarios = async (ticket: TicketNotificable, evento: EventoNotific
       return ticket.asignadoA ? [ticket.asignadoA] : []
     case 'estado':
       return evento.a === 'reabierto' && ticket.asignadoA ? [...participantes, ticket.asignadoA] : participantes
+    case 'prioridad':
+      return ticket.asignadoA ? [...participantes, ticket.asignadoA] : participantes
     case 'comentario':
+      if (evento.interna) return [...(ticket.asignadoA ? [ticket.asignadoA] : []), ...(await soportesDelArea(ticket))]
       return [...participantes, ...(ticket.asignadoA ? [ticket.asignadoA] : await soportesDelArea(ticket))]
   }
 }
@@ -98,8 +104,17 @@ const contenido = (ticket: TicketNotificable, evento: EventoNotificable, actor: 
     }
     case 'comentario': {
       const adjuntos = evento.adjuntos > 0 ? ` (con ${evento.adjuntos} archivo${evento.adjuntos > 1 ? 's' : ''} adjunto${evento.adjuntos > 1 ? 's' : ''})` : ''
+      if (evento.interna) {
+        return { ...base, asunto: `Nota interna en: ${ticket.titulo}`, resumen: `${actor} agregó una nota interna${adjuntos}:`, extracto: evento.contenido }
+      }
       return { ...base, asunto: `Nuevo comentario en: ${ticket.titulo}`, resumen: `${actor} comentó${adjuntos}:`, extracto: evento.contenido }
     }
+    case 'prioridad':
+      return {
+        ...base,
+        asunto: `Prioridad cambiada: ${ticket.titulo}`,
+        resumen: `${actor} cambió la prioridad: ${prioridadLegible[evento.de] ?? evento.de} → ${prioridadLegible[evento.a] ?? evento.a}.`
+      }
   }
 }
 
@@ -117,7 +132,9 @@ const procesar = async (ticketId: Id, actorId: Id, evento: EventoNotificable): P
   const ids = [...new Set((await idsDestinatarios(ticket, evento)).map(String))].filter((id) => id !== String(actorId))
   if (ids.length === 0) return
 
-  const destinatarios = await User.find({ _id: { $in: ids }, estado: 'activo' }).select('nombre email rol').lean<Destinatario[]>()
+  const todos = await User.find({ _id: { $in: ids }, estado: 'activo' }).select('nombre email rol').lean<Destinatario[]>()
+  // Segunda barrera: una nota interna nunca sale hacia un usuario final
+  const destinatarios = evento.tipo === 'comentario' && evento.interna ? todos.filter((d) => d.rol !== 'usuario') : todos
 
   await Promise.all(destinatarios.map((d) => {
     const { asunto, ...datos } = contenido(ticket, evento, actorParaDestinatario(actor, d.rol, ticket.area?.nombre))

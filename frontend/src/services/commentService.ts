@@ -10,6 +10,7 @@ export interface Comment {
     rol: string
   }
   archivos: Attachment[]
+  interna?: boolean // nota del equipo: el usuario final no la recibe
   createdAt: string
 }
 
@@ -22,10 +23,12 @@ export const getComments = async (ticketId: string): Promise<Comment[]> => {
 export const createComment = async (
   ticketId: string,
   contenido: string,
-  archivos: File[] = []
+  archivos: File[] = [],
+  interna = false
 ): Promise<Comment> => {
   const data = new FormData()
   data.append('contenido', contenido)
+  if (interna) data.append('interna', 'true')
   archivos.forEach((archivo) => data.append('archivos', archivo))
   const response = await api.post(`/tickets/${ticketId}/comments`, data)
   return response.data.comment

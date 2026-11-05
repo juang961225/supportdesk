@@ -1,3 +1,4 @@
+import { Lock } from 'lucide-react'
 import { formatFechaHora } from '../utils/fechas'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
@@ -16,6 +17,7 @@ interface CommentThreadProps {
   placeholder?: string
   creadorId?: string       // para marcar al creador del ticket
   observadorIds?: string[] // para marcar a los observadores
+  permiteNotaInterna?: boolean // admin y soporte: pueden escribir solo para el equipo
 }
 
 const badgeClass: Record<string, string> = {
@@ -33,12 +35,14 @@ function CommentThread({
   placeholder = 'Escribe tu comentario...',
   creadorId,
   observadorIds = [],
+  permiteNotaInterna = false,
 }: CommentThreadProps) {
   const { toast } = useToast()
   const [comments, setComments] = useState<Comment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [contenido, setContenido] = useState('')
   const [archivos, setArchivos] = useState<File[]>([])
+  const [interna, setInterna] = useState(false)
   const [isSending, setIsSending] = useState(false)
   // Tiempo real: sube cuando alguien comenta en este ticket
   const { versionComentarios } = useTicketEnVivo(ticketId)
@@ -76,11 +80,12 @@ function CommentThread({
 
     setIsSending(true)
     try {
-      const newComment = await createComment(ticketId, contenido, archivos)
+      const newComment = await createComment(ticketId, contenido, archivos, interna)
       setComments([...comments, newComment])
       setContenido('')
       setArchivos([])
-      toast.success('Comentario enviado')
+      setInterna(false)
+      toast.success(interna ? 'Nota interna guardada' : 'Comentario enviado')
     } catch (err) {
       const apiMsg = axios.isAxiosError(err) ? err.response?.data?.message : undefined
       toast.error(apiMsg || 'No se pudo enviar el comentario')
@@ -104,7 +109,10 @@ function CommentThread({
         ) : (
           <div className="space-y-4">
             {comments.map((comment) => (
-              <div key={comment._id} className="flex gap-3">
+              <div
+                key={comment._id}
+                className={`flex gap-3 ${comment.interna ? 'rounded-lg p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : ''}`}
+              >
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                   <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
                     {comment.autor.nombre.charAt(0).toUpperCase()}
@@ -118,6 +126,12 @@ function CommentThread({
                     {papelDe(comment.autor) && (
                       <span className={`text-xs px-1.5 py-0.5 rounded ${badgeClass[papelDe(comment.autor) ?? '']}`}>
                         {papelDe(comment.autor)}
+                      </span>
+                    )}
+                    {comment.interna && (
+                      <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">
+                        <Lock className="w-3 h-3" aria-hidden="true" />
+                        Nota interna
                       </span>
                     )}
                     <span className="text-xs text-gray-400 dark:text-gray-500">
@@ -150,8 +164,15 @@ function CommentThread({
                 onChange={(e) => setContenido(e.target.value)}
                 className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 rows={3}
-                placeholder={placeholder}
+                placeholder={interna ? 'Solo la verá el equipo de soporte...' : placeholder}
               />
+              {permiteNotaInterna && (
+                <label className="flex items-center gap-2 mt-2 text-sm text-gray-700 dark:text-gray-300">
+                  <input type="checkbox" checked={interna} onChange={(e) => setInterna(e.target.checked)} />
+                  <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+                  Nota interna: el usuario no la verá
+                </label>
+              )}
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-3">
                 <AttachmentInput files={archivos} onChange={setArchivos} disabled={isSending} />
                 <button
@@ -159,7 +180,7 @@ function CommentThread({
                   disabled={isSending || !puedeEnviar}
                   className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
                 >
-                  {isSending ? 'Enviando...' : 'Enviar'}
+                  {isSending ? 'Enviando...' : interna ? 'Guardar nota' : 'Enviar'}
                 </button>
               </div>
             </form>

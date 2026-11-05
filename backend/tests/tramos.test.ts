@@ -76,13 +76,16 @@ describe('calcularTramos', () => {
 })
 
 describe('resumenSla', () => {
-  const tramo = (extra: Partial<Tramo>): Tramo => ({
-    areaId: 'a', area: 'A', entrada: bog('2026-10-26T09:00'), salida: bog('2026-10-26T10:00'),
-    minutosLaborales: 60, fechaLimite: bog('2026-10-26T13:00'), vencido: false, ...extra
-  })
+  const tramo = (extra: Partial<Tramo>): Tramo => {
+    const vencido = extra.vencido === undefined ? false : extra.vencido
+    return {
+      areaId: 'a', area: 'A', entrada: bog('2026-10-26T09:00'), salida: bog('2026-10-26T10:00'),
+      minutosLaborales: 60, fechaLimite: bog('2026-10-26T13:00'), vencido, vencidoSinAjuste: vencido, ...extra
+    }
+  }
 
   it('vencido si se venció en cualquier tramo, y suma el tiempo', () => {
-    expect(resumenSla([tramo({ vencido: true }), tramo({ minutosLaborales: 30 })])).toEqual({ minutosLaborales: 90, sla: 'vencido' })
+    expect(resumenSla([tramo({ vencido: true }), tramo({ minutosLaborales: 30 })])).toEqual({ minutosLaborales: 90, sla: 'vencido', slaSinAjuste: 'vencido' })
   })
 
   it('en curso si el último tramo sigue abierto y no venció', () => {

@@ -47,7 +47,18 @@ export interface Area {
   descripcion?: string
   activo: boolean
   marca: string
+  plazos?: AjustePlazos // lo que falte viene de la marca
 }
+
+// Plazos por prioridad, en tiempo laboral
+export type Prioridad = 'critica' | 'alta' | 'media' | 'baja'
+export type UnidadPlazo = 'horas' | 'dias'
+export interface Plazo {
+  valor: number
+  unidad: UnidadPlazo
+}
+export type Plazos = Record<Prioridad, Plazo>
+export type AjustePlazos = Partial<Plazos>
 
 export interface Brand {
   _id: string
@@ -124,6 +135,7 @@ export interface TicketEvent {
     | 'fecha_limite'
     | 'editado'
     | 'categoria'
+    | 'prioridad'
   autor?: {
     _id: string
     nombre: string
@@ -183,6 +195,7 @@ export interface Tramo {
   minutosLaborales: number
   fechaLimite: string | null
   vencido: boolean | null // null = sin fecha límite (tickets antiguos)
+  vencidoSinAjuste: boolean | null // sin contar lo que el admin amplió a mano
 }
 
 // Sub-marca dentro de una marca (BMW, MINI…). `marca` solo llega poblada para el superadmin

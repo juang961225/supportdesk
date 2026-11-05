@@ -71,6 +71,9 @@ function TicketTramos({ ticketId, refreshKey }: TicketTramosProps) {
                   <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{tramo.area}</p>
                   <EstadoTramo tramo={tramo} />
                 </div>
+                {tramo.vencidoSinAjuste && !tramo.vencido && (
+                  <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">Se habría vencido sin la ampliación de la fecha límite</p>
+                )}
                 <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
                   {formatTiempoLaboral(tramo.minutosLaborales, minutosJornada, false)}
                 </p>

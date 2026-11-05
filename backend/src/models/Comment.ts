@@ -6,6 +6,7 @@ export interface IComment extends Document {
   ticket: mongoose.Types.ObjectId
   autor: mongoose.Types.ObjectId
   archivos: Adjunto[]
+  interna: boolean // nota del equipo: el usuario final no la recibe
 }
 
 const CommentSchema = new Schema<IComment>(
@@ -29,6 +30,10 @@ const CommentSchema = new Schema<IComment>(
     archivos: {
       type: [AdjuntoSchema],
       default: []
+    },
+    interna: {
+      type: Boolean,
+      default: false
     }
   },
   {

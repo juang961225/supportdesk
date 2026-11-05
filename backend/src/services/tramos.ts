@@ -5,7 +5,7 @@ import Area from '../models/Area'
 import { horarioDeMarca } from './horario'
 import { calcularTramos, EventoParaTramos, TicketParaTramos, Tramo } from '../utils/tramos'
 
-const TIPOS_RELEVANTES: TipoEvento[] = ['movido', 'estado', 'fecha_limite']
+const TIPOS_RELEVANTES: TipoEvento[] = ['movido', 'estado', 'fecha_limite', 'prioridad']
 const CAMPOS_EVENTO = 'ticket tipo createdAt de a deNombre aNombre fechaLimiteAnterior'
 
 // Forma de los eventos que trae CAMPOS_EVENTO con .lean()
@@ -85,6 +85,8 @@ export interface SlaArea {
   promedioMinutos: number
   vencidos: number
   porcentajeVencidos: number // sobre los tramos con fecha límite
+  vencidosSinAjuste: number // sin contar lo que el admin amplió a mano
+  porcentajeVencidosSinAjuste: number
 }
 
 // SLA por área de una marca: tramos terminados (movidos o cerrados) en los últimos `dias` días
@@ -104,7 +106,7 @@ export const slaPorArea = async (marcaId: string, dias: number): Promise<SlaArea
   ])
   const nombreArea = new Map(areas.map((a) => [String(a._id), a.nombre]))
 
-  const porArea = new Map<string, { areaId: string | null; area: string; tramos: number; minutos: number; conLimite: number; vencidos: number }>()
+  const porArea = new Map<string, { areaId: string | null; area: string; tramos: number; minutos: number; conLimite: number; vencidos: number; vencidosSinAjuste: number }>()
   for (const ticket of tickets) {
     const tramos = calcularTramos(aTicketParaTramos(ticket), eventosPorTicket.get(String(ticket._id)) ?? [], horario)
     for (const tramo of tramos) {
@@ -113,12 +115,13 @@ export const slaPorArea = async (marcaId: string, dias: number): Promise<SlaArea
       const fila = porArea.get(clave) ?? {
         areaId: tramo.areaId,
         area: (tramo.areaId && nombreArea.get(tramo.areaId)) || tramo.area,
-        tramos: 0, minutos: 0, conLimite: 0, vencidos: 0
+        tramos: 0, minutos: 0, conLimite: 0, vencidos: 0, vencidosSinAjuste: 0
       }
       fila.tramos += 1
       fila.minutos += tramo.minutosLaborales
       if (tramo.vencido !== null) fila.conLimite += 1
       if (tramo.vencido) fila.vencidos += 1
+      if (tramo.vencidoSinAjuste) fila.vencidosSinAjuste += 1
       porArea.set(clave, fila)
     }
   }
@@ -130,7 +133,9 @@ export const slaPorArea = async (marcaId: string, dias: number): Promise<SlaArea
       tramos: f.tramos,
       promedioMinutos: Math.round(f.minutos / f.tramos),
       vencidos: f.vencidos,
-      porcentajeVencidos: f.conLimite ? Math.round((f.vencidos / f.conLimite) * 100) : 0
+      porcentajeVencidos: f.conLimite ? Math.round((f.vencidos / f.conLimite) * 100) : 0,
+      vencidosSinAjuste: f.vencidosSinAjuste,
+      porcentajeVencidosSinAjuste: f.conLimite ? Math.round((f.vencidosSinAjuste / f.conLimite) * 100) : 0
     }))
     .sort((a, b) => a.area.localeCompare(b.area, 'es'))
 }

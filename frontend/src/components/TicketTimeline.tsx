@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getTicketHistory } from '../services/historyService'
 import { useToast } from '../hooks/useToast'
-import { labelDeEstado } from '../utils/ticketLabels'
+import { labelDeEstado, prioridadLabel } from '../utils/ticketLabels'
 import { formatFechaLimite, formatFechaHora } from '../utils/fechas'
 import type { TicketEvent } from '../types'
 import { SkeletonLines } from './Skeleton'
@@ -11,6 +11,9 @@ interface TicketTimelineProps {
   // Cambia cuando la página modifica el ticket (estado, asignación) para recargar el historial
   refreshKey?: string
 }
+
+const labelDePrioridad = (valor?: string): string =>
+  (valor && prioridadLabel[valor as keyof typeof prioridadLabel]) || valor || '—'
 
 // Texto de cada evento: "<autor> <acción>"
 const describirEvento = (evento: TicketEvent): string => {
@@ -55,6 +58,9 @@ const describirEvento = (evento: TicketEvent): string => {
       const descripcion = evento.descripcionAnterior ? 'la descripción' : ''
       return `${autor} editó ${[titulo, descripcion].filter(Boolean).join(' y ')}`
     }
+    case 'prioridad':
+      return `${autor} cambió la prioridad: ${labelDePrioridad(evento.de)} → ${labelDePrioridad(evento.a)}` +
+        `${evento.fechaLimiteNueva ? `; nueva fecha límite ${formatFechaLimite(evento.fechaLimiteNueva)}` : ''}${evento.motivo ? ` (${evento.motivo})` : ''}`
     case 'categoria':
       return `${autor} corrigió la categoría: ${evento.deNombre ?? 'sin categoría'} → ${evento.aNombre}`
   }
@@ -75,6 +81,7 @@ const dotColor: Record<TicketEvent['tipo'], string> = {
   fecha_limite: 'bg-orange-500',
   editado: 'bg-gray-400',
   categoria: 'bg-purple-500',
+  prioridad: 'bg-orange-500',
 }
 
 // Historial interno del ticket — solo admin, soporte y superadmin

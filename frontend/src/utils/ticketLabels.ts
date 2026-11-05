@@ -20,3 +20,11 @@ export const prioridadLabel: Record<Ticket['prioridad'], string> = {
   alta: 'Alta',
   critica: 'Crítica',
 }
+
+// Ayuda a elegir bien: de esto depende cuánto tiempo hay para resolver el ticket
+export const DESCRIPCION_PRIORIDAD: Record<Ticket['prioridad'], string> = {
+  critica: 'El servicio está detenido y nadie puede trabajar.',
+  alta: 'Afecta a varias personas o a un proceso importante, sin alternativa.',
+  media: 'Afecta el trabajo, pero hay una forma de seguir.',
+  baja: 'Consulta, solicitud o mejora; no impide trabajar.',
+}

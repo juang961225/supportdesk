@@ -1,10 +1,13 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import { AjustePlazos } from '../utils/fechaLimite'
+import { PlazosSchema } from './esquemaPlazos'
 
 export interface IArea extends Document {
   nombre: string
   descripcion?: string
   marca: mongoose.Types.ObjectId
   activo: boolean
+  plazos?: AjustePlazos // ajuste por prioridad; lo que falte viene de la marca
 }
 
 const AreaSchema = new Schema<IArea>(
@@ -26,7 +29,8 @@ const AreaSchema = new Schema<IArea>(
     activo: {
       type: Boolean,
       default: true
-    }
+    },
+    plazos: { type: PlazosSchema, default: undefined }
   },
   {
     timestamps: true

@@ -75,6 +75,12 @@ export const updateTicketCategoria = async (ticketId: string, categoriaId: strin
   return response.data.ticket
 }
 
+// Admin y soporte: corrige lo que eligió el usuario y recalcula la fecha límite
+export const updateTicketPrioridad = async (ticketId: string, prioridad: Ticket['prioridad'], motivo: string): Promise<Ticket> => {
+  const response = await api.put(`/tickets/${ticketId}/prioridad`, { prioridad, motivo })
+  return response.data.ticket
+}
+
 export const moveTicket = async (ticketId: string, areaId: string): Promise<Ticket> => {
   const response = await api.put(`/tickets/${ticketId}/move`, { areaId })
   return response.data.ticket

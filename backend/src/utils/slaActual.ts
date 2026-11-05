@@ -23,11 +23,11 @@ interface EventoPlazo {
   createdAt: Date
 }
 
-// El plazo vigente empezó la última vez que la fecha límite se calculó sola: al crear, mover o reabrir.
+// El plazo vigente empezó la última vez que la fecha límite se calculó sola: al crear, mover, reabrir o corregir la prioridad.
 // (Un ajuste del admin cambia la fecha límite, no el inicio del plazo)
 export const inicioDelPlazo = (createdAt: Date, eventos: EventoPlazo[]): Date =>
   eventos
-    .filter((e) => e.tipo === 'movido' || (e.tipo === 'estado' && e.a === 'reabierto'))
+    .filter((e) => e.tipo === 'movido' || e.tipo === 'prioridad' || (e.tipo === 'estado' && e.a === 'reabierto'))
     .reduce((ultimo, e) => (e.createdAt > ultimo ? e.createdAt : ultimo), createdAt)
 
 export const calcularSlaActual = (

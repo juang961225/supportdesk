@@ -6,9 +6,14 @@ import { PageSkeleton } from '../../components/Skeleton'
 import EmptyState from '../../components/EmptyState'
 import Modal from '../../components/Modal'
 import ConfirmDialog from '../../components/ConfirmDialog'
+import PlazosEditor from '../../components/PlazosEditor'
+import { getPlazos } from '../../services/horarioService'
+import { prioridadLabel } from '../../utils/ticketLabels'
+import { aFormulario, deFormulario, resumenAjuste } from '../../utils/plazos'
+import type { FormularioPlazos } from '../../utils/plazos'
 import { getAreas, createArea, updateArea, updateAreaEstado } from '../../services/areaService'
 import { useToast } from '../../hooks/useToast'
-import type { Area } from '../../types'
+import type { Area, Plazos } from '../../types'
 
 const inputClass =
   'w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500'
@@ -22,6 +27,8 @@ function AreasPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingArea, setEditingArea] = useState<Area | null>(null)
   const [formData, setFormData] = useState({ nombre: '', descripcion: '' })
+  const [plazosMarca, setPlazosMarca] = useState<Plazos>()
+  const [plazosArea, setPlazosArea] = useState<FormularioPlazos>(aFormulario(undefined))
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
 
@@ -32,7 +39,9 @@ function AreasPage() {
   useEffect(() => {
     const fetchAreas = async () => {
       try {
-        setAreas(await getAreas())
+        const [lista, plazos] = await Promise.all([getAreas(), getPlazos()])
+        setAreas(lista)
+        setPlazosMarca(plazos)
       } catch {
         toast.error('No se pudieron cargar las áreas')
       } finally {
@@ -49,6 +58,7 @@ function AreasPage() {
   const handleOpenCreate = () => {
     setEditingArea(null)
     setFormData({ nombre: '', descripcion: '' })
+    setPlazosArea(aFormulario(undefined, plazosMarca))
     setFormError('')
     setIsModalOpen(true)
   }
@@ -56,6 +66,7 @@ function AreasPage() {
   const handleOpenEdit = (area: Area) => {
     setEditingArea(area)
     setFormData({ nombre: area.nombre, descripcion: area.descripcion || '' })
+    setPlazosArea(aFormulario(area.plazos, plazosMarca))
     setFormError('')
     setIsModalOpen(true)
   }
@@ -74,15 +85,22 @@ function AreasPage() {
       return
     }
 
+    const plazos = deFormulario(plazosArea)
+    if (!plazos) {
+      setFormError('Los plazos deben ser números enteros mayores que cero, o quedar vacíos')
+      toast.warning('Revisa los plazos del área')
+      return
+    }
+
     setIsSubmitting(true)
     setFormError('')
     try {
       if (editingArea) {
-        const updated = await updateArea(editingArea._id, formData)
+        const updated = await updateArea(editingArea._id, { ...formData, plazos })
         setAreas(areas.map(a => (a._id === updated._id ? updated : a)))
         toast.success('Área actualizada')
       } else {
-        const created = await createArea(formData)
+        const created = await createArea({ ...formData, plazos })
         setAreas([...areas, created].sort((a, b) => a.nombre.localeCompare(b.nombre)))
         toast.success(`Área "${created.nombre}" creada`)
       }
@@ -167,6 +185,9 @@ function AreasPage() {
                     {area.descripcion && (
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{area.descripcion}</p>
                     )}
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      {resumenAjuste(area.plazos, prioridadLabel) ? `Plazos propios: ${resumenAjuste(area.plazos, prioridadLabel)}` : 'Usa los plazos de la marca'}
+                    </p>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`text-xs px-2 py-1 rounded-full ${
@@ -228,6 +249,15 @@ function AreasPage() {
                 className={inputClass}
               />
             </div>
+            {plazosMarca && (
+              <div>
+                <p className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Plazos de esta área (opcional)</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+                  Deja vacío lo que deba usar el plazo de la marca, que aparece de ejemplo en gris.
+                </p>
+                <PlazosEditor value={plazosArea} onChange={setPlazosArea} base={plazosMarca} />
+              </div>
+            )}
           </div>
           <div className="flex gap-3 justify-end mt-6">
             <button

@@ -211,7 +211,10 @@ function TendenciasAdmin() {
             tabla={{
               columnaEtiqueta: 'Área',
               columnaValor: 'Vencidos',
-              filas: vencidos.map((s) => ({ etiqueta: s.area, valor: `${s.porcentajeVencidos}% (${s.vencidos} de ${s.tramos})` })),
+              filas: vencidos.map((s) => ({
+                etiqueta: s.area,
+                valor: `${s.porcentajeVencidos}% (${s.vencidos} de ${s.tramos})${s.vencidosSinAjuste !== s.vencidos ? ` · sin ampliar fechas: ${s.porcentajeVencidosSinAjuste}%` : ''}`,
+              })),
             }}
           >
             <BarrasHorizontales

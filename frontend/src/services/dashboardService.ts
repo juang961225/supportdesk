@@ -58,6 +58,8 @@ export interface SlaArea {
   promedioMinutos: number
   vencidos: number
   porcentajeVencidos: number
+  vencidosSinAjuste: number
+  porcentajeVencidosSinAjuste: number
 }
 
 export type PeriodoTendencias = 7 | 30 | 90

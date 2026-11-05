@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express'
 import Brand from '../models/Brand'
 import { AuthRequest } from '../middlewares/auth'
-import { horarioDeMarca, invalidarHorario } from '../services/horario'
+import { horarioDeMarca, invalidarHorario, plazosDeMarca } from '../services/horario'
 import { invalidarResumenesDeMarca } from '../services/cacheResumenes'
 import { validarHorario } from '../utils/horarioLaboral'
 
@@ -33,6 +33,29 @@ export const updateHorario = async (req: AuthRequest, res: Response, next: NextF
     }
 
     res.status(200).json({ message: 'Horario actualizado', horario })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// GET /api/horario/plazos — plazos base por prioridad de la marca del admin
+export const getPlazos = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    res.status(200).json({ plazos: await plazosDeMarca(req.user!.marca as string) })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// PUT /api/horario/plazos — aplica a las fechas límite que se calculen desde ahora; las existentes no cambian
+export const updatePlazos = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const marca = await Brand.findByIdAndUpdate(req.user!.marca, { plazos: req.body }, { returnDocument: 'after', runValidators: true })
+    if (!marca) {
+      res.status(404).json({ message: 'Marca no encontrada' })
+      return
+    }
+    res.status(200).json({ message: 'Plazos actualizados', plazos: await plazosDeMarca(marca._id) })
   } catch (error) {
     next(error)
   }
