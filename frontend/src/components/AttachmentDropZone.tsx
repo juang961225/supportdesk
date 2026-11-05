@@ -1,3 +1,4 @@
+import { Paperclip } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useAgregarAdjuntos } from '../hooks/useAgregarAdjuntos'
 import { nombrarPegado } from '../utils/attachments'
@@ -79,7 +80,7 @@ function AttachmentDropZone({ files, onChange, disabled = false, children }: Att
       {children}
       {arrastrando && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-lg border-2 border-dashed border-blue-500 bg-blue-50/90 dark:bg-blue-900/80">
-          <p className="text-sm font-medium text-blue-700 dark:text-blue-200">📎 Suelta los archivos aquí</p>
+          <p className="inline-flex items-center gap-2 text-sm font-medium text-blue-700 dark:text-blue-200"><Paperclip className="w-4 h-4" aria-hidden="true" />Suelta los archivos aquí</p>
         </div>
       )}
     </div>

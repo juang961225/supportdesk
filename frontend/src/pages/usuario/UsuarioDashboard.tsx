@@ -1,3 +1,4 @@
+import { Ticket as IconoTicket } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
@@ -93,7 +94,7 @@ function UsuarioDashboard() {
           tickets={misTickets}
           vacio={
             <EmptyState
-              icon="🎫"
+              icon={IconoTicket}
               title="No has creado ningún ticket todavía"
               description="Cuéntanos qué necesitas y el equipo de soporte te responderá por aquí."
               action={{ label: 'Crear primer ticket', onClick: () => navigate('/usuario/tickets/new') }}

@@ -1,3 +1,4 @@
+import { ArrowLeft } from 'lucide-react'
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
@@ -125,7 +126,8 @@ function NewTicketPage() {
           onClick={() => navigate('/usuario/dashboard')}
           className="text-sm text-blue-600 dark:text-blue-400 hover:underline mb-6 flex items-center gap-1"
         >
-          ← Volver
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+          Volver
         </button>
 
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">

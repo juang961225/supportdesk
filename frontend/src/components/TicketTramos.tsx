@@ -12,9 +12,6 @@ interface TicketTramosProps {
   refreshKey?: string
 }
 
-const thClass = 'px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase whitespace-nowrap'
-const tdClass = 'px-3 py-2 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap'
-
 const EstadoTramo = ({ tramo }: { tramo: Tramo }) => {
   if (tramo.vencido === true) {
     return <span className="text-xs px-2 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">Vencido</span>
@@ -66,40 +63,35 @@ function TicketTramos({ ticketId, refreshKey }: TicketTramosProps) {
       ) : tramos.length === 0 ? (
         <p className="text-gray-500 dark:text-gray-400 text-sm">Sin datos</p>
       ) : (
-        <div className="overflow-x-auto -mx-3">
-          <table className="w-full">
-            <thead>
-              <tr>
-                <th className={thClass}>Área</th>
-                <th className={thClass}>Entrada</th>
-                <th className={thClass}>Salida</th>
-                <th className={thClass}>Tiempo</th>
-                <th className={thClass}>Fecha límite</th>
-                <th className={thClass}>SLA</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {tramos.map((tramo) => (
-                <tr key={tramo.entrada}>
-                  <td className={`${tdClass} font-medium`}>{tramo.area}</td>
-                  <td className={tdClass}>{formatFechaLimite(tramo.entrada)}</td>
-                  <td className={tdClass}>{tramo.salida ? formatFechaLimite(tramo.salida) : '—'}</td>
-                  <td className={tdClass}>{formatTiempoLaboral(tramo.minutosLaborales, minutosJornada, false)}</td>
-                  <td className={tdClass}>{tramo.fechaLimite ? formatFechaLimite(tramo.fechaLimite) : '—'}</td>
-                  <td className={tdClass}><EstadoTramo tramo={tramo} /></td>
-                </tr>
-              ))}
-            </tbody>
-            {tramos.length > 1 && (
-              <tfoot>
-                <tr className="border-t border-gray-200 dark:border-gray-700">
-                  <td className={`${tdClass} font-medium`} colSpan={3}>Total</td>
-                  <td className={`${tdClass} font-medium`} colSpan={3}>{formatTiempoLaboral(total, minutosJornada, false)}</td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
+        <>
+          <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+            {tramos.map((tramo) => (
+              <li key={tramo.entrada} className="py-3 first:pt-0 last:pb-0">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{tramo.area}</p>
+                  <EstadoTramo tramo={tramo} />
+                </div>
+                <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                  {formatTiempoLaboral(tramo.minutosLaborales, minutosJornada, false)}
+                </p>
+                <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <dt>Entrada</dt>
+                  <dd>{formatFechaLimite(tramo.entrada)}</dd>
+                  <dt>Salida</dt>
+                  <dd>{tramo.salida ? formatFechaLimite(tramo.salida) : '—'}</dd>
+                  <dt>Límite</dt>
+                  <dd>{tramo.fechaLimite ? formatFechaLimite(tramo.fechaLimite) : '—'}</dd>
+                </dl>
+              </li>
+            ))}
+          </ul>
+          {tramos.length > 1 && (
+            <p className="flex justify-between gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-800 dark:text-white">
+              <span>Total</span>
+              <span>{formatTiempoLaboral(total, minutosJornada, false)}</span>
+            </p>
+          )}
+        </>
       )}
     </div>
   )

@@ -1,3 +1,4 @@
+import { Layers } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
@@ -153,7 +154,7 @@ function AreasPage() {
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {areas.length === 0 ? (
               <EmptyState
-                icon="🗂️"
+                icon={Layers}
                 title="No hay áreas creadas"
                 description="Crea al menos un área para poder enrutar los tickets por categoría."
                 action={{ label: '+ Nueva Área', onClick: handleOpenCreate }}

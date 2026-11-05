@@ -63,6 +63,18 @@ export const releaseTicket = async (ticketId: string): Promise<Ticket> => {
   return response.data.ticket
 }
 
+// El creador corrige título y descripción mientras nadie atiende el ticket
+export const editTicket = async (ticketId: string, data: { titulo: string; descripcion: string }): Promise<Ticket> => {
+  const response = await api.put(`/tickets/${ticketId}`, data)
+  return response.data.ticket
+}
+
+// Admin y soporte: solo cambia la clasificación (no el área ni la fecha límite)
+export const updateTicketCategoria = async (ticketId: string, categoriaId: string): Promise<Ticket> => {
+  const response = await api.put(`/tickets/${ticketId}/categoria`, { categoriaId })
+  return response.data.ticket
+}
+
 export const moveTicket = async (ticketId: string, areaId: string): Promise<Ticket> => {
   const response = await api.put(`/tickets/${ticketId}/move`, { areaId })
   return response.data.ticket

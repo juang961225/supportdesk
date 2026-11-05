@@ -3,7 +3,7 @@ import { TicketTimeBadge } from './TicketTimeBadge'
 import SlaBarra from './SlaBarra'
 import { prioridadColor, estadoColor } from '../utils/ticketColors'
 import { estadoLabel, prioridadLabel } from '../utils/ticketLabels'
-import { formatFechaLimite } from '../utils/fechas'
+import { formatFechaCorta } from '../utils/fechas'
 
 // Lo mínimo para pintar una card; creador y categoría no llegan en todas las listas (ej. urgentes del dashboard)
 export type TicketCardData = Pick<Ticket, '_id' | 'titulo' | 'estado' | 'prioridad' | 'fechaLimite' | 'area' | 'asignadoA'> &
@@ -33,7 +33,7 @@ function TicketCard({ ticket, onClick, variante = 'equipo', mostrarCreador = tru
 
   const detalle = [
     atencion,
-    ticket.fechaLimite && ticket.estado !== 'cerrado' ? `Límite: ${formatFechaLimite(ticket.fechaLimite)}` : '',
+    ticket.fechaLimite && ticket.estado !== 'cerrado' ? `Límite: ${formatFechaCorta(ticket.fechaLimite)}` : '',
   ].filter(Boolean).join(' · ')
 
   return (

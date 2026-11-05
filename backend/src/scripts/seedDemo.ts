@@ -94,18 +94,19 @@ const crearTickets = async (
   const nombreArea = (id: Id): string => areas.find((a) => a._id.equals(id))?.nombre ?? ''
 
   const documentos = especificos.map((t, i) => {
-    const creador = usuarios[i % usuarios.length]
+    // Rota cada vuelta: así cada usuario tiene tickets en distintos estados
+    const creador = usuarios[(i + Math.floor(i / usuarios.length)) % usuarios.length]
     const propias = submarcas.filter((s) => creador.submarcas.some((id) => id.equals(s._id)) && subMarcaAplica(s.organizaciones, creador.contexto.organizaciones))
     const submarca = propias[i % propias.length]
     const categoria = categorias[i % categorias.length]
     const creado = new Date(ahora - t.diasAtras * DIA_MS - HORA_MS)
     const fechaLimite = calcularFechaLimite(t.prioridad, HORARIO_POR_DEFECTO, creado)
 
-    // El usuario corporativo (uno de cada 4 tickets) alterna entre "Corporativo" y un concesionario
+    // El usuario corporativo alterna entre "Corporativo" y un concesionario
     let contexto
     if (catalogo) {
       const opciones = sedesPermitidas(creador.contexto, catalogo).filter((s) => s.brandId === submarca.onlineBriefId)
-      const sede = creador.contexto.todosConcesionarios && i % 8 === 3 ? undefined : opciones[i % Math.max(opciones.length, 1)]?.clave
+      const sede = creador.contexto.todosConcesionarios && i % 2 === 0 ? undefined : opciones[i % Math.max(opciones.length, 1)]?.clave
       const resultado = resolverContextoTicket(creador.contexto, sede, submarca.onlineBriefId, catalogo)
       contexto = resultado.ok ? resultado.contexto : undefined
     }

@@ -1,3 +1,5 @@
+import { AlertTriangle, CheckCircle2, Info, X, XCircle } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useEffect } from 'react'
 import { useToast } from '../hooks/useToast'
 import type { Toast as ToastType } from '../types/toast'
@@ -13,15 +15,16 @@ const variantStyles: Record<ToastType['variant'], string> = {
   warning: 'bg-yellow-50 border-yellow-500 text-yellow-800 dark:bg-yellow-900/30 dark:border-yellow-500 dark:text-yellow-200',
 }
 
-const variantIcons: Record<ToastType['variant'], string> = {
-  success: '✓',
-  error: '✕',
-  info: 'ℹ',
-  warning: '⚠',
+const variantIcons: Record<ToastType['variant'], LucideIcon> = {
+  success: CheckCircle2,
+  error: XCircle,
+  info: Info,
+  warning: AlertTriangle,
 }
 
 export function Toast({ toast }: ToastProps) {
   const { toast: toastApi } = useToast()
+  const Icono = variantIcons[toast.variant]
 
   useEffect(() => {
     if (toast.duration <= 0) return
@@ -38,14 +41,14 @@ export function Toast({ toast }: ToastProps) {
       className={`flex items-center gap-3 min-w-[280px] max-w-md px-4 py-3 rounded-lg border-l-4 shadow-lg ${variantStyles[toast.variant]}`}
       role="alert"
     >
-      <span className="text-lg font-bold">{variantIcons[toast.variant]}</span>
+      <Icono className="w-5 h-5 shrink-0" aria-hidden="true" />
       <p className="flex-1 text-sm font-medium">{toast.message}</p>
       <button
         onClick={() => toastApi.dismiss(toast.id)}
         className="text-lg hover:opacity-70 transition-opacity"
         aria-label="Cerrar notificación"
       >
-        ×
+        <X className="w-4 h-4" aria-hidden="true" />
       </button>
     </div>
   )

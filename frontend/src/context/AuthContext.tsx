@@ -2,6 +2,7 @@ import { createContext, useState, useEffect } from 'react'
 import { configurarSesion, renovarSesion, setAccessToken } from '../services/api'
 import { logoutServidor } from '../services/authService'
 import { conectarTiempoReal, desconectarTiempoReal } from '../services/tiempoReal'
+import { fijarZonaPorRol } from '../utils/fechas'
 import type { User } from '../types'
 
 interface AuthContextType {
@@ -32,11 +33,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const setAuth = (nuevoUser: User, nuevoToken: string) => {
     setAccessToken(nuevoToken)
+    fijarZonaPorRol(nuevoUser.rol)
     setSesion({ user: nuevoUser, token: nuevoToken })
   }
 
   const limpiar = () => {
     setAccessToken(null)
+    fijarZonaPorRol()
     setSesion(null)
   }
 
@@ -52,7 +55,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     limpiarSesionAntigua()
     configurarSesion({
-      alRenovar: ({ user, token }) => setSesion({ user, token }),
+      alRenovar: ({ user, token }) => {
+        fijarZonaPorRol(user.rol)
+        setSesion({ user, token })
+      },
       alExpirar: () => {
         limpiar()
         // Recarga completa al login: ProtectedRoute ya no encuentra sesión

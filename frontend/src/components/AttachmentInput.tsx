@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { Paperclip } from 'lucide-react'
 import { useAgregarAdjuntos } from '../hooks/useAgregarAdjuntos'
 import { MAX_ARCHIVOS, ACCEPT_ADJUNTOS, formatTamano } from '../utils/attachments'
 
@@ -35,7 +36,8 @@ function AttachmentInput({ files, onChange, disabled = false }: AttachmentInputP
         disabled={disabled || files.length >= MAX_ARCHIVOS}
         className="text-xs px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
       >
-        📎 Adjuntar archivos
+        <Paperclip className="inline w-3 h-3 mr-1" aria-hidden="true" />
+        Adjuntar archivos
       </button>
       <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">
         Imágenes, PDF, Word, Excel, CSV o TXT · máx. 10 MB · hasta {MAX_ARCHIVOS} · también puedes pegar o arrastrar

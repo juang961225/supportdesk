@@ -5,7 +5,7 @@ export type TipoEvento =
   | 'creado' | 'asignado' | 'reasignado' | 'estado' | 'desasignado'
   | 'tomado' | 'soltado' | 'pasado' | 'movido'
   | 'observador_agregado' | 'observador_quitado'
-  | 'fecha_limite'
+  | 'fecha_limite' | 'editado' | 'categoria'
 
 export interface ITicketEvent extends Document {
   ticket: mongoose.Types.ObjectId
@@ -19,6 +19,7 @@ export interface ITicketEvent extends Document {
   motivo?: string
   fechaLimiteAnterior?: Date // en 'movido' y 'fecha_limite': para calcular tramos por área (F2-4)
   fechaLimiteNueva?: Date    // en 'fecha_limite': la que puso el admin
+  descripcionAnterior?: string // en 'editado': el texto que tenía antes
   createdAt: Date
 }
 
@@ -28,7 +29,7 @@ const TicketEventSchema = new Schema<ITicketEvent>(
     marca: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand', required: true },
     tipo: {
       type: String,
-      enum: ['creado', 'asignado', 'reasignado', 'estado', 'desasignado', 'tomado', 'soltado', 'pasado', 'movido', 'observador_agregado', 'observador_quitado', 'fecha_limite'],
+      enum: ['creado', 'asignado', 'reasignado', 'estado', 'desasignado', 'tomado', 'soltado', 'pasado', 'movido', 'observador_agregado', 'observador_quitado', 'fecha_limite', 'editado', 'categoria'],
       required: true
     },
     autor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -38,7 +39,8 @@ const TicketEventSchema = new Schema<ITicketEvent>(
     aNombre: { type: String },
     motivo: { type: String },
     fechaLimiteAnterior: { type: Date },
-    fechaLimiteNueva: { type: Date }
+    fechaLimiteNueva: { type: Date },
+    descripcionAnterior: { type: String }
   },
   {
     // Historial append-only: solo fecha de creación

@@ -118,6 +118,13 @@ export const esquemaCrearTicket = z.object({
   observadorIds: z.union([objectId('El observador'), z.array(objectId('El observador')).max(20, 'Máximo 20 observadores')]).optional()
 })
 
+export const esquemaEditarTicket = z.object({
+  titulo: texto('El título', 150),
+  descripcion: texto('La descripción', 5000, true)
+})
+
+export const esquemaCategoriaTicket = z.object({ categoriaId: objectId('La categoría', true) })
+
 export const esquemaComentario = z.object({
   contenido: z.string().trim().max(5000, 'El comentario no puede superar 5000 caracteres').optional().default('')
 })

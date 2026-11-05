@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { X } from 'lucide-react'
 
 interface ModalProps {
   isOpen: boolean
@@ -38,9 +39,10 @@ function Modal({ isOpen, onClose, title, children }: ModalProps) {
           </h3>
           <button
             onClick={onClose}
+            aria-label="Cerrar"
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
           >
-            ✕
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 

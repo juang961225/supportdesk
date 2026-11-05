@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ChevronDown, ChevronUp, Search, SlidersHorizontal } from 'lucide-react'
 import { estadoLabel, prioridadLabel } from '../utils/ticketLabels'
 import { CLAVES_MAS_FILTROS, contarFiltros } from '../utils/ticketFilters'
 import type { AreaRef, ClaveFiltroTicket, FiltrosContexto, FiltrosTicket, UserRef } from '../types'
@@ -56,15 +57,18 @@ function TicketFilters({ filtros, onChange, onLimpiar, areas, submarcas, context
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <input
-          type="search"
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          placeholder="🔍 Buscar en título o descripción"
-          aria-label="Buscar tickets"
-          maxLength={100}
-          className={`${campo} sm:col-span-2 lg:col-span-1`}
-        />
+        <div className="relative sm:col-span-2 lg:col-span-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" aria-hidden="true" />
+          <input
+            type="search"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar en título o descripción"
+            aria-label="Buscar tickets"
+            maxLength={100}
+            className={`${campo} w-full pl-9`}
+          />
+        </div>
         <select value={filtros.estado} onChange={(e) => onChange('estado', e.target.value)} aria-label="Estado" className={campo}>
           <option value="">Todos los estados</option>
           <option value="activos">Activos (sin cerrados)</option>
@@ -93,9 +97,11 @@ function TicketFilters({ filtros, onChange, onLimpiar, areas, submarcas, context
           type="button"
           onClick={() => setMasAbierto(!masAbierto)}
           aria-expanded={masAbierto}
-          className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+          className="inline-flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
         >
-          ⚙ Más filtros{activosEnMas > 0 ? ` (${activosEnMas})` : ''} {masAbierto ? '▴' : '▾'}
+          <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
+          Más filtros{activosEnMas > 0 ? ` (${activosEnMas})` : ''}
+          {masAbierto ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
         </button>
         {hayFiltros && (
           <button type="button" onClick={handleLimpiar} className="text-sm text-red-600 dark:text-red-400 hover:underline">
