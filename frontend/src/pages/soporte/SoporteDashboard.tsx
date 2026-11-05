@@ -40,7 +40,11 @@ const vistas: { id: Vista; label: string; vacio: { icon: LucideIcon; title: stri
 ]
 
 // Orden por urgencia: fecha límite más cercana primero (sin fecha al final)
-const limiteDe = (t: Ticket): number => (t.fechaLimite ? Date.parse(t.fechaLimite) : Number.MAX_SAFE_INTEGER)
+// Lo que venza primero: el plazo del ticket o el del área
+const limiteDe = (t: Ticket): number => Math.min(
+  t.fechaLimite ? Date.parse(t.fechaLimite) : Number.MAX_SAFE_INTEGER,
+  t.fechaLimiteArea ? Date.parse(t.fechaLimiteArea) : Number.MAX_SAFE_INTEGER
+)
 const porVencimiento = (a: Ticket, b: Ticket): number => limiteDe(a) - limiteDe(b)
 
 function SoporteDashboard() {

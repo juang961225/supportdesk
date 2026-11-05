@@ -19,6 +19,7 @@ export interface ITicketEvent extends Document {
   motivo?: string
   fechaLimiteAnterior?: Date // en 'movido', 'fecha_limite' y 'prioridad': para calcular tramos por área (F2-4)
   fechaLimiteNueva?: Date    // en 'fecha_limite': la que puso el admin
+  fechaLimiteAreaAnterior?: Date // plazo del tramo antes del cambio (en tickets anteriores: fechaLimiteAnterior)
   descripcionAnterior?: string // en 'editado': el texto que tenía antes
   createdAt: Date
 }
@@ -40,6 +41,7 @@ const TicketEventSchema = new Schema<ITicketEvent>(
     motivo: { type: String },
     fechaLimiteAnterior: { type: Date },
     fechaLimiteNueva: { type: Date },
+    fechaLimiteAreaAnterior: { type: Date },
     descripcionAnterior: { type: String }
   },
   {

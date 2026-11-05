@@ -48,8 +48,9 @@ function PlazosMarcaForm() {
     <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 md:p-6 mt-4">
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Plazos por prioridad</h3>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-        Valen para toda la marca; en Áreas puedes ajustar los de un área. Un día es una jornada del horario de arriba.
-        Aplican a tickets nuevos, movidos de área o reabiertos; las fechas actuales no cambian.
+        Es lo que se le promete al cliente y no se reinicia al mover el ticket de área. En Áreas puedes ajustar el plazo
+        interno de cada una. Un día es una jornada del horario de arriba. Crítica cuenta horas seguidas, 24/7, también de
+        noche, en fin de semana y en festivos. Aplica a tickets nuevos; las fechas actuales no cambian.
       </p>
       {formError && (
         <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded text-sm mb-4">{formError}</div>

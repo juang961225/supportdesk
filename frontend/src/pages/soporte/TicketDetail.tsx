@@ -249,13 +249,23 @@ function SoporteTicketDetail() {
                 </div>
                 {ticket.fechaLimite && (
                   <div>
-                    <p className="text-gray-500 dark:text-gray-400">Fecha límite</p>
+                    <p className="text-gray-500 dark:text-gray-400">Fecha límite del ticket</p>
                     <p className="text-gray-800 dark:text-white font-medium">
                       {formatFechaLimite(ticket.fechaLimite)}
                     </p>
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Hora Colombia</p>
                     {estaEnPausa(ticket.estado) && <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Plazo detenido</p>}
                     <SlaBarra sla={ticket.sla} />
+                  </div>
+                )}
+                {(ticket.fechaLimiteArea ?? ticket.fechaLimite) && (
+                  <div>
+                    <p className="text-gray-500 dark:text-gray-400">Plazo del área</p>
+                    <p className="text-gray-800 dark:text-white font-medium">
+                      {formatFechaLimite((ticket.fechaLimiteArea ?? ticket.fechaLimite) as string)}
+                    </p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Interno: mide este paso por {ticket.area?.nombre ?? 'el área'}</p>
+                    <SlaBarra sla={ticket.slaArea} />
                   </div>
                 )}
               </div>

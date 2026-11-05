@@ -186,7 +186,7 @@ function AreasPage() {
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{area.descripcion}</p>
                     )}
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                      {resumenAjuste(area.plazos, prioridadLabel) ? `Plazos propios: ${resumenAjuste(area.plazos, prioridadLabel)}` : 'Usa los plazos de la marca'}
+                      {resumenAjuste(area.plazos, prioridadLabel) ? `Plazos internos: ${resumenAjuste(area.plazos, prioridadLabel)}` : 'Usa los plazos de la marca'}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -251,9 +251,9 @@ function AreasPage() {
             </div>
             {plazosMarca && (
               <div>
-                <p className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Plazos de esta área (opcional)</p>
+                <p className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Plazos internos de esta área (opcional)</p>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
-                  Deja vacío lo que deba usar el plazo de la marca, que aparece de ejemplo en gris.
+                  Miden cada paso del ticket por esta área; no cambian lo prometido al cliente. Deja vacío lo que deba usar el plazo de la marca, que aparece de ejemplo en gris.
                 </p>
                 <PlazosEditor value={plazosArea} onChange={setPlazosArea} base={plazosMarca} />
               </div>

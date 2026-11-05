@@ -108,8 +108,10 @@ export interface Ticket {
   area?: AreaRef // área actual (cola donde está)
   observadores?: UserRef[] // usuarios que siguen el ticket
   archivos: Attachment[]
-  fechaLimite?: string
-  sla?: SlaActual | null // null si está cerrado o no tiene fecha límite
+  fechaLimite?: string // plazo del ticket: lo que se promete al cliente
+  fechaLimiteArea?: string // plazo del tramo en el área; solo lo recibe el equipo. Sin valor: vale fechaLimite
+  sla?: SlaActual | null // null si está cerrado, en pausa o no tiene fecha límite
+  slaArea?: SlaActual | null
   submarca?: AreaRef | null // null solo en tickets anteriores a la migración
   contexto?: ContextoTicket | null // copia al crear; solo marcas ligadas a Online Brief
   sinAtender?: boolean // solo usuario final: nadie lo atiende aún, puede editarlo

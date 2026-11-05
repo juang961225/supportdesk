@@ -15,7 +15,7 @@ interface MoveAreaModalProps {
 const selectClass =
   'w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500'
 
-// Mover un ticket a otra área: conserva la categoría, queda sin asignar y con nueva fecha límite
+// Mover un ticket a otra área: conserva la categoría y su plazo; queda sin asignar y empieza el plazo del área destino
 function MoveAreaModal({ ticket, onClose, onMoved }: MoveAreaModalProps) {
   const { toast } = useToast()
   const [areas, setAreas] = useState<Area[]>([])
@@ -61,7 +61,7 @@ function MoveAreaModal({ ticket, onClose, onMoved }: MoveAreaModalProps) {
       <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
         El ticket <span className="font-medium">"{ticket?.titulo}"</span> sale de{' '}
         <span className="font-medium">{ticket?.area?.nombre ?? 'su área'}</span> y llega{' '}
-        <span className="font-medium">sin asignar</span> a la cola del área destino, con una nueva fecha límite.
+        <span className="font-medium">sin asignar</span> a la cola del área destino, donde empieza el plazo de esa área. La fecha límite del ticket no cambia.
         La categoría no cambia.
       </p>
 

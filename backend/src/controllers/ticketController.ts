@@ -14,7 +14,7 @@ import { registrarEvento } from '../services/ticketEvents'
 import { notificar } from '../services/notificaciones'
 import { conSla } from '../services/slaActual'
 import { findTicketResponse } from '../services/ticketQueries'
-import { fechaLimiteDeTicket, reanudarPlazo } from '../services/horario'
+import { fechaLimiteDeArea, fechaLimiteDelTicket, reanudarPlazo } from '../services/horario'
 import { buscarObservadorValido } from './ticketObserverController'
 import { guardarAdjuntos } from '../services/attachments'
 import { storageConfigurado } from '../services/storage'
@@ -100,7 +100,10 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       observadores.push(observador)
     }
 
-    const fechaLimite = await fechaLimiteDeTicket(marcaId, categoria.area, prioridad)
+    const [fechaLimite, fechaLimiteArea] = await Promise.all([
+      fechaLimiteDelTicket(marcaId, prioridad),
+      fechaLimiteDeArea(marcaId, categoria.area, prioridad)
+    ])
 
     const ticket = await Ticket.create({
       titulo,
@@ -113,7 +116,8 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       area: categoria.area, // el ticket entra a la cola del área de su categoría
       creadoPor: req.user?.id,
       observadores: observadores.map((o) => o._id),
-      fechaLimite
+      fechaLimite,
+      fechaLimiteArea
     })
 
     // Los adjuntos se guardan bajo el id del ticket, por eso se suben después de crearlo
@@ -339,7 +343,7 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
     // Al salir de una pausa el ticket conserva el tiempo que le quedaba (la fecha límite se corre)
     const estadoAnterior = ticket.estado
     const saleDePausa = !ESTADOS_SIN_RELOJ.includes(estado)
-    const fechaLimiteAnterior = saleDePausa ? await reanudarPlazo(ticket) : undefined
+    const cambioDePlazo = saleDePausa ? await reanudarPlazo(ticket) : {}
     aplicarEstado(ticket, estado)
     await ticket.save()
 
@@ -350,7 +354,7 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
       autor: id,
       de: estadoAnterior,
       a: estado,
-      ...(fechaLimiteAnterior && { fechaLimiteAnterior, fechaLimiteNueva: ticket.fechaLimite })
+      ...cambioDePlazo
     })
 
     notificar(ticket._id, id, { tipo: 'estado', de: estadoAnterior, a: estado })

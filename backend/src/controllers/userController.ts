@@ -41,7 +41,7 @@ const liberarTickets = async (
   // Los resueltos ya no necesitan a nadie: solo esperan la confirmación del usuario
   const tickets = await Ticket.find({ asignadoA: soporteId, estado: { $nin: ['cerrado', 'resuelto'] }, ...filtroExtra })
   for (const ticket of tickets) {
-    await reanudarPlazo(ticket)
+    const cambioDePlazo = await reanudarPlazo(ticket)
     ticket.asignadoA = undefined
     ticket.estado = 'abierto'
     await ticket.save()
@@ -49,6 +49,7 @@ const liberarTickets = async (
       ticket: ticket._id,
       marca: ticket.marca,
       tipo: 'desasignado',
+      ...cambioDePlazo,
       autor: autorId,
       de: String(soporteId),
       deNombre: soporteNombre,

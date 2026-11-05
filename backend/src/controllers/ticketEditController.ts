@@ -5,7 +5,7 @@ import { AuthRequest } from '../middlewares/auth'
 import { registrarEvento } from '../services/ticketEvents'
 import { findTicketResponse } from '../services/ticketQueries'
 import { avisarCambioTicket } from '../services/tiempoReal'
-import { fechaLimiteDeTicket } from '../services/horario'
+import { fechaLimiteDeArea, fechaLimiteDelTicket } from '../services/horario'
 import { notificar } from '../services/notificaciones'
 import { puedeVerTicket } from '../utils/ticketAccess'
 import { ticketParaRol } from '../utils/privacidadTicket'
@@ -127,8 +127,12 @@ export const updateTicketPrioridad = async (req: AuthRequest, res: Response, nex
 
     const prioridadAnterior = ticket.prioridad
     const fechaLimiteAnterior = ticket.fechaLimite
+    const fechaLimiteAreaAnterior = ticket.fechaLimiteArea ?? ticket.fechaLimite
     ticket.prioridad = prioridad
-    ticket.fechaLimite = await fechaLimiteDeTicket(ticket.marca, ticket.area, prioridad)
+    ;[ticket.fechaLimite, ticket.fechaLimiteArea] = await Promise.all([
+      fechaLimiteDelTicket(ticket.marca, prioridad),
+      fechaLimiteDeArea(ticket.marca, ticket.area, prioridad)
+    ])
     if (ticket.pausadoDesde) ticket.pausadoDesde = new Date() // el plazo nuevo empieza a contar al reanudar
     await ticket.save()
 
@@ -141,6 +145,7 @@ export const updateTicketPrioridad = async (req: AuthRequest, res: Response, nex
       a: prioridad,
       motivo,
       fechaLimiteAnterior,
+      fechaLimiteAreaAnterior,
       fechaLimiteNueva: ticket.fechaLimite
     })
     notificar(ticket._id, req.user!.id, { tipo: 'prioridad', de: prioridadAnterior, a: prioridad })

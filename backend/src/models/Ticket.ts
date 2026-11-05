@@ -16,7 +16,8 @@ export interface ITicket extends Document {
   submarca?: mongoose.Types.ObjectId
   contexto?: ContextoTicket // copia al crear: no cambia si después cambia el usuario
   area?: mongoose.Types.ObjectId // área actual (puede diferir de la de su categoría tras moverlo)
-  fechaLimite?: Date
+  fechaLimite?: Date // plazo del ticket: lo que se promete al cliente; no se reinicia al mover
+  fechaLimiteArea?: Date // plazo del tramo en el área actual; sin valor en tickets anteriores: vale fechaLimite
   fechaCierre?: Date
   pausadoDesde?: Date // en Esperando al usuario o Resuelto: desde cuándo está detenido el plazo
   createdAt: Date
@@ -87,6 +88,9 @@ const TicketSchema = new Schema<ITicket>(
       )
     },
     fechaLimite: {
+      type: Date
+    },
+    fechaLimiteArea: {
       type: Date
     },
     fechaCierre: {

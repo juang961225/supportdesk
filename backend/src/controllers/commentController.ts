@@ -67,7 +67,7 @@ export const createComment = async (req: AuthRequest, res: Response, next: NextF
     // El usuario respondió: el ticket vuelve a atención y conserva el tiempo que le quedaba.
     // El soporte se entera por el aviso del comentario
     if (ticket.estado === 'esperando_usuario' && req.user?.rol === 'usuario') {
-      const fechaLimiteAnterior = await reanudarPlazo(ticket)
+      const cambioDePlazo = await reanudarPlazo(ticket)
       aplicarEstado(ticket, 'en_progreso')
       await ticket.save()
       await registrarEvento({
@@ -77,7 +77,7 @@ export const createComment = async (req: AuthRequest, res: Response, next: NextF
         autor: req.user.id,
         de: 'esperando_usuario',
         a: 'en_progreso',
-        ...(fechaLimiteAnterior && { fechaLimiteAnterior, fechaLimiteNueva: ticket.fechaLimite })
+        ...cambioDePlazo
       })
       avisarCambioTicket(ticket._id)
     }

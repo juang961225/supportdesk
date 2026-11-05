@@ -13,6 +13,7 @@ interface NuevoEvento {
   motivo?: string
   fechaLimiteAnterior?: Date
   fechaLimiteNueva?: Date
+  fechaLimiteAreaAnterior?: Date
   descripcionAnterior?: string
 }
 

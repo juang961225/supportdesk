@@ -42,6 +42,7 @@ export interface FilaExportacion {
   horasLaborales: number
   sla: string
   slaSinAjuste: string
+  slaArea: string
   vencido: boolean
 }
 
@@ -72,7 +73,8 @@ const COLUMNAS_EXCEL: Columna[] = [
   { clave: 'tiempoLaboral', titulo: 'Tiempo laboral', ancho: 18 },
   { clave: 'horasLaborales', titulo: 'Horas laborales', ancho: 15 },
   { clave: 'sla', titulo: 'SLA', ancho: 16 },
-  { clave: 'slaSinAjuste', titulo: 'SLA sin ampliar fecha', ancho: 20 }
+  { clave: 'slaSinAjuste', titulo: 'SLA sin ampliar fecha', ancho: 20 },
+  { clave: 'slaArea', titulo: 'Plazos de áreas', ancho: 16 }
 ]
 
 const COLUMNAS_PDF: Columna[] = [
@@ -95,7 +97,7 @@ export const columnasExportacion = (formato: 'xlsx' | 'pdf', incluirMarca: boole
 
 export const armarFilas = (
   tickets: TicketExportable[],
-  resumenes: Map<string, { minutosLaborales: number; sla: EstadoSla; slaSinAjuste?: EstadoSla; minutosJornada: number }>
+  resumenes: Map<string, { minutosLaborales: number; sla: EstadoSla; slaSinAjuste?: EstadoSla; slaArea?: EstadoSla; minutosJornada: number }>
 ): FilaExportacion[] =>
   tickets.map((t) => {
     const resumen = resumenes.get(String(t._id)) ?? { minutosLaborales: 0, sla: 'sin_fecha' as const, minutosJornada: 0 }
@@ -118,6 +120,7 @@ export const armarFilas = (
       horasLaborales: Math.round((resumen.minutosLaborales / 60) * 10) / 10,
       sla: slaLegible[resumen.sla],
       slaSinAjuste: slaLegible[resumen.slaSinAjuste ?? resumen.sla],
+      slaArea: slaLegible[resumen.slaArea ?? resumen.sla],
       vencido: resumen.sla === 'vencido'
     }
   })

@@ -1,4 +1,5 @@
-import { HorarioLaboral, minutosLaboralesEntre } from './horarioLaboral'
+import { HorarioLaboral } from './horarioLaboral'
+import { relojDe } from './fechaLimite'
 import { ESTADOS_EN_PAUSA, ESTADOS_SIN_RELOJ, EstadoTicket } from './ticketStatus'
 
 // Tramos por área de un ticket, calculados desde el historial (funciones puras).
@@ -16,6 +17,7 @@ export interface EventoParaTramos {
   deNombre?: string
   aNombre?: string
   fechaLimiteAnterior?: Date
+  fechaLimiteAreaAnterior?: Date
 }
 
 export interface TicketParaTramos {
@@ -23,6 +25,8 @@ export interface TicketParaTramos {
   estado: string
   fechaCierre?: Date
   fechaLimite?: Date
+  fechaLimiteArea?: Date
+  prioridad?: string
   areaId?: string
   areaNombre?: string
 }
@@ -84,25 +88,25 @@ export const periodosPausa = (ticket: Pick<TicketParaTramos, 'estado' | 'fechaCi
   return periodos
 }
 
-export const calcularTramos = (
-  ticket: TicketParaTramos,
-  eventos: EventoParaTramos[], // ordenados por fecha
-  horario: HorarioLaboral,
-  ahora: Date = new Date()
-): Tramo[] => {
-  const movidos = eventos.filter((e) => e.tipo === 'movido')
-  const cerrado = periodosPausa(ticket, eventos)
+const TIPOS_CON_CAMBIO_DE_PLAZO = ['movido', 'fecha_limite', 'estado', 'prioridad', 'soltado', 'desasignado']
 
-  // Cambios de fecha límite (mover, ajuste del admin, reabrir): cada uno guarda la anterior
-  const cambios = eventos
-    .filter((e) => e.fechaLimiteAnterior && ['movido', 'fecha_limite', 'estado', 'prioridad'].includes(e.tipo))
-    .map((e) => ({ t: e.createdAt.getTime(), anterior: (e.fechaLimiteAnterior as Date).getTime(), manual: e.tipo === 'fecha_limite' }))
+interface CambioDeLimite {
+  t: number
+  anterior: number
+  manual: boolean
+}
 
+// Cambios de fecha límite de un reloj: cada evento guarda la anterior
+const cambiosDeLimite = (eventos: EventoParaTramos[], anteriorDe: (e: EventoParaTramos) => Date | undefined): CambioDeLimite[] =>
+  eventos.flatMap((e) => {
+    const anterior = TIPOS_CON_CAMBIO_DE_PLAZO.includes(e.tipo) ? anteriorDe(e) : undefined
+    return anterior ? [{ t: e.createdAt.getTime(), anterior: anterior.getTime(), manual: e.tipo === 'fecha_limite' }] : []
+  })
+
+// Compara el tiempo abierto con la fecha que valía en cada momento, y con la que valía sin ampliaciones del admin
+const evaluarLimites = (abiertos: Intervalo[], cambios: CambioDeLimite[], limiteActual: number | null) => {
   // Fecha límite vigente en el instante t: la "anterior" del primer cambio posterior, o la actual
-  const limiteEn = (t: number): number | null => {
-    const siguiente = cambios.find((c) => c.t > t)
-    return siguiente ? siguiente.anterior : ticket.fechaLimite?.getTime() ?? null
-  }
+  const limiteEn = (t: number): number | null => cambios.find((c) => c.t > t)?.anterior ?? limiteActual
 
   // La que valía antes de cualquier ampliación manual desde el último cálculo automático
   const limiteSinAjusteEn = (t: number): number | null => {
@@ -111,8 +115,40 @@ export const calcularTramos = (
     const proximo = automaticos.find((c) => c.t > t)
     const ampliacion = cambios.find((c) => c.manual && c.t > inicio && c.t < (proximo?.t ?? Infinity))
     if (ampliacion) return ampliacion.anterior
-    return proximo ? proximo.anterior : ticket.fechaLimite?.getTime() ?? null
+    return proximo?.anterior ?? limiteActual
   }
+
+  let vencido: boolean | null = null
+  let vencidoSinAjuste: boolean | null = null
+  for (const tramo of abiertos) {
+    // Partir el intervalo en los cambios de fecha límite y comparar cada parte con la vigente
+    const cortes = [tramo.desde, ...cambios.map((c) => c.t).filter((t) => t > tramo.desde && t < tramo.hasta), tramo.hasta]
+    for (let k = 0; k < cortes.length - 1; k++) {
+      const limite = limiteEn(cortes[k])
+      if (limite === null) continue
+      if (cortes[k + 1] > limite) vencido = true
+      else if (vencido === null) vencido = false
+      const sinAjuste = limiteSinAjusteEn(cortes[k])
+      if (sinAjuste !== null && cortes[k + 1] > sinAjuste) vencidoSinAjuste = true
+      else if (vencidoSinAjuste === null) vencidoSinAjuste = false
+    }
+  }
+  return { vencido, vencidoSinAjuste, limiteEn }
+}
+
+export const calcularTramos = (
+  ticket: TicketParaTramos,
+  eventos: EventoParaTramos[], // ordenados por fecha
+  horario: HorarioLaboral,
+  ahora: Date = new Date()
+): Tramo[] => {
+  const movidos = eventos.filter((e) => e.tipo === 'movido')
+  const cerrado = periodosPausa(ticket, eventos)
+  const reloj = relojDe(ticket.prioridad, horario)
+
+  // Reloj del área: plazo del tramo. En tickets anteriores, la única fecha que había
+  const cambios = cambiosDeLimite(eventos, (e) => e.fechaLimiteAreaAnterior ?? e.fechaLimiteAnterior)
+  const limiteActual = (ticket.fechaLimiteArea ?? ticket.fechaLimite)?.getTime() ?? null
 
   // Resolver termina el tramo: lo que tarde el usuario en confirmar no cuenta
   const salidaPorCierre = ticket.estado === 'cerrado' || ticket.estado === 'resuelto'
@@ -127,23 +163,8 @@ export const calcularTramos = (
 
     const abiertos = restar({ desde: entrada.getTime(), hasta: finMs }, cerrado)
 
-    let minutos = 0
-    let vencido: boolean | null = null
-    let vencidoSinAjuste: boolean | null = null
-    for (const tramo of abiertos) {
-      minutos += minutosLaboralesEntre(new Date(tramo.desde), new Date(tramo.hasta), horario)
-      // Partir el intervalo en los cambios de fecha límite y comparar cada parte con la vigente
-      const cortes = [tramo.desde, ...cambios.map((c) => c.t).filter((t) => t > tramo.desde && t < tramo.hasta), tramo.hasta]
-      for (let k = 0; k < cortes.length - 1; k++) {
-        const limite = limiteEn(cortes[k])
-        if (limite === null) continue
-        if (cortes[k + 1] > limite) vencido = true
-        else if (vencido === null) vencido = false
-        const sinAjuste = limiteSinAjusteEn(cortes[k])
-        if (sinAjuste !== null && cortes[k + 1] > sinAjuste) vencidoSinAjuste = true
-        else if (vencidoSinAjuste === null) vencidoSinAjuste = false
-      }
-    }
+    const minutos = abiertos.reduce((suma, t) => suma + reloj.minutosEntre(new Date(t.desde), new Date(t.hasta)), 0)
+    const { vencido, vencidoSinAjuste, limiteEn } = evaluarLimites(abiertos, cambios, limiteActual)
 
     const ultimoAbierto = abiertos[abiertos.length - 1]
     const limiteFinal = limiteEn(ultimoAbierto ? ultimoAbierto.hasta - 1 : entrada.getTime())
@@ -173,4 +194,27 @@ export const resumenSla = (tramos: Tramo[]): { minutosLaborales: number; sla: Es
     return ultimo && ultimo.salida === null ? 'en_curso' : 'a_tiempo'
   }
   return { minutosLaborales, sla: estadoSegun((t) => t.vencido), slaSinAjuste: estadoSegun((t) => t.vencidoSinAjuste) }
+}
+
+// Cumplimiento del ticket completo frente a lo que se le prometió al cliente
+export const slaDelTicket = (
+  ticket: TicketParaTramos,
+  eventos: EventoParaTramos[],
+  ahora: Date = new Date()
+): { sla: EstadoSla; slaSinAjuste: EstadoSla } => {
+  const pausas = periodosPausa(ticket, eventos)
+  const termino = ticket.estado === 'cerrado' || ticket.estado === 'resuelto'
+  const fin = termino ? (pausas[pausas.length - 1]?.desde ?? ahora.getTime()) : ahora.getTime()
+  const abiertos = restar({ desde: ticket.createdAt.getTime(), hasta: fin }, pausas)
+  const { vencido, vencidoSinAjuste } = evaluarLimites(
+    abiertos,
+    cambiosDeLimite(eventos, (e) => e.fechaLimiteAnterior),
+    ticket.fechaLimite?.getTime() ?? null
+  )
+  const estadoDe = (v: boolean | null): EstadoSla => {
+    if (v === true) return 'vencido'
+    if (v === null) return 'sin_fecha'
+    return termino ? 'a_tiempo' : 'en_curso'
+  }
+  return { sla: estadoDe(vencido), slaSinAjuste: estadoDe(vencidoSinAjuste) }
 }

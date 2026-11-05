@@ -72,7 +72,7 @@ const resumenAdmin = async (marcaId: string) => {
       ...noCerrados,
       $or: [{ asignadoA: { $exists: false } }, { asignadoA: null }, { estado: { $nin: ESTADOS_SIN_RELOJ }, fechaLimite: { $lt: ahora } }]
     })
-      .select('titulo estado prioridad fechaLimite area asignadoA marca createdAt')
+      .select('titulo estado prioridad fechaLimite fechaLimiteArea area asignadoA marca createdAt')
       .populate('area', 'nombre')
       .populate('asignadoA', 'nombre')
       .sort({ fechaLimite: 1 })
