@@ -23,8 +23,10 @@ export const getUsers = async (): Promise<User[]> => {
   return response.data.users
 }
 
-export const getUsersPage = async (page: number): Promise<Paginado<User>> => {
-  const response = await api.get('/users', { params: { page } })
+// filtros: ?q (nombre o correo) y ?rol; vacíos no se envían
+export const getUsersPage = async (page: number, filtros?: { q?: string; rol?: string }): Promise<Paginado<User>> => {
+  const params = { page, ...(filtros?.q ? { q: filtros.q } : {}), ...(filtros?.rol ? { rol: filtros.rol } : {}) }
+  const response = await api.get('/users', { params })
   return { items: response.data.users, pagination: response.data.pagination }
 }
 

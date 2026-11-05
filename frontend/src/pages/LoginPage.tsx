@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { login } from '../services/authService'
@@ -12,6 +13,7 @@ function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [verPassword, setVerPassword] = useState(false)
 
   const navigate = useNavigate()
   const { setAuth } = useAuth()
@@ -20,7 +22,7 @@ function LoginPage() {
     e.preventDefault()
 
     if (!email || !password) {
-      toast.warning('Email y password son obligatorios')
+      toast.warning('Escribe tu correo y tu contraseña')
       return
     }
 
@@ -44,7 +46,7 @@ function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center transition-colors">
+    <main className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center px-4 transition-colors">
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
@@ -58,10 +60,13 @@ function LoginPage() {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Email
+            <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Correo
             </label>
             <input
+              id="login-email"
+              autoComplete="username"
+              autoFocus
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -70,16 +75,29 @@ function LoginPage() {
             />
           </div>
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Contraseña
             </label>
+            <div className="relative">
             <input
-              type="password"
+              id="login-password"
+              autoComplete="current-password"
+              type={verPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              className="w-full pr-10 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
               placeholder="••••••"
             />
+            <button
+              type="button"
+              onClick={() => setVerPassword((v) => !v)}
+              aria-label={verPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              aria-pressed={verPassword}
+              className="absolute inset-y-0 right-0 px-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            >
+              {verPassword ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
+            </button>
+            </div>
           </div>
           <button
             type="submit"
@@ -90,7 +108,7 @@ function LoginPage() {
           </button>
         </form>
       </div>
-    </div>
+    </main>
   )
 }
 

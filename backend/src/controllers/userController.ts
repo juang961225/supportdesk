@@ -15,6 +15,7 @@ import { avisarCambioTicket, desconectarUsuario } from '../services/tiempoReal'
 import SubMarca from '../models/SubMarca'
 import { catalogoDeMarca } from '../services/catalogoOnlineBrief'
 import { CONTEXTO_VACIO, ContextoUsuario, limpiarContexto } from '../utils/contextoUsuario'
+import { filtroDeUsuarios } from '../utils/filtroUsuarios'
 
 const ROLES_EDITABLES: IUser['rol'][] = ['admin', 'soporte', 'usuario']
 const ESTADOS_VALIDOS: IUser['estado'][] = ['activo', 'inactivo']
@@ -114,7 +115,7 @@ export const getUsers = async (req: AuthRequest, res: Response, next: NextFuncti
   try {
     const { rol, marca } = req.user!
 
-    const filtro: Record<string, unknown> = rol === 'admin' ? { marca } : {}
+    const filtro: Record<string, unknown> = { ...(rol === 'admin' ? { marca } : {}), ...filtroDeUsuarios(req.query) }
 
     const consulta = User.find(filtro)
       .select('-password') // excluye el password de la respuesta

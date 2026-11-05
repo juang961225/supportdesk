@@ -41,12 +41,16 @@ const resumenAdmin = async (marcaId: string) => {
   const marca = new mongoose.Types.ObjectId(marcaId)
   const noCerrados = { marca, estado: { $ne: 'cerrado' as const } }
 
-  const [abiertos, enProgreso, vencidos, criticos, cerrados] = await Promise.all([
+  const hace30Dias = new Date(ahora.getTime() - 30 * 24 * 60 * 60 * 1000)
+
+  // Abiertos (sin tomar) · en atención (el equipo trabaja) · esperando al usuario (detenidos: falta respuesta o confirmación)
+  const [abiertos, enAtencion, esperandoUsuario, vencidos, criticos, cerrados] = await Promise.all([
     Ticket.countDocuments({ marca, estado: { $in: ['abierto', 'reabierto'] } }),
-    Ticket.countDocuments({ marca, estado: { $in: ['en_progreso', 'en_revision', 'esperando_usuario', 'resuelto'] } }),
+    Ticket.countDocuments({ marca, estado: { $in: ['en_progreso', 'en_revision'] } }),
+    Ticket.countDocuments({ marca, estado: { $in: ['esperando_usuario', 'resuelto'] } }),
     Ticket.countDocuments({ marca, estado: { $nin: ESTADOS_SIN_RELOJ }, fechaLimite: { $lt: ahora } }),
     Ticket.countDocuments({ ...noCerrados, prioridad: 'critica' }),
-    Ticket.countDocuments({ marca, estado: 'cerrado' })
+    Ticket.countDocuments({ marca, estado: 'cerrado', fechaCierre: { $gte: hace30Dias } }) // últimos 30 días: el total histórico solo crece
   ])
 
   const [conteoAreas, conteoSoportes, areas, soportes, urgentes] = await Promise.all([
@@ -102,7 +106,7 @@ const resumenAdmin = async (marcaId: string) => {
     .sort((a, b) => b.activos - a.activos)
 
   return {
-    totales: { abiertos, enProgreso, vencidos, criticos, cerrados },
+    totales: { abiertos, enAtencion, esperandoUsuario, vencidos, criticos, cerrados },
     porArea,
     cargaPorSoporte,
     urgentes: await conSla(urgentes)

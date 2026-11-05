@@ -99,7 +99,7 @@ function CommentThread({
       {/* Historial de comentarios */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-4">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-          Historial ({comments.length})
+          Conversación ({comments.length})
         </h3>
 
         {isLoading ? (
@@ -153,7 +153,7 @@ function CommentThread({
 
       {/* Agregar comentario */}
       {canComment && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-4">
+        <div id="responder" className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-4 scroll-mt-4">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
             Agregar comentario
           </h3>

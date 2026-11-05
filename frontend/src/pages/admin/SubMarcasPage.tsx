@@ -1,4 +1,4 @@
-import { Tags } from 'lucide-react'
+import { Plus, Tags } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
@@ -148,9 +148,10 @@ function SubMarcasPage() {
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Sub-marcas</h2>
           <button
             onClick={handleOpenCreate}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
           >
-            + Nueva Sub-marca
+            <Plus className="w-4 h-4" aria-hidden="true" />
+            Nueva Sub-marca
           </button>
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
@@ -164,7 +165,7 @@ function SubMarcasPage() {
                 icon={Tags}
                 title="No hay sub-marcas creadas"
                 description="Crea al menos una para que los usuarios puedan crear tickets."
-                action={{ label: '+ Nueva Sub-marca', onClick: handleOpenCreate }}
+                action={{ label: 'Nueva Sub-marca', icono: Plus, onClick: handleOpenCreate }}
               />
             ) : (
               submarcas.map((submarca) => (

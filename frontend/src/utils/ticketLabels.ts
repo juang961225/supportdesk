@@ -11,6 +11,13 @@ export const estadoLabel: Record<Ticket['estado'], string> = {
   reabierto: 'Reabierto',
 }
 
+// El usuario final lee los estados desde su lado: lo que le toca hacer queda claro
+export const estadoLabelUsuario: Record<Ticket['estado'], string> = {
+  ...estadoLabel,
+  esperando_usuario: 'Esperando tu respuesta',
+  resuelto: 'Resuelto: por confirmar',
+}
+
 // Para valores que llegan como string sin tipar (ej. eventos del historial)
 export const labelDeEstado = (estado: string | undefined): string =>
   estado && estado in estadoLabel ? estadoLabel[estado as Ticket['estado']] : estado ?? ''

@@ -3,11 +3,12 @@ import type { Ticket, AreaRef, Brand } from '../types'
 
 export interface AdminSummary {
   totales: {
-    abiertos: number
-    enProgreso: number
+    abiertos: number // sin tomar
+    enAtencion: number // En progreso y En revisión
+    esperandoUsuario: number // Esperando al usuario y Resuelto (plazo detenido)
     vencidos: number
     criticos: number
-    cerrados: number
+    cerrados: number // en los últimos 30 días
   }
   porArea: {
     area: AreaRef

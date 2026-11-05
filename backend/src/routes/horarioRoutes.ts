@@ -11,7 +11,8 @@ router.get('/', authenticate, authorize('admin'), getHorario)
 router.put('/', authenticate, authorize('admin'), updateHorario)
 
 // Plazos base por prioridad — solo el admin (cada área los puede ajustar en /api/areas)
-router.get('/plazos', authenticate, authorize('admin'), getPlazos)
+// El usuario también los lee: al crear un ticket ve cuánto tiempo se promete por prioridad
+router.get('/plazos', authenticate, authorize('admin', 'usuario'), getPlazos)
 router.put('/plazos', authenticate, authorize('admin'), validarBody(esquemaPlazos), updatePlazos)
 
 export default router

@@ -1,4 +1,4 @@
-import { AlertTriangle, Users } from 'lucide-react'
+import { AlertTriangle, Plus, SearchX, Users } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
@@ -11,6 +11,8 @@ import { getUsersPage, createUser, updateUser } from '../../services/userService
 import { getBrands } from '../../services/brandService'
 import { useToast } from '../../hooks/useToast'
 import { usePaginatedList } from '../../hooks/usePaginatedList'
+import FiltroUsuarios from '../../components/FiltroUsuarios'
+import { useFiltrosUsuarios } from '../../hooks/useFiltrosUsuarios'
 import Pagination from '../../components/Pagination'
 import { rolLabel, cuentaEstadoLabel } from '../../utils/userLabels'
 import type { User } from '../../types'
@@ -18,9 +20,10 @@ import type { Brand } from '../../types'
 
 function UsersPage() {
   const { toast } = useToast()
+  const { filtros, setFiltro, clave: claveFiltros } = useFiltrosUsuarios()
   const {
     items: users, setItems: setUsers, pagination, setPage, isLoading, isFetching, error, recargarDesdeInicio
-  } = usePaginatedList<User>(getUsersPage, () => toast.error('No se pudieron cargar los usuarios'))
+  } = usePaginatedList<User>((page) => getUsersPage(page, filtros), () => toast.error('No se pudieron cargar los usuarios'), claveFiltros)
   const [brands, setBrands] = useState<Brand[]>([])
 
   // Estado del modal
@@ -164,23 +167,28 @@ function UsersPage() {
           </h2>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
           >
-            + Nuevo Usuario
+            <Plus className="w-4 h-4" aria-hidden="true" />
+            Nuevo Usuario
           </button>
         </div>
 
         {/* Lista de usuarios */}
+        <FiltroUsuarios filtros={filtros} onChange={setFiltro} roles={['superadmin', 'admin', 'soporte', 'usuario']} />
+
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {error ? (
               <EmptyState icon={AlertTriangle} title="Error al cargar los usuarios" description="Recarga la página para intentarlo de nuevo." />
+            ) : users.length === 0 && (filtros.q || filtros.rol) ? (
+              <EmptyState icon={SearchX} title="Ningún usuario coincide con la búsqueda" description="Prueba con otro nombre, correo o rol." />
             ) : users.length === 0 ? (
               <EmptyState
                 icon={Users}
                 title="No hay usuarios creados"
                 description="Crea el admin de cada marca para que pueda gestionar su equipo."
-                action={{ label: '+ Nuevo Usuario', onClick: () => setIsModalOpen(true) }}
+                action={{ label: 'Nuevo Usuario', icono: Plus, onClick: () => setIsModalOpen(true) }}
               />
             ) : (
               users.map((user) => (

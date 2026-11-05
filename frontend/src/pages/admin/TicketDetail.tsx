@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Pencil } from 'lucide-react'
+import { useParams } from 'react-router-dom'
+import { Pencil } from 'lucide-react'
 import Layout from '../../components/Layout'
+import { useTituloPagina } from '../../hooks/useTituloPagina'
+import { BotonVolver, TicketNoEncontrado } from '../../components/NavegacionTicket'
 import { estaEnPausa } from '../../utils/ticketStatus'
 import { PageSkeleton } from '../../components/Skeleton'
 import CommentThread from '../../components/CommentThread'
@@ -32,13 +34,13 @@ function AdminTicketDetail() {
   const { id } = useParams<{ id: string }>()
   // Tiempo real: sube cuando otra persona cambia este ticket
   const { versionTicket } = useTicketEnVivo(id)
-  const navigate = useNavigate()
   const { toast } = useToast()
   const { user } = useAuth()
   // Superadmin es solo lectura en tickets
   const canAssign = user?.rol === 'admin'
 
   const [ticket, setTicket] = useState<Ticket | null>(null)
+  useTituloPagina(ticket?.titulo)
   const [isLoading, setIsLoading] = useState(true)
 
   // 🔵 ADMIN: modales de asignar, mover de área y editar fecha límite
@@ -89,7 +91,7 @@ function AdminTicketDetail() {
   if (!ticket) {
     return (
       <Layout>
-        <p className="text-gray-500 dark:text-gray-400">Ticket no encontrado</p>
+        <TicketNoEncontrado destino="/admin/tickets" />
       </Layout>
     )
   }
@@ -98,13 +100,7 @@ function AdminTicketDetail() {
     <Layout>
       <div className="max-w-7xl">
         {/* Botón volver */}
-        <button
-          onClick={() => navigate('/admin/tickets')}
-          className="text-sm text-blue-600 dark:text-blue-400 hover:underline mb-6 flex items-center gap-1"
-        >
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          Volver a tickets
-        </button>
+        <BotonVolver destino="/admin/tickets" />
 
         {/* En pantallas grandes: el ticket y su hilo a la izquierda; lo que solo ve el equipo, al lado */}
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-x-4 items-start">
@@ -138,7 +134,7 @@ function AdminTicketDetail() {
                 </div>
               </div>
 
-              <p className="text-gray-600 dark:text-gray-300 mb-4">
+              <p className="text-gray-600 dark:text-gray-300 mb-4 whitespace-pre-line break-words">
                 {ticket.descripcion}
               </p>
               {ticket.archivos.length > 0 && (
@@ -218,13 +214,13 @@ function AdminTicketDetail() {
                 <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
                   <button
                     onClick={() => setIsAssignOpen(true)}
-                    className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    className="text-sm px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                   >
                     {ticket.asignadoA ? 'Reasignar' : 'Asignar'}
                   </button>
                   <button
                     onClick={() => setIsMoveOpen(true)}
-                    className="text-xs px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    className="text-sm px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
                     Mover de área
                   </button>
