@@ -10,6 +10,7 @@ import TicketTimeline from '../../components/TicketTimeline'
 import TicketTramos from '../../components/TicketTramos'
 import AssignTicketModal from '../../components/AssignTicketModal'
 import MoveAreaModal from '../../components/MoveAreaModal'
+import CategoriaTicketModal from '../../components/CategoriaTicketModal'
 import { getTicketById, updateTicketStatus, takeTicket, releaseTicket } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
 import { useAuth } from '../../hooks/useAuth'
@@ -52,6 +53,7 @@ function SoporteTicketDetail() {
   const [isConfirmingRelease, setIsConfirmingRelease] = useState(false)
   const [isPassOpen, setIsPassOpen] = useState(false)
   const [isMoveOpen, setIsMoveOpen] = useState(false)
+  const [isCategoriaOpen, setIsCategoriaOpen] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -201,6 +203,12 @@ function SoporteTicketDetail() {
               <p className="text-gray-500 dark:text-gray-400">Categoría</p>
               <p className="text-gray-800 dark:text-white font-medium">
                 {ticket.categoria.nombre}
+                <button
+                  onClick={() => setIsCategoriaOpen(true)}
+                  className="ml-2 text-xs font-normal text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  ✏️ Corregir
+                </button>
               </p>
             </div>
             <div>
@@ -313,7 +321,7 @@ function SoporteTicketDetail() {
 
         <TicketTramos ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.area?._id ?? ''}-${ticket.fechaLimite ?? ''}`} />
 
-        <TicketTimeline ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.asignadoA?._id ?? ''}-${ticket.area?._id ?? ''}-${ticket.observadores?.length ?? 0}`} />
+        <TicketTimeline ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.asignadoA?._id ?? ''}-${ticket.area?._id ?? ''}-${ticket.observadores?.length ?? 0}-${ticket.updatedAt ?? ''}`} />
 
         <CommentThread
           ticketId={ticket._id}
@@ -355,6 +363,15 @@ function SoporteTicketDetail() {
         ticket={isMoveOpen ? ticket : null}
         onClose={() => setIsMoveOpen(false)}
         onMoved={handleUpdated}
+      />
+
+      <CategoriaTicketModal
+        ticket={isCategoriaOpen ? ticket : null}
+        onClose={() => setIsCategoriaOpen(false)}
+        onUpdated={(updated) => {
+          setTicket(updated)
+          setIsCategoriaOpen(false)
+        }}
       />
     </Layout>
   )

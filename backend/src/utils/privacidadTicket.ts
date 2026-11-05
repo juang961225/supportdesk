@@ -5,11 +5,15 @@ const NOMBRE_EQUIPO = 'El equipo de soporte'
 
 const esUsuarioFinal = (rol: string | undefined): boolean => rol === 'usuario'
 
-// Quita al soporte asignado de lo que recibe el usuario final
-export const ticketParaRol = <T extends object>(ticket: T, rol: string | undefined): Omit<T, 'asignadoA'> | T => {
+// Quita al soporte asignado de lo que recibe el usuario final. `sinAtender` le dice si aún puede editar
+// el ticket, sin revelar quién lo atiende.
+export const ticketParaRol = <T extends object>(
+  ticket: T,
+  rol: string | undefined
+): (Omit<T, 'asignadoA'> & { sinAtender: boolean }) | T => {
   if (!esUsuarioFinal(rol)) return ticket
-  const { asignadoA: _oculto, ...visible } = ticket as T & { asignadoA?: unknown }
-  return visible
+  const { asignadoA, ...visible } = ticket as T & { asignadoA?: unknown; estado?: string }
+  return { ...visible, sinAtender: !asignadoA && (ticket as { estado?: string }).estado !== 'cerrado' }
 }
 
 interface AutorComentario {

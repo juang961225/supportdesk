@@ -59,6 +59,13 @@ const describirEvento = (evento: TicketEvent): string => {
       const nueva = evento.fechaLimiteNueva ? formatFechaLimite(evento.fechaLimiteNueva) : '—'
       return `${autor} cambió la fecha límite: ${anterior} → ${nueva}${evento.motivo ? ` (${evento.motivo})` : ''}`
     }
+    case 'editado': {
+      const titulo = evento.a ? `el título: "${evento.de}" → "${evento.a}"` : ''
+      const descripcion = evento.descripcionAnterior ? 'la descripción' : ''
+      return `${autor} editó ${[titulo, descripcion].filter(Boolean).join(' y ')}`
+    }
+    case 'categoria':
+      return `${autor} corrigió la categoría: ${evento.deNombre ?? 'sin categoría'} → ${evento.aNombre}`
   }
 }
 
@@ -75,6 +82,8 @@ const dotColor: Record<TicketEvent['tipo'], string> = {
   observador_agregado: 'bg-gray-400',
   observador_quitado: 'bg-gray-400',
   fecha_limite: 'bg-orange-500',
+  editado: 'bg-gray-400',
+  categoria: 'bg-purple-500',
 }
 
 // Historial interno del ticket — solo admin, soporte y superadmin
@@ -118,6 +127,12 @@ function TicketTimeline({ ticketId, refreshKey }: TicketTimelineProps) {
               <p className="text-sm text-gray-700 dark:text-gray-300">
                 {describirEvento(evento)}
               </p>
+              {evento.descripcionAnterior && (
+                <details className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  <summary className="cursor-pointer">Ver descripción anterior</summary>
+                  <p className="mt-1 whitespace-pre-wrap">{evento.descripcionAnterior}</p>
+                </details>
+              )}
               <p className="text-xs text-gray-400 dark:text-gray-500">
                 {evento.createdAt ? formatFecha(evento.createdAt) : 'Fecha no registrada'}
                 {evento.sintetico && ' · registro anterior al historial'}

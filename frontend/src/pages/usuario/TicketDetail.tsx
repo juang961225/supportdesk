@@ -6,6 +6,7 @@ import CommentThread from '../../components/CommentThread'
 import AttachmentList from '../../components/AttachmentList'
 import ObserversPanel from '../../components/ObserversPanel'
 import AreaRecorrido from '../../components/AreaRecorrido'
+import EditTicketModal from '../../components/EditTicketModal'
 import { getTicketById, updateTicketStatus } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
 import { useAuth } from '../../hooks/useAuth'
@@ -31,6 +32,7 @@ function UsuarioTicketDetail() {
   const [isLoading, setIsLoading] = useState(true)
   const [isReopening, setIsReopening] = useState(false)
   const [isConfirmingReopen, setIsConfirmingReopen] = useState(false)
+  const [isEditOpen, setIsEditOpen] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -109,9 +111,19 @@ function UsuarioTicketDetail() {
             <h2 className="text-xl font-bold text-gray-800 dark:text-white">
               {ticket.titulo}
             </h2>
-            <span className={`text-xs px-2 py-1 rounded-full ${estadoColor[ticket.estado]}`}>
-              {estadoLabel[ticket.estado]}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {esCreador && ticket.sinAtender && (
+                <button
+                  onClick={() => setIsEditOpen(true)}
+                  className="text-xs px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  ✏️ Editar
+                </button>
+              )}
+              <span className={`text-xs px-2 py-1 rounded-full ${estadoColor[ticket.estado]}`}>
+                {estadoLabel[ticket.estado]}
+              </span>
+            </div>
           </div>
 
           <p className="text-gray-600 dark:text-gray-300 mb-4">
@@ -196,6 +208,15 @@ function UsuarioTicketDetail() {
           </div>
         )}
       </div>
+
+      <EditTicketModal
+        ticket={isEditOpen ? ticket : null}
+        onClose={() => setIsEditOpen(false)}
+        onSaved={(updated) => {
+          setTicket(updated)
+          setIsEditOpen(false)
+        }}
+      />
 
       <ConfirmDialog
         isOpen={isConfirmingReopen}

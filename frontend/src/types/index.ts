@@ -101,6 +101,8 @@ export interface Ticket {
   sla?: SlaActual | null // null si está cerrado o no tiene fecha límite
   submarca?: AreaRef | null // null solo en tickets anteriores a la migración
   contexto?: ContextoTicket | null // copia al crear; solo marcas ligadas a Online Brief
+  sinAtender?: boolean // solo usuario final: nadie lo atiende aún, puede editarlo
+  updatedAt?: string
   fechaCierre?: string
   createdAt: string
 }
@@ -120,6 +122,8 @@ export interface TicketEvent {
     | 'tomado' | 'soltado' | 'pasado' | 'movido'
     | 'observador_agregado' | 'observador_quitado'
     | 'fecha_limite'
+    | 'editado'
+    | 'categoria'
   autor?: {
     _id: string
     nombre: string
@@ -132,6 +136,7 @@ export interface TicketEvent {
   motivo?: string
   fechaLimiteAnterior?: string
   fechaLimiteNueva?: string
+  descripcionAnterior?: string
   createdAt: string | null
   sintetico?: boolean
 }

@@ -9,6 +9,7 @@ import TicketTimeline from '../../components/TicketTimeline'
 import TicketTramos from '../../components/TicketTramos'
 import AssignTicketModal from '../../components/AssignTicketModal'
 import MoveAreaModal from '../../components/MoveAreaModal'
+import CategoriaTicketModal from '../../components/CategoriaTicketModal'
 import FechaLimiteModal from '../../components/FechaLimiteModal'
 import { getTicketById } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
@@ -38,6 +39,7 @@ function AdminTicketDetail() {
   // 🔵 ADMIN: modales de asignar, mover de área y editar fecha límite
   const [isAssignOpen, setIsAssignOpen] = useState(false)
   const [isMoveOpen, setIsMoveOpen] = useState(false)
+  const [isCategoriaOpen, setIsCategoriaOpen] = useState(false)
   const [isFechaOpen, setIsFechaOpen] = useState(false)
 
   useEffect(() => {
@@ -63,6 +65,7 @@ function AdminTicketDetail() {
     setTicket(updated)
     setIsAssignOpen(false)
     setIsMoveOpen(false)
+    setIsCategoriaOpen(false)
     setIsFechaOpen(false)
   }
 
@@ -141,6 +144,14 @@ function AdminTicketDetail() {
               <p className="text-gray-500 dark:text-gray-400">Categoría</p>
               <p className="text-gray-800 dark:text-white font-medium">
                 {ticket.categoria.nombre}
+                {canAssign && (
+                  <button
+                    onClick={() => setIsCategoriaOpen(true)}
+                    className="ml-2 text-xs font-normal text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    ✏️ Corregir
+                  </button>
+                )}
               </p>
             </div>
             <div>
@@ -202,7 +213,7 @@ function AdminTicketDetail() {
 
         <TicketTramos ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.area?._id ?? ''}-${ticket.fechaLimite ?? ''}`} />
 
-        <TicketTimeline ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.asignadoA?._id ?? ''}-${ticket.area?._id ?? ''}-${ticket.observadores?.length ?? 0}-${ticket.fechaLimite ?? ''}`} />
+        <TicketTimeline ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.asignadoA?._id ?? ''}-${ticket.area?._id ?? ''}-${ticket.observadores?.length ?? 0}-${ticket.fechaLimite ?? ''}-${ticket.updatedAt ?? ''}`} />
 
         {/* El admin puede comentar siempre (administrativo) — decisión de producto */}
         <CommentThread
@@ -224,6 +235,12 @@ function AdminTicketDetail() {
         ticket={isMoveOpen ? ticket : null}
         onClose={() => setIsMoveOpen(false)}
         onMoved={handleUpdated}
+      />
+
+      <CategoriaTicketModal
+        ticket={isCategoriaOpen ? ticket : null}
+        onClose={() => setIsCategoriaOpen(false)}
+        onUpdated={handleUpdated}
       />
 
       <FechaLimiteModal

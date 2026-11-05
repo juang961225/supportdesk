@@ -10,12 +10,13 @@ import {
 import { takeTicket, releaseTicket, moveTicket, getTicketRecorrido } from '../controllers/ticketQueueController'
 import { addObserver, removeObserver } from '../controllers/ticketObserverController'
 import { updateFechaLimite } from '../controllers/ticketDeadlineController'
+import { editTicket, updateTicketCategoria } from '../controllers/ticketEditController'
 import { getTicketTramos } from '../controllers/ticketSlaController'
 import { exportarTickets } from '../controllers/ticketExportController'
 import { authenticate, authorize } from '../middlewares/auth'
 import { uploadAdjuntos, verificarContenidoAdjuntos } from '../services/attachments'
 import { validarBody } from '../validacion/validar'
-import { esquemaCrearTicket, esquemaAsignar, esquemaMover, esquemaFechaLimite, esquemaEstadoTicket, esquemaObservador } from '../validacion/esquemas'
+import { esquemaCrearTicket, esquemaEditarTicket, esquemaCategoriaTicket, esquemaAsignar, esquemaMover, esquemaFechaLimite, esquemaEstadoTicket, esquemaObservador } from '../validacion/esquemas'
 
 const router = Router()
 
@@ -30,6 +31,12 @@ router.get('/exportar', authenticate, authorize('superadmin', 'admin'), exportar
 
 // Ver un ticket — todos los roles
 router.get('/:id', authenticate, authorize('superadmin', 'admin', 'soporte', 'usuario'), getTicketById)
+
+// Editar título y descripción — el creador, mientras nadie lo atiende
+router.put('/:id', authenticate, authorize('usuario'), validarBody(esquemaEditarTicket), editTicket)
+
+// Corregir la categoría — admin y soporte (no cambia el área ni la fecha límite)
+router.put('/:id/categoria', authenticate, authorize('admin', 'soporte'), validarBody(esquemaCategoriaTicket), updateTicketCategoria)
 
 // Historial interno — admin, soporte y superadmin (solo lectura)
 router.get('/:id/history', authenticate, authorize('superadmin', 'admin', 'soporte'), getTicketHistory)
