@@ -1,3 +1,4 @@
+import { AlertTriangle, Building2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
@@ -143,10 +144,10 @@ function BrandsPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {error ? (
-              <EmptyState icon="⚠️" title="Error al cargar las marcas" description="Recarga la página para intentarlo de nuevo." />
+              <EmptyState icon={AlertTriangle} title="Error al cargar las marcas" description="Recarga la página para intentarlo de nuevo." />
             ) : brands.length === 0 ? (
               <EmptyState
-                icon="🏢"
+                icon={Building2}
                 title="No hay marcas creadas"
                 description="Cada marca tiene sus propios usuarios, áreas y tickets."
                 action={{ label: '+ Nueva Marca', onClick: () => setIsModalOpen(true) }}

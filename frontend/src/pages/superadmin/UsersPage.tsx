@@ -1,3 +1,4 @@
+import { AlertTriangle, Users } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
@@ -173,10 +174,10 @@ function UsersPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {error ? (
-              <EmptyState icon="⚠️" title="Error al cargar los usuarios" description="Recarga la página para intentarlo de nuevo." />
+              <EmptyState icon={AlertTriangle} title="Error al cargar los usuarios" description="Recarga la página para intentarlo de nuevo." />
             ) : users.length === 0 ? (
               <EmptyState
-                icon="👥"
+                icon={Users}
                 title="No hay usuarios creados"
                 description="Crea el admin de cada marca para que pueda gestionar su equipo."
                 action={{ label: '+ Nuevo Usuario', onClick: () => setIsModalOpen(true) }}

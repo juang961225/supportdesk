@@ -1,3 +1,4 @@
+import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
@@ -54,7 +55,7 @@ function AdminDashboard() {
   if (!summary) {
     return (
       <Layout>
-        <EmptyState icon="⚠️" title="No se pudieron cargar los datos" description="Recarga la página para intentarlo de nuevo." />
+        <EmptyState icon={AlertTriangle} title="No se pudieron cargar los datos" description="Recarga la página para intentarlo de nuevo." />
       </Layout>
     )
   }
@@ -139,7 +140,7 @@ function AdminDashboard() {
           <p className="text-xs text-gray-400 dark:text-gray-500 px-6 pb-4">Sin asignar o vencidos, los que vencen antes primero</p>
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {urgentes.length === 0 ? (
-              <EmptyState icon="✅" title="Todo al día" description="No hay tickets sin asignar ni vencidos." />
+              <EmptyState icon={CheckCircle2} title="Todo al día" description="No hay tickets sin asignar ni vencidos." />
             ) : (
               urgentes.map((ticket) => (
                 <TicketCard key={ticket._id} ticket={ticket} onClick={() => navigate(`/admin/tickets/${ticket._id}`)} />

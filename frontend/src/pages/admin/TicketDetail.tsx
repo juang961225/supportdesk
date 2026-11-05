@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { ArrowLeft, Pencil } from 'lucide-react'
 import Layout from '../../components/Layout'
 import { PageSkeleton } from '../../components/Skeleton'
 import CommentThread from '../../components/CommentThread'
@@ -87,141 +88,150 @@ function AdminTicketDetail() {
 
   return (
     <Layout>
-      <div className="max-w-3xl">
+      <div className="max-w-7xl">
         {/* Botón volver */}
         <button
           onClick={() => navigate('/admin/tickets')}
           className="text-sm text-blue-600 dark:text-blue-400 hover:underline mb-6 flex items-center gap-1"
         >
-          ← Volver a tickets
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+          Volver a tickets
         </button>
 
-        {/* Header del ticket */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-4">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-              {ticket.titulo}
-            </h2>
-            <div className="flex flex-wrap items-center gap-2">
-              <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} sla={ticket.sla} />
-              <span
-                className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}
-              >
-                {prioridadLabel[ticket.prioridad]}
-              </span>
-              <span
-                className={`text-xs px-2 py-1 rounded-full ${estadoColor[ticket.estado]}`}
-              >
-                {estadoLabel[ticket.estado]}
-              </span>
-            </div>
-          </div>
-
-          <p className="text-gray-600 dark:text-gray-300 mb-4">
-            {ticket.descripcion}
-          </p>
-          {ticket.archivos.length > 0 && (
-            <div className="mb-4">
-              <AttachmentList archivos={ticket.archivos} />
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-gray-500 dark:text-gray-400">Creado por</p>
-              <p className="text-gray-800 dark:text-white font-medium">
-                {ticket.creadoPor.nombre}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-500 dark:text-gray-400">Sub-marca</p>
-              <p className="text-gray-800 dark:text-white font-medium">
-                {ticket.submarca?.nombre ?? 'Sin sub-marca'}
-              </p>
-            </div>
-            <TicketContexto contexto={ticket.contexto} />
-            <div>
-              <p className="text-gray-500 dark:text-gray-400">Categoría</p>
-              <p className="text-gray-800 dark:text-white font-medium">
-                {ticket.categoria.nombre}
-                {canAssign && (
-                  <button
-                    onClick={() => setIsCategoriaOpen(true)}
-                    className="ml-2 text-xs font-normal text-blue-600 dark:text-blue-400 hover:underline"
+        {/* En pantallas grandes: el ticket y su hilo a la izquierda; lo que solo ve el equipo, al lado */}
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-x-4 items-start">
+          <div className="min-w-0">
+            {/* Header del ticket */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+                  {ticket.titulo}
+                </h2>
+                <div className="flex flex-wrap items-center gap-2">
+                  <TicketTimeBadge fechaLimite={ticket.fechaLimite} estado={ticket.estado} sla={ticket.sla} />
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${prioridadColor[ticket.prioridad]}`}
                   >
-                    ✏️ Corregir
-                  </button>
-                )}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-500 dark:text-gray-400">Área</p>
-              <p className="text-gray-800 dark:text-white font-medium">
-                {ticket.area?.nombre ?? 'Sin área'}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-500 dark:text-gray-400">Asignado a</p>
-              <p className="text-gray-800 dark:text-white font-medium">
-                {ticket.asignadoA?.nombre || 'Sin asignar'}
-              </p>
-            </div>
-            {ticket.fechaLimite && (
-              <div>
-                <p className="text-gray-500 dark:text-gray-400">Fecha límite</p>
-                <p className="text-gray-800 dark:text-white font-medium">
-                  {formatFechaLimite(ticket.fechaLimite)}
-                  {canAssign && ticket.estado !== 'cerrado' && (
-                    <button
-                      onClick={() => setIsFechaOpen(true)}
-                      className="ml-2 text-xs font-normal text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      ✏️ Editar
-                    </button>
-                  )}
-                </p>
-                <SlaBarra sla={ticket.sla} />
+                    {prioridadLabel[ticket.prioridad]}
+                  </span>
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${estadoColor[ticket.estado]}`}
+                  >
+                    {estadoLabel[ticket.estado]}
+                  </span>
+                </div>
               </div>
-            )}
+
+              <p className="text-gray-600 dark:text-gray-300 mb-4">
+                {ticket.descripcion}
+              </p>
+              {ticket.archivos.length > 0 && (
+                <div className="mb-4">
+                  <AttachmentList archivos={ticket.archivos} />
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500 dark:text-gray-400">Creado por</p>
+                  <p className="text-gray-800 dark:text-white font-medium">
+                    {ticket.creadoPor.nombre}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 dark:text-gray-400">Sub-marca</p>
+                  <p className="text-gray-800 dark:text-white font-medium">
+                    {ticket.submarca?.nombre ?? 'Sin sub-marca'}
+                  </p>
+                </div>
+                <TicketContexto contexto={ticket.contexto} />
+                <div>
+                  <p className="text-gray-500 dark:text-gray-400">Categoría</p>
+                  <p className="text-gray-800 dark:text-white font-medium">
+                    {ticket.categoria.nombre}
+                    {canAssign && (
+                      <button
+                        onClick={() => setIsCategoriaOpen(true)}
+                        className="ml-2 text-xs font-normal text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        <Pencil className="inline w-3 h-3 mr-1" aria-hidden="true" />Corregir
+                      </button>
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 dark:text-gray-400">Área</p>
+                  <p className="text-gray-800 dark:text-white font-medium">
+                    {ticket.area?.nombre ?? 'Sin área'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 dark:text-gray-400">Asignado a</p>
+                  <p className="text-gray-800 dark:text-white font-medium">
+                    {ticket.asignadoA?.nombre || 'Sin asignar'}
+                  </p>
+                </div>
+                {ticket.fechaLimite && (
+                  <div>
+                    <p className="text-gray-500 dark:text-gray-400">Fecha límite</p>
+                    <p className="text-gray-800 dark:text-white font-medium">
+                      {formatFechaLimite(ticket.fechaLimite)}
+                      {canAssign && ticket.estado !== 'cerrado' && (
+                        <button
+                          onClick={() => setIsFechaOpen(true)}
+                          className="ml-2 text-xs font-normal text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          <Pencil className="inline w-3 h-3 mr-1" aria-hidden="true" />Editar
+                        </button>
+                      )}
+                    </p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Hora Colombia</p>
+                    <SlaBarra sla={ticket.sla} />
+                  </div>
+                )}
+              </div>
+
+              {/* 🔵 ADMIN: asignar y mover de área (no en cerrados; superadmin solo lectura) */}
+              {canAssign && ticket.estado !== 'cerrado' && (
+                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+                  <button
+                    onClick={() => setIsAssignOpen(true)}
+                    className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                  >
+                    {ticket.asignadoA ? 'Reasignar' : 'Asignar'}
+                  </button>
+                  <button
+                    onClick={() => setIsMoveOpen(true)}
+                    className="text-xs px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Mover de área
+                  </button>
+                </div>
+              )}
+
+              <ObserversPanel
+                ticket={ticket}
+                currentUserId={user?._id}
+                canManage={canAssign}
+                onUpdated={(updated) => updated && setTicket(updated)}
+              />
+            </div>
+
+            {/* El admin puede comentar siempre (administrativo) — decisión de producto */}
+            <CommentThread
+              ticketId={ticket._id}
+              canComment
+              creadorId={ticket.creadoPor._id}
+              observadorIds={ticket.observadores?.map((o) => o._id)}
+            />
           </div>
 
-          {/* 🔵 ADMIN: asignar y mover de área (no en cerrados; superadmin solo lectura) */}
-          {canAssign && ticket.estado !== 'cerrado' && (
-            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
-              <button
-                onClick={() => setIsAssignOpen(true)}
-                className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-              >
-                {ticket.asignadoA ? 'Reasignar' : 'Asignar'}
-              </button>
-              <button
-                onClick={() => setIsMoveOpen(true)}
-                className="text-xs px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                Mover de área
-              </button>
-            </div>
-          )}
+          <div className="min-w-0">
+            <TicketTramos ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.area?._id ?? ''}-${ticket.fechaLimite ?? ''}`} />
 
-          <ObserversPanel
-            ticket={ticket}
-            currentUserId={user?._id}
-            canManage={canAssign}
-            onUpdated={(updated) => updated && setTicket(updated)}
-          />
+            <TicketTimeline ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.asignadoA?._id ?? ''}-${ticket.area?._id ?? ''}-${ticket.observadores?.length ?? 0}-${ticket.fechaLimite ?? ''}-${ticket.updatedAt ?? ''}`} />
+          </div>
         </div>
-
-        <TicketTramos ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.area?._id ?? ''}-${ticket.fechaLimite ?? ''}`} />
-
-        <TicketTimeline ticketId={ticket._id} refreshKey={`${ticket.estado}-${ticket.asignadoA?._id ?? ''}-${ticket.area?._id ?? ''}-${ticket.observadores?.length ?? 0}-${ticket.fechaLimite ?? ''}-${ticket.updatedAt ?? ''}`} />
-
-        {/* El admin puede comentar siempre (administrativo) — decisión de producto */}
-        <CommentThread
-          ticketId={ticket._id}
-          canComment
-          creadorId={ticket.creadoPor._id}
-          observadorIds={ticket.observadores?.map((o) => o._id)}
-        />
       </div>
 
       <AssignTicketModal

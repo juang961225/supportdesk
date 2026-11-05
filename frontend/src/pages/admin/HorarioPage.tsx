@@ -1,3 +1,4 @@
+import { AlertTriangle, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
@@ -70,7 +71,7 @@ function HorarioPage() {
   if (!horario) {
     return (
       <Layout>
-        <EmptyState icon="⚠️" title="Error al cargar el horario" description="Recarga la página para intentarlo de nuevo." />
+        <EmptyState icon={AlertTriangle} title="Error al cargar el horario" description="Recarga la página para intentarlo de nuevo." />
       </Layout>
     )
   }
@@ -279,7 +280,7 @@ function HorarioPage() {
                       aria-label={`Quitar ${fecha}`}
                       className="text-red-600 dark:text-red-400 hover:underline"
                     >
-                      ✕
+                      <X className="w-3 h-3" aria-hidden="true" />
                     </button>
                   </li>
                 ))}

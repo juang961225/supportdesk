@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Building2, Clock, FolderTree, Layers, LayoutDashboard, LogOut, Menu, PlusCircle, Tags, Ticket, Users } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import ThemeToggle from './ThemeToggle'
@@ -8,26 +9,26 @@ import { useConexionPerdida } from '../hooks/useTiempoReal'
 // Definimos los items del menú según el rol
 const menuItems = {
   superadmin: [
-    { label: 'Dashboard', path: '/superadmin/dashboard' },
-    { label: 'Tickets', path: '/admin/tickets' },
-    { label: 'Marcas', path: '/superadmin/brands' },
-    { label: 'Usuarios', path: '/superadmin/users' },
+    { label: 'Dashboard', icono: LayoutDashboard, path: '/superadmin/dashboard' },
+    { label: 'Tickets', icono: Ticket, path: '/admin/tickets' },
+    { label: 'Marcas', icono: Building2, path: '/superadmin/brands' },
+    { label: 'Usuarios', icono: Users, path: '/superadmin/users' },
   ],
   admin: [
-    { label: 'Dashboard', path: '/admin/dashboard' },
-    { label: 'Tickets', path: '/admin/tickets' },
-    { label: 'Áreas', path: '/admin/areas' },
-    { label: 'Sub-marcas', path: '/admin/submarcas' },
-    { label: 'Categorías', path: '/admin/categories' },
-    { label: 'Usuarios', path: '/admin/users' },
-    { label: 'Horario laboral', path: '/admin/horario' },
+    { label: 'Dashboard', icono: LayoutDashboard, path: '/admin/dashboard' },
+    { label: 'Tickets', icono: Ticket, path: '/admin/tickets' },
+    { label: 'Áreas', icono: Layers, path: '/admin/areas' },
+    { label: 'Sub-marcas', icono: Tags, path: '/admin/submarcas' },
+    { label: 'Categorías', icono: FolderTree, path: '/admin/categories' },
+    { label: 'Usuarios', icono: Users, path: '/admin/users' },
+    { label: 'Horario laboral', icono: Clock, path: '/admin/horario' },
   ],
   soporte: [
-    { label: 'Tickets', path: '/soporte/dashboard' },
+    { label: 'Tickets', icono: Ticket, path: '/soporte/dashboard' },
   ],
   usuario: [
-    { label: 'Mis Tickets', path: '/usuario/dashboard' },
-    { label: 'Nuevo Ticket', path: '/usuario/tickets/new' },
+    { label: 'Mis Tickets', icono: Ticket, path: '/usuario/dashboard' },
+    { label: 'Nuevo Ticket', icono: PlusCircle, path: '/usuario/tickets/new' },
   ],
 }
 
@@ -88,12 +89,13 @@ function Layout({ children }: { children: React.ReactNode }) {
                       setMenuAbierto(false)
                       navigate(item.path)
                     }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-sm transition-colors ${
+                    className={`w-full flex items-center gap-3 text-left px-4 py-2 rounded-lg text-sm transition-colors ${
                       isActive
                         ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium'
                         : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
                   >
+                    <item.icono className="w-4 h-4 shrink-0" aria-hidden="true" />
                     {item.label}
                   </button>
                 </li>
@@ -117,8 +119,9 @@ function Layout({ children }: { children: React.ReactNode }) {
           </div>
           <button
             onClick={handleLogout}
-            className="w-full text-left px-4 py-2 rounded-lg text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            className="w-full flex items-center gap-3 text-left px-4 py-2 rounded-lg text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
           >
+            <LogOut className="w-4 h-4 shrink-0" aria-hidden="true" />
             Cerrar sesión
           </button>
         </div>
@@ -133,9 +136,7 @@ function Layout({ children }: { children: React.ReactNode }) {
             aria-label="Abrir menú"
             className="p-2 -ml-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+            <Menu className="w-6 h-6" aria-hidden="true" />
           </button>
           <span className="text-lg font-bold text-blue-600 dark:text-blue-400">SupportDesk</span>
         </header>

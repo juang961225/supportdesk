@@ -3,7 +3,7 @@ import axios from 'axios'
 import Modal from './Modal'
 import { updateFechaLimite } from '../services/ticketService'
 import { useToast } from '../hooks/useToast'
-import { formatFechaLimite, aFechaHoraLocal } from '../utils/fechas'
+import { formatFechaLimite, aFechaHoraVista, deFechaHoraVista } from '../utils/fechas'
 import type { Ticket } from '../types'
 
 interface FechaLimiteModalProps {
@@ -47,7 +47,7 @@ function FechaLimiteModal({ ticket, onClose, onUpdated }: FechaLimiteModalProps)
   // Los atajos suman sobre la fecha actual; si ya venció, sobre este momento
   const aplicarAtajo = (ms: number) => {
     const base = actual && !vencida ? actual.getTime() : Date.now()
-    setNueva(aFechaHoraLocal(new Date(base + ms)))
+    setNueva(aFechaHoraVista(new Date(base + ms)))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,7 +57,7 @@ function FechaLimiteModal({ ticket, onClose, onUpdated }: FechaLimiteModalProps)
       setFormError('Elige la nueva fecha límite')
       return
     }
-    const fecha = new Date(nueva) // datetime-local se interpreta en la hora local
+    const fecha = deFechaHoraVista(nueva)
     if (fecha.getTime() <= Date.now()) {
       setFormError('La fecha límite debe ser posterior a este momento')
       return
@@ -117,7 +117,7 @@ function FechaLimiteModal({ ticket, onClose, onUpdated }: FechaLimiteModalProps)
           id="nueva-fecha-limite"
           type="datetime-local"
           value={nueva}
-          min={aFechaHoraLocal(new Date())}
+          min={aFechaHoraVista(new Date())}
           onChange={(e) => setNueva(e.target.value)}
           className={campoClass}
         />

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { getTicketHistory } from '../services/historyService'
 import { useToast } from '../hooks/useToast'
 import { labelDeEstado } from '../utils/ticketLabels'
-import { formatFechaLimite } from '../utils/fechas'
+import { formatFechaLimite, formatFechaHora } from '../utils/fechas'
 import type { TicketEvent } from '../types'
 import { SkeletonLines } from './Skeleton'
 
@@ -11,15 +11,6 @@ interface TicketTimelineProps {
   // Cambia cuando la página modifica el ticket (estado, asignación) para recargar el historial
   refreshKey?: string
 }
-
-const formatFecha = (fecha: string) =>
-  new Date(fecha).toLocaleString('es-CO', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 
 // Texto de cada evento: "<autor> <acción>"
 const describirEvento = (evento: TicketEvent): string => {
@@ -134,7 +125,7 @@ function TicketTimeline({ ticketId, refreshKey }: TicketTimelineProps) {
                 </details>
               )}
               <p className="text-xs text-gray-400 dark:text-gray-500">
-                {evento.createdAt ? formatFecha(evento.createdAt) : 'Fecha no registrada'}
+                {evento.createdAt ? formatFechaHora(evento.createdAt) : 'Fecha no registrada'}
                 {evento.sintetico && ' · registro anterior al historial'}
               </p>
             </li>

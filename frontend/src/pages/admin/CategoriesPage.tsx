@@ -1,3 +1,4 @@
+import { AlertTriangle, FolderTree } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
@@ -171,10 +172,10 @@ function CategoriesPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {error ? (
-              <EmptyState icon="⚠️" title="Error al cargar las categorías" description="Recarga la página para intentarlo de nuevo." />
+              <EmptyState icon={AlertTriangle} title="Error al cargar las categorías" description="Recarga la página para intentarlo de nuevo." />
             ) : categories.length === 0 ? (
               <EmptyState
-                icon="🏷️"
+                icon={FolderTree}
                 title="No hay categorías creadas"
                 description="Los usuarios eligen una categoría al crear un ticket; cada una lo envía a un área."
                 action={{ label: '+ Nueva Categoría', onClick: handleOpenCreate }}

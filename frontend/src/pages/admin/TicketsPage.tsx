@@ -1,3 +1,4 @@
+import { AlertTriangle, Download, SearchX, Ticket as IconoTicket } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { PageSkeleton } from '../../components/Skeleton'
@@ -131,7 +132,12 @@ function TicketsPage() {
                 disabled={exportando !== null || (pagination?.total ?? 0) === 0}
                 className="text-sm px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
               >
-                {exportando === formato ? 'Exportando…' : formato === 'xlsx' ? '⬇ Excel' : '⬇ PDF'}
+                {exportando === formato ? 'Exportando…' : (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Download className="w-4 h-4" aria-hidden="true" />
+                    {formato === 'xlsx' ? 'Excel' : 'PDF'}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -153,17 +159,17 @@ function TicketsPage() {
           <TicketList
             tickets={tickets}
             vacio={error ? (
-              <EmptyState icon="⚠️" title="Error al cargar los tickets" description="Recarga la página para intentarlo de nuevo." />
+              <EmptyState icon={AlertTriangle} title="Error al cargar los tickets" description="Recarga la página para intentarlo de nuevo." />
             ) : hayFiltros ? (
               <EmptyState
-                icon="🔍"
+                icon={SearchX}
                 title="Ningún ticket coincide con los filtros"
                 description="Prueba con otros filtros o límpialos para ver todos."
                 action={{ label: 'Limpiar filtros', onClick: limpiar }}
               />
             ) : (
               <EmptyState
-                icon="🎫"
+                icon={IconoTicket}
                 title="No hay tickets todavía"
                 description="Cuando los usuarios de tu marca creen tickets, aparecerán aquí."
               />

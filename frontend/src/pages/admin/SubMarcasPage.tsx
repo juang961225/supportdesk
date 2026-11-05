@@ -1,3 +1,4 @@
+import { Tags } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Layout from '../../components/Layout'
@@ -160,7 +161,7 @@ function SubMarcasPage() {
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {submarcas.length === 0 ? (
               <EmptyState
-                icon="🏷️"
+                icon={Tags}
                 title="No hay sub-marcas creadas"
                 description="Crea al menos una para que los usuarios puedan crear tickets."
                 action={{ label: '+ Nueva Sub-marca', onClick: handleOpenCreate }}

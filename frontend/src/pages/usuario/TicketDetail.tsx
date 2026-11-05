@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { ArrowLeft, Pencil } from 'lucide-react'
 import Layout from '../../components/Layout'
 import { PageSkeleton } from '../../components/Skeleton'
 import CommentThread from '../../components/CommentThread'
@@ -12,7 +13,7 @@ import { useToast } from '../../hooks/useToast'
 import { useAuth } from '../../hooks/useAuth'
 import { estadoColor } from '../../utils/ticketColors'
 import { estadoLabel, prioridadLabel } from '../../utils/ticketLabels'
-import { formatFechaLimite } from '../../utils/fechas'
+import { formatFechaCorta } from '../../utils/fechas'
 import type { Ticket } from '../../types'
 import { TicketTimeBadge } from '../../components/TicketTimeBadge'
 import ConfirmDialog from '../../components/ConfirmDialog'
@@ -102,7 +103,8 @@ function UsuarioTicketDetail() {
           onClick={() => navigate('/usuario/dashboard')}
           className="text-sm text-blue-600 dark:text-blue-400 hover:underline mb-6 flex items-center gap-1"
         >
-          ← Volver
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+          Volver
         </button>
 
         {/* Header del ticket */}
@@ -117,7 +119,7 @@ function UsuarioTicketDetail() {
                   onClick={() => setIsEditOpen(true)}
                   className="text-xs px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
-                  ✏️ Editar
+                  <Pencil className="inline w-3 h-3 mr-1" aria-hidden="true" />Editar
                 </button>
               )}
               <span className={`text-xs px-2 py-1 rounded-full ${estadoColor[ticket.estado]}`}>
@@ -166,7 +168,7 @@ function UsuarioTicketDetail() {
               <div>
                 <p className="text-gray-500 dark:text-gray-400">Fecha límite</p>
                 <p className="text-gray-800 dark:text-white font-medium">
-                  {formatFechaLimite(ticket.fechaLimite)}
+                  {formatFechaCorta(ticket.fechaLimite)}
                 </p>
                 <SlaBarra sla={ticket.sla} />
               </div>

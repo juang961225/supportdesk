@@ -1,3 +1,4 @@
+import { AlertTriangle, Building2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import StatCard from '../../components/StatCard'
@@ -43,7 +44,7 @@ function SuperAdminDashboard() {
   if (!summary) {
     return (
       <Layout>
-        <EmptyState icon="⚠️" title="No se pudieron cargar los datos" description="Recarga la página para intentarlo de nuevo." />
+        <EmptyState icon={AlertTriangle} title="No se pudieron cargar los datos" description="Recarga la página para intentarlo de nuevo." />
       </Layout>
     )
   }
@@ -65,7 +66,7 @@ function SuperAdminDashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-x-auto">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white p-4 pb-2">Por marca</h3>
           {porMarca.length === 0 ? (
-            <EmptyState icon="🏢" title="No hay marcas creadas" description="Créalas desde la sección Marcas." />
+            <EmptyState icon={Building2} title="No hay marcas creadas" description="Créalas desde la sección Marcas." />
           ) : (
             <table className="w-full">
               <thead>

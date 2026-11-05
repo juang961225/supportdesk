@@ -1,3 +1,5 @@
+import { Coffee, Inbox, SearchX, Users } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
@@ -19,21 +21,21 @@ import { useRecargaEnVivo } from '../../hooks/useTiempoReal'
 
 type Vista = 'cola' | 'mios' | 'equipo'
 
-const vistas: { id: Vista; label: string; vacio: { icon: string; title: string; description: string } }[] = [
+const vistas: { id: Vista; label: string; vacio: { icon: LucideIcon; title: string; description: string } }[] = [
   {
     id: 'cola',
     label: 'Cola de mis áreas',
-    vacio: { icon: '☕', title: 'La cola está vacía', description: 'No hay tickets esperando en tus áreas.' },
+    vacio: { icon: Coffee, title: 'La cola está vacía', description: 'No hay tickets esperando en tus áreas.' },
   },
   {
     id: 'mios',
     label: 'Mis tickets',
-    vacio: { icon: '🙌', title: 'No tienes tickets asignados', description: 'Toma uno de la cola de tus áreas para empezar.' },
+    vacio: { icon: Inbox, title: 'No tienes tickets asignados', description: 'Toma uno de la cola de tus áreas para empezar.' },
   },
   {
     id: 'equipo',
     label: 'Del equipo',
-    vacio: { icon: '👥', title: 'Sin tickets del equipo', description: 'Tus compañeros no tienen tickets abiertos en tus áreas.' },
+    vacio: { icon: Users, title: 'Sin tickets del equipo', description: 'Tus compañeros no tienen tickets abiertos en tus áreas.' },
   },
 ]
 
@@ -165,7 +167,7 @@ function SoporteDashboard() {
             tickets={listaActual}
             vacio={hayFiltros ? (
               <EmptyState
-                icon="🔍"
+                icon={SearchX}
                 title="Ningún ticket coincide con los filtros"
                 description="Prueba con otros filtros o límpialos para ver todos."
                 action={{ label: 'Limpiar filtros', onClick: limpiar }}

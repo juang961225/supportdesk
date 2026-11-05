@@ -1,3 +1,4 @@
+import { formatFechaHora } from '../utils/fechas'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { getComments, createComment } from '../services/commentService'
@@ -16,15 +17,6 @@ interface CommentThreadProps {
   creadorId?: string       // para marcar al creador del ticket
   observadorIds?: string[] // para marcar a los observadores
 }
-
-const formatFecha = (fecha: string) =>
-  new Date(fecha).toLocaleString('es-CO', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 
 const badgeClass: Record<string, string> = {
   Creador: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
@@ -129,7 +121,7 @@ function CommentThread({
                       </span>
                     )}
                     <span className="text-xs text-gray-400 dark:text-gray-500">
-                      {formatFecha(comment.createdAt)}
+                      {formatFechaHora(comment.createdAt)}
                     </span>
                   </div>
                   {comment.contenido && (

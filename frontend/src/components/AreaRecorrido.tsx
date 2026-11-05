@@ -1,3 +1,5 @@
+import { ArrowRight } from 'lucide-react'
+import { formatFechaHora } from '../utils/fechas'
 import { useState, useEffect } from 'react'
 import { getTicketRecorrido } from '../services/ticketService'
 import type { TramoRecorrido } from '../types'
@@ -6,15 +8,6 @@ interface AreaRecorridoProps {
   ticketId: string
   refreshKey?: string
 }
-
-const formatFecha = (fecha: string) =>
-  new Date(fecha).toLocaleString('es-CO', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 
 // Recorrido público del ticket por las áreas (con fechas, sin nombres de soporte)
 function AreaRecorrido({ ticketId, refreshKey }: AreaRecorridoProps) {
@@ -35,13 +28,13 @@ function AreaRecorrido({ ticketId, refreshKey }: AreaRecorridoProps) {
       <ol className="flex flex-wrap items-center gap-2 text-sm">
         {recorrido.map((tramo, i) => (
           <li key={`${tramo.area}-${tramo.desde}`} className="flex items-center gap-2">
-            {i > 0 && <span className="text-gray-400">→</span>}
+            {i > 0 && <ArrowRight className="w-3 h-3 text-gray-400" aria-hidden="true" />}
             <span
               className="px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-              title={`Desde ${formatFecha(tramo.desde)}`}
+              title={`Desde ${formatFechaHora(tramo.desde)}`}
             >
               {tramo.area}
-              <span className="text-xs text-gray-400 dark:text-gray-500 ml-1">{formatFecha(tramo.desde)}</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500 ml-1">{formatFechaHora(tramo.desde)}</span>
             </span>
           </li>
         ))}
