@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose'
 import { Adjunto, AdjuntoSchema } from '../services/attachments'
 import { ContextoTicket } from '../utils/contextoUsuario'
+import { AvisosPlazo } from '../utils/tareas'
 
 export interface ITicket extends Document {
   titulo: string
@@ -20,6 +21,7 @@ export interface ITicket extends Document {
   fechaLimiteArea?: Date // plazo del tramo en el área actual; sin valor en tickets anteriores: vale fechaLimite
   fechaCierre?: Date
   pausadoDesde?: Date // en Esperando al usuario o Resuelto: desde cuándo está detenido el plazo
+  avisosPlazo?: AvisosPlazo // avisos automáticos ya enviados: cada uno guarda la fecha a la que se refiere
   createdAt: Date
 }
 
@@ -98,6 +100,12 @@ const TicketSchema = new Schema<ITicket>(
     },
     pausadoDesde: {
       type: Date
+    },
+    avisosPlazo: {
+      type: new Schema<AvisosPlazo>(
+        { ticketPronto: Date, ticketVencido: Date, areaPronto: Date, areaVencido: Date, recordatorio: Date },
+        { _id: false }
+      )
     }
   },
   {

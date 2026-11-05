@@ -11,7 +11,7 @@ export interface ITicketEvent extends Document {
   ticket: mongoose.Types.ObjectId
   marca: mongoose.Types.ObjectId
   tipo: TipoEvento
-  autor: mongoose.Types.ObjectId
+  autor?: mongoose.Types.ObjectId // sin autor: lo hizo el sistema (cierres automáticos)
   de?: string       // id o estado anterior
   a?: string        // id o estado nuevo
   deNombre?: string // nombres del momento: se conservan aunque luego cambien
@@ -33,7 +33,7 @@ const TicketEventSchema = new Schema<ITicketEvent>(
       enum: ['creado', 'asignado', 'reasignado', 'estado', 'desasignado', 'tomado', 'soltado', 'pasado', 'movido', 'observador_agregado', 'observador_quitado', 'fecha_limite', 'editado', 'categoria', 'prioridad'],
       required: true
     },
-    autor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    autor: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     de: { type: String },
     a: { type: String },
     deNombre: { type: String },

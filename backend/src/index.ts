@@ -16,6 +16,7 @@ import dashboardRoutes from './routes/dashboardRoutes'
 import horarioRoutes from './routes/horarioRoutes'
 import subMarcaRoutes from './routes/subMarcaRoutes'
 import catalogoRoutes from './routes/catalogoRoutes'
+import { iniciarTareasProgramadas } from './services/tareasProgramadas'
 import { origenesFrontend } from './config/origenes'
 import { iniciarTiempoReal } from './services/tiempoReal'
 import { configurarMedicion, medirPeticiones } from './middlewares/medicion'
@@ -73,4 +74,5 @@ iniciarTiempoReal(servidor)
 
 servidor.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
+  iniciarTareasProgramadas()
 })

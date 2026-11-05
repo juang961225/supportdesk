@@ -297,7 +297,7 @@ function SoporteTicketDetail() {
               {ticket.estado === 'resuelto' && esMio && (
                 <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                    Esperando que el usuario confirme la solución o reabra el ticket. Si fue un error, puedes volverlo a atención.
+                    Esperando que el usuario confirme la solución o reabra el ticket; se cerrará solo en 3 días laborales. Si fue un error, puedes volverlo a atención.
                   </p>
                   <button
                     onClick={() => handleUpdateStatus('en_progreso')}
@@ -383,7 +383,7 @@ function SoporteTicketDetail() {
       <ConfirmDialog
         isOpen={isConfirmingClose}
         title="Marcar resuelto"
-        message="El usuario podrá confirmarlo o reabrirlo. Mientras tanto, el plazo queda detenido."
+        message="El usuario podrá confirmarlo o reabrirlo; si no responde en 3 días laborales, se cerrará solo. Mientras tanto, el plazo queda detenido."
         confirmLabel="Marcar resuelto"
         isLoading={isUpdatingStatus}
         onConfirm={() => handleUpdateStatus('resuelto')}

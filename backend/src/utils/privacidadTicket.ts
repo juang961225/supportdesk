@@ -10,11 +10,12 @@ const esUsuarioFinal = (rol: string | undefined): boolean => rol === 'usuario'
 export const ticketParaRol = <T extends object>(
   ticket: T,
   rol: string | undefined
-): (Omit<T, 'asignadoA' | 'fechaLimiteArea' | 'slaArea'> & { sinAtender: boolean }) | T => {
+): (Omit<T, 'asignadoA' | 'fechaLimiteArea' | 'slaArea' | 'avisosPlazo'> & { sinAtender: boolean }) | T => {
   if (!esUsuarioFinal(rol)) return ticket
   // El plazo interno del área tampoco es para el cliente
-  const { asignadoA, fechaLimiteArea: _limiteArea, slaArea: _slaArea, ...visible } = ticket as T & {
+  const { asignadoA, fechaLimiteArea: _limiteArea, slaArea: _slaArea, avisosPlazo: _avisos, ...visible } = ticket as T & {
     asignadoA?: unknown
+    avisosPlazo?: unknown
     estado?: string
     fechaLimiteArea?: unknown
     slaArea?: unknown

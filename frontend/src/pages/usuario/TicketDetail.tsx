@@ -212,7 +212,7 @@ function UsuarioTicketDetail() {
         {ticket.estado === 'esperando_usuario' && (
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-6 mb-4">
             <p className="text-sm text-amber-800 dark:text-amber-300">
-              Soporte necesita tu respuesta para continuar. Escribe arriba en los comentarios y el ticket seguirá su atención.
+              Soporte necesita tu respuesta para continuar. Escribe arriba en los comentarios y el ticket seguirá su atención. Si no respondes en 5 días laborales, se cerrará automáticamente.
             </p>
           </div>
         )}
@@ -221,7 +221,7 @@ function UsuarioTicketDetail() {
         {ticket.estado === 'resuelto' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-4">
             <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
-              {esCreador ? 'Soporte marcó este ticket como resuelto. ¿Se solucionó tu problema?' : 'Soporte marcó este ticket como resuelto. Quien lo creó puede confirmarlo.'}
+              {esCreador ? 'Soporte marcó este ticket como resuelto. ¿Se solucionó tu problema? Si no respondes en 3 días laborales, se cerrará automáticamente.' : 'Soporte marcó este ticket como resuelto. Quien lo creó puede confirmarlo.'}
             </p>
             {esCreador && (
               <div className="flex flex-wrap gap-3">

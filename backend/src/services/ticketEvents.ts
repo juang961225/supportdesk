@@ -5,7 +5,7 @@ interface NuevoEvento {
   ticket: mongoose.Types.ObjectId
   marca: mongoose.Types.ObjectId
   tipo: TipoEvento
-  autor: mongoose.Types.ObjectId | string
+  autor?: mongoose.Types.ObjectId | string // sin autor: lo hizo el sistema
   de?: string
   a?: string
   deNombre?: string
