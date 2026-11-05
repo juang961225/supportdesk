@@ -11,6 +11,7 @@ import TicketTramos from '../../components/TicketTramos'
 import AssignTicketModal from '../../components/AssignTicketModal'
 import MoveAreaModal from '../../components/MoveAreaModal'
 import CategoriaTicketModal from '../../components/CategoriaTicketModal'
+import PrioridadTicketModal from '../../components/PrioridadTicketModal'
 import FechaLimiteModal from '../../components/FechaLimiteModal'
 import { getTicketById } from '../../services/ticketService'
 import { useToast } from '../../hooks/useToast'
@@ -41,6 +42,7 @@ function AdminTicketDetail() {
   const [isAssignOpen, setIsAssignOpen] = useState(false)
   const [isMoveOpen, setIsMoveOpen] = useState(false)
   const [isCategoriaOpen, setIsCategoriaOpen] = useState(false)
+  const [isPrioridadOpen, setIsPrioridadOpen] = useState(false)
   const [isFechaOpen, setIsFechaOpen] = useState(false)
 
   useEffect(() => {
@@ -67,6 +69,7 @@ function AdminTicketDetail() {
     setIsAssignOpen(false)
     setIsMoveOpen(false)
     setIsCategoriaOpen(false)
+    setIsPrioridadOpen(false)
     setIsFechaOpen(false)
   }
 
@@ -114,6 +117,14 @@ function AdminTicketDetail() {
                   >
                     {prioridadLabel[ticket.prioridad]}
                   </span>
+                  {canAssign && ticket.estado !== 'cerrado' && (
+                    <button
+                      onClick={() => setIsPrioridadOpen(true)}
+                      className="text-xs font-normal text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      <Pencil className="inline w-3 h-3 mr-1" aria-hidden="true" />Prioridad
+                    </button>
+                  )}
                   <span
                     className={`text-xs px-2 py-1 rounded-full ${estadoColor[ticket.estado]}`}
                   >
@@ -221,6 +232,7 @@ function AdminTicketDetail() {
             <CommentThread
               ticketId={ticket._id}
               canComment
+              permiteNotaInterna
               creadorId={ticket.creadoPor._id}
               observadorIds={ticket.observadores?.map((o) => o._id)}
             />
@@ -245,6 +257,12 @@ function AdminTicketDetail() {
         ticket={isMoveOpen ? ticket : null}
         onClose={() => setIsMoveOpen(false)}
         onMoved={handleUpdated}
+      />
+
+      <PrioridadTicketModal
+        ticket={isPrioridadOpen ? ticket : null}
+        onClose={() => setIsPrioridadOpen(false)}
+        onUpdated={handleUpdated}
       />
 
       <CategoriaTicketModal

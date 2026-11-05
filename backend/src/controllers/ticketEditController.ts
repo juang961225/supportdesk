@@ -5,6 +5,8 @@ import { AuthRequest } from '../middlewares/auth'
 import { registrarEvento } from '../services/ticketEvents'
 import { findTicketResponse } from '../services/ticketQueries'
 import { avisarCambioTicket } from '../services/tiempoReal'
+import { fechaLimiteDeTicket } from '../services/horario'
+import { notificar } from '../services/notificaciones'
 import { puedeVerTicket } from '../utils/ticketAccess'
 import { ticketParaRol } from '../utils/privacidadTicket'
 import { describirEdicion } from '../utils/edicionTicket'
@@ -93,6 +95,57 @@ export const updateTicketCategoria = async (req: AuthRequest, res: Response, nex
     avisarCambioTicket(ticket._id)
 
     res.status(200).json({ message: `Categoría cambiada a ${nueva.nombre}`, ticket: await findTicketResponse(ticket._id) })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// PUT /api/tickets/:id/prioridad — admin y soporte corrigen lo que eligió el usuario, con motivo.
+// La fecha límite se recalcula desde ahora; el motivo queda solo en el historial interno
+export const updateTicketPrioridad = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { prioridad, motivo } = req.body
+    const marca = req.user?.marca
+
+    const ticket = await Ticket.findOne({ _id: req.params.id, marca })
+    if (!ticket) {
+      res.status(404).json({ message: 'Ticket no encontrado' })
+      return
+    }
+    if (!puedeVerTicket(req.user!, ticket)) {
+      res.status(403).json({ message: 'No tienes acceso a este ticket' })
+      return
+    }
+    if (ticket.estado === 'cerrado') {
+      res.status(400).json({ message: 'No se puede cambiar la prioridad de un ticket cerrado' })
+      return
+    }
+    if (ticket.prioridad === prioridad) {
+      res.status(400).json({ message: 'El ticket ya tiene esa prioridad' })
+      return
+    }
+
+    const prioridadAnterior = ticket.prioridad
+    const fechaLimiteAnterior = ticket.fechaLimite
+    ticket.prioridad = prioridad
+    ticket.fechaLimite = await fechaLimiteDeTicket(ticket.marca, ticket.area, prioridad)
+    await ticket.save()
+
+    await registrarEvento({
+      ticket: ticket._id,
+      marca: ticket.marca,
+      tipo: 'prioridad',
+      autor: req.user!.id,
+      de: prioridadAnterior,
+      a: prioridad,
+      motivo,
+      fechaLimiteAnterior,
+      fechaLimiteNueva: ticket.fechaLimite
+    })
+    notificar(ticket._id, req.user!.id, { tipo: 'prioridad', de: prioridadAnterior, a: prioridad })
+    avisarCambioTicket(ticket._id)
+
+    res.status(200).json({ message: 'Prioridad actualizada', ticket: await findTicketResponse(ticket._id) })
   } catch (error) {
     next(error)
   }

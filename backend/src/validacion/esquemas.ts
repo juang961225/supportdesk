@@ -133,8 +133,15 @@ export const esquemaEditarTicket = z.object({
 
 export const esquemaCategoriaTicket = z.object({ categoriaId: objectId('La categoría', true) })
 
+export const esquemaPrioridadTicket = z.object({
+  prioridad: z.enum(PRIORIDADES, { error: 'Prioridad inválida' }),
+  motivo: texto('El motivo', 300)
+})
+
 export const esquemaComentario = z.object({
-  contenido: z.string().trim().max(5000, 'El comentario no puede superar 5000 caracteres').optional().default('')
+  contenido: z.string().trim().max(5000, 'El comentario no puede superar 5000 caracteres').optional().default(''),
+  // Llega por multipart, como texto
+  interna: z.enum(['true', 'false'], { error: 'El tipo de comentario no es válido' }).optional()
 })
 
 export const esquemaAsignar = z.object({ soporterId: objectId('El soporte') })

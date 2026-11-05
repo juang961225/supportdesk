@@ -135,6 +135,7 @@ export interface TicketEvent {
     | 'fecha_limite'
     | 'editado'
     | 'categoria'
+    | 'prioridad'
   autor?: {
     _id: string
     nombre: string
@@ -194,6 +195,7 @@ export interface Tramo {
   minutosLaborales: number
   fechaLimite: string | null
   vencido: boolean | null // null = sin fecha límite (tickets antiguos)
+  vencidoSinAjuste: boolean | null // sin contar lo que el admin amplió a mano
 }
 
 // Sub-marca dentro de una marca (BMW, MINI…). `marca` solo llega poblada para el superadmin

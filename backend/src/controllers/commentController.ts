@@ -27,6 +27,13 @@ export const createComment = async (req: AuthRequest, res: Response, next: NextF
       return
     }
 
+    // Las notas internas son solo del equipo
+    const interna = req.body?.interna === 'true'
+    if (interna && req.user?.rol === 'usuario') {
+      res.status(403).json({ message: 'No puedes crear notas internas' })
+      return
+    }
+
     if (files.length > 0 && !storageConfigurado()) {
       res.status(503).json({ message: 'El almacenamiento de archivos no está configurado' })
       return
@@ -49,11 +56,12 @@ export const createComment = async (req: AuthRequest, res: Response, next: NextF
     const comment = await Comment.create({
       contenido,
       archivos,
+      interna,
       ticket: new mongoose.Types.ObjectId(req.params.id as string),
       autor: new mongoose.Types.ObjectId(req.user!.id)
     })
 
-    notificar(ticket._id, req.user!.id, { tipo: 'comentario', contenido, adjuntos: archivos.length })
+    notificar(ticket._id, req.user!.id, { tipo: 'comentario', contenido, adjuntos: archivos.length, interna })
     avisarComentario(ticket._id)
 
     // Populate para devolver datos completos
@@ -85,8 +93,10 @@ export const getComments = async (req: AuthRequest, res: Response, next: NextFun
       return
     }
 
+    // El usuario final no recibe las notas internas, ni sus adjuntos
     const comments = await Comment.find({
-      ticket: new mongoose.Types.ObjectId(req.params.id as string)
+      ticket: new mongoose.Types.ObjectId(req.params.id as string),
+      ...(req.user?.rol === 'usuario' ? { interna: { $ne: true } } : {})
     })
       .populate('autor', 'nombre email rol')
       .sort({ createdAt: 1 }) // más antiguos primero — orden cronológico

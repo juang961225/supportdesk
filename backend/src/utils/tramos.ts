@@ -4,6 +4,8 @@ import { HorarioLaboral, minutosLaboralesEntre } from './horarioLaboral'
 // - Un tramo empieza al crear el ticket o al moverlo de área, y termina al moverlo otra vez o al cerrarlo.
 // - El tiempo se mide en horario laboral y no cuenta mientras el ticket está cerrado.
 // - Vencido: en algún momento abierto dentro del tramo se pasó la fecha límite vigente en ese momento.
+// - Vencido sin ajuste: lo mismo, sin contar lo que el admin amplió a mano. Mover, reabrir o corregir la
+//   prioridad sí calculan un plazo legítimo; ampliar no debe hacer que un tramo cuente como "a tiempo" sin dejar rastro.
 
 export interface EventoParaTramos {
   tipo: string
@@ -32,6 +34,7 @@ export interface Tramo {
   minutosLaborales: number
   fechaLimite: Date | null // la vigente al final del tramo
   vencido: boolean | null  // null = sin fecha límite (tickets antiguos)
+  vencidoSinAjuste: boolean | null // sin contar lo que el admin amplió a mano
 }
 
 interface Intervalo {
@@ -85,13 +88,23 @@ export const calcularTramos = (
 
   // Cambios de fecha límite (mover, ajuste del admin, reabrir): cada uno guarda la anterior
   const cambios = eventos
-    .filter((e) => e.fechaLimiteAnterior && ['movido', 'fecha_limite', 'estado'].includes(e.tipo))
-    .map((e) => ({ t: e.createdAt.getTime(), anterior: (e.fechaLimiteAnterior as Date).getTime() }))
+    .filter((e) => e.fechaLimiteAnterior && ['movido', 'fecha_limite', 'estado', 'prioridad'].includes(e.tipo))
+    .map((e) => ({ t: e.createdAt.getTime(), anterior: (e.fechaLimiteAnterior as Date).getTime(), manual: e.tipo === 'fecha_limite' }))
 
   // Fecha límite vigente en el instante t: la "anterior" del primer cambio posterior, o la actual
   const limiteEn = (t: number): number | null => {
     const siguiente = cambios.find((c) => c.t > t)
     return siguiente ? siguiente.anterior : ticket.fechaLimite?.getTime() ?? null
+  }
+
+  // La que valía antes de cualquier ampliación manual desde el último cálculo automático
+  const limiteSinAjusteEn = (t: number): number | null => {
+    const automaticos = cambios.filter((c) => !c.manual)
+    const inicio = automaticos.filter((c) => c.t <= t).pop()?.t ?? -Infinity
+    const proximo = automaticos.find((c) => c.t > t)
+    const ampliacion = cambios.find((c) => c.manual && c.t > inicio && c.t < (proximo?.t ?? Infinity))
+    if (ampliacion) return ampliacion.anterior
+    return proximo ? proximo.anterior : ticket.fechaLimite?.getTime() ?? null
   }
 
   const salidaPorCierre = ticket.estado === 'cerrado'
@@ -108,6 +121,7 @@ export const calcularTramos = (
 
     let minutos = 0
     let vencido: boolean | null = null
+    let vencidoSinAjuste: boolean | null = null
     for (const tramo of abiertos) {
       minutos += minutosLaboralesEntre(new Date(tramo.desde), new Date(tramo.hasta), horario)
       // Partir el intervalo en los cambios de fecha límite y comparar cada parte con la vigente
@@ -117,6 +131,9 @@ export const calcularTramos = (
         if (limite === null) continue
         if (cortes[k + 1] > limite) vencido = true
         else if (vencido === null) vencido = false
+        const sinAjuste = limiteSinAjusteEn(cortes[k])
+        if (sinAjuste !== null && cortes[k + 1] > sinAjuste) vencidoSinAjuste = true
+        else if (vencidoSinAjuste === null) vencidoSinAjuste = false
       }
     }
 
@@ -130,7 +147,8 @@ export const calcularTramos = (
       salida: salidaMs === null ? null : new Date(salidaMs),
       minutosLaborales: minutos,
       fechaLimite: limiteFinal === null ? null : new Date(limiteFinal),
-      vencido
+      vencido,
+      vencidoSinAjuste
     }
   })
 }
@@ -138,10 +156,13 @@ export const calcularTramos = (
 export type EstadoSla = 'a_tiempo' | 'vencido' | 'en_curso' | 'sin_fecha'
 
 // Resumen de un ticket para reportes: tiempo laboral total y SLA (vencido si se venció en algún tramo)
-export const resumenSla = (tramos: Tramo[]): { minutosLaborales: number; sla: EstadoSla } => {
+export const resumenSla = (tramos: Tramo[]): { minutosLaborales: number; sla: EstadoSla; slaSinAjuste: EstadoSla } => {
   const minutosLaborales = tramos.reduce((suma, t) => suma + t.minutosLaborales, 0)
-  if (tramos.some((t) => t.vencido === true)) return { minutosLaborales, sla: 'vencido' }
-  if (tramos.every((t) => t.vencido === null)) return { minutosLaborales, sla: 'sin_fecha' }
   const ultimo = tramos[tramos.length - 1]
-  return { minutosLaborales, sla: ultimo && ultimo.salida === null ? 'en_curso' : 'a_tiempo' }
+  const estadoSegun = (vencidoDe: (t: Tramo) => boolean | null): EstadoSla => {
+    if (tramos.some((t) => vencidoDe(t) === true)) return 'vencido'
+    if (tramos.every((t) => vencidoDe(t) === null)) return 'sin_fecha'
+    return ultimo && ultimo.salida === null ? 'en_curso' : 'a_tiempo'
+  }
+  return { minutosLaborales, sla: estadoSegun((t) => t.vencido), slaSinAjuste: estadoSegun((t) => t.vencidoSinAjuste) }
 }

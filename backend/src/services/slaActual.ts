@@ -27,7 +27,7 @@ export const slaDeTickets = async (tickets: TicketConPlazo[]): Promise<Map<strin
   const [eventos, horarios] = await Promise.all([
     TicketEvent.find({
       ticket: { $in: abiertos.map((t) => t._id) },
-      $or: [{ tipo: 'movido' }, { tipo: 'estado', a: 'reabierto' }]
+      $or: [{ tipo: 'movido' }, { tipo: 'prioridad' }, { tipo: 'estado', a: 'reabierto' }]
     }).select('ticket tipo a createdAt').lean<{ ticket: mongoose.Types.ObjectId; tipo: string; a?: string; createdAt: Date }[]>(),
     Promise.all(marcas.map(async (m) => [m, await horarioDeMarca(m)] as const))
   ])

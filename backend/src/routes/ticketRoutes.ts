@@ -10,13 +10,13 @@ import {
 import { takeTicket, releaseTicket, moveTicket, getTicketRecorrido } from '../controllers/ticketQueueController'
 import { addObserver, removeObserver } from '../controllers/ticketObserverController'
 import { updateFechaLimite } from '../controllers/ticketDeadlineController'
-import { editTicket, updateTicketCategoria } from '../controllers/ticketEditController'
+import { editTicket, updateTicketCategoria, updateTicketPrioridad } from '../controllers/ticketEditController'
 import { getTicketTramos } from '../controllers/ticketSlaController'
 import { exportarTickets } from '../controllers/ticketExportController'
 import { authenticate, authorize } from '../middlewares/auth'
 import { uploadAdjuntos, verificarContenidoAdjuntos } from '../services/attachments'
 import { validarBody } from '../validacion/validar'
-import { esquemaCrearTicket, esquemaEditarTicket, esquemaCategoriaTicket, esquemaAsignar, esquemaMover, esquemaFechaLimite, esquemaEstadoTicket, esquemaObservador } from '../validacion/esquemas'
+import { esquemaCrearTicket, esquemaEditarTicket, esquemaCategoriaTicket, esquemaPrioridadTicket, esquemaAsignar, esquemaMover, esquemaFechaLimite, esquemaEstadoTicket, esquemaObservador } from '../validacion/esquemas'
 
 const router = Router()
 
@@ -37,6 +37,9 @@ router.put('/:id', authenticate, authorize('usuario'), validarBody(esquemaEditar
 
 // Corregir la categoría — admin y soporte (no cambia el área ni la fecha límite)
 router.put('/:id/categoria', authenticate, authorize('admin', 'soporte'), validarBody(esquemaCategoriaTicket), updateTicketCategoria)
+
+// Corregir la prioridad — admin y soporte, con motivo (recalcula la fecha límite)
+router.put('/:id/prioridad', authenticate, authorize('admin', 'soporte'), validarBody(esquemaPrioridadTicket), updateTicketPrioridad)
 
 // Historial interno — admin, soporte y superadmin (solo lectura)
 router.get('/:id/history', authenticate, authorize('superadmin', 'admin', 'soporte'), getTicketHistory)
