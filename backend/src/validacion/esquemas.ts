@@ -32,7 +32,7 @@ export const passwordNueva = z.string({ error: 'La contraseña es obligatoria' }
   .regex(/\d/, 'La contraseña debe tener al menos un número')
 
 const PRIORIDADES = ['baja', 'media', 'alta', 'critica'] as const
-const ESTADOS_TICKET = ['abierto', 'en_progreso', 'en_revision', 'cerrado', 'reabierto'] as const
+const ESTADOS_TICKET = ['abierto', 'en_progreso', 'en_revision', 'esperando_usuario', 'resuelto', 'cerrado', 'reabierto'] as const
 const ROLES = ['admin', 'soporte', 'usuario'] as const
 const ESTADOS_CUENTA = ['activo', 'inactivo'] as const
 

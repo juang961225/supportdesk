@@ -1,3 +1,4 @@
+import { estaEnPausa } from '../utils/ticketStatus'
 import type { Ticket } from '../types'
 import { TicketTimeBadge } from './TicketTimeBadge'
 import SlaBarra from './SlaBarra'
@@ -33,7 +34,7 @@ function TicketCard({ ticket, onClick, variante = 'equipo', mostrarCreador = tru
 
   const detalle = [
     atencion,
-    ticket.fechaLimite && ticket.estado !== 'cerrado' ? `Límite: ${formatFechaCorta(ticket.fechaLimite)}` : '',
+    ticket.fechaLimite && ticket.estado !== 'cerrado' && !estaEnPausa(ticket.estado) ? `Límite: ${formatFechaCorta(ticket.fechaLimite)}` : '',
   ].filter(Boolean).join(' · ')
 
   return (

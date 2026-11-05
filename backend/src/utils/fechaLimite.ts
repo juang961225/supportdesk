@@ -1,4 +1,4 @@
-import { HorarioLaboral, minutosJornada, sumarMinutosLaborales } from './horarioLaboral'
+import { HorarioLaboral, minutosJornada, minutosLaboralesEntre, sumarMinutosLaborales } from './horarioLaboral'
 
 // Plazos por prioridad en tiempo laboral: horas, o días (1 día = 1 jornada del horario de la marca).
 // El admin define los de la marca y, si hace falta, los ajusta por área.
@@ -51,3 +51,9 @@ export const calcularFechaLimite = (
   desde: Date = new Date(),
   plazos: Plazos = PLAZOS_POR_DEFECTO
 ): Date => sumarMinutosLaborales(desde, minutosDePlazo(prioridad, horario, plazos), horario)
+
+// Al terminar una pausa, el ticket conserva el tiempo que le quedaba. Si ya estaba vencido, sigue vencido.
+export const fechaTrasPausa = (limite: Date, pausadoDesde: Date, ahora: Date, horario: HorarioLaboral): Date => {
+  if (limite.getTime() <= pausadoDesde.getTime()) return limite
+  return sumarMinutosLaborales(ahora, minutosLaboralesEntre(pausadoDesde, limite, horario), horario)
+}

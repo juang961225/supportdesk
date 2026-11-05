@@ -2,7 +2,7 @@ import mongoose from 'mongoose'
 import Brand from '../models/Brand'
 import { HorarioLaboral, HORARIO_POR_DEFECTO } from '../utils/horarioLaboral'
 import Area from '../models/Area'
-import { Plazos, calcularFechaLimite, resolverPlazos } from '../utils/fechaLimite'
+import { Plazos, calcularFechaLimite, fechaTrasPausa, resolverPlazos } from '../utils/fechaLimite'
 import { CacheMemoria } from './cacheMemoria'
 
 // El horario casi nunca cambia y se usa en cada lista (SLA): 60 s en memoria, se borra al guardarlo
@@ -41,4 +41,19 @@ export const fechaLimiteDeTicket = async (
     areaId ? Area.findById(areaId).select('plazos').lean() : null
   ])
   return calcularFechaLimite(prioridad, horario, desde, resolverPlazos(marca?.plazos, area?.plazos))
+}
+
+// Corre la fecha límite al salir de una pausa. Devuelve la anterior si cambió, para registrarla en el historial
+export const reanudarPlazo = async (ticket: {
+  marca: mongoose.Types.ObjectId
+  fechaLimite?: Date
+  pausadoDesde?: Date
+}): Promise<Date | undefined> => {
+  const { fechaLimite, pausadoDesde } = ticket
+  ticket.pausadoDesde = undefined
+  if (!fechaLimite || !pausadoDesde) return undefined
+  const nueva = fechaTrasPausa(fechaLimite, pausadoDesde, new Date(), await horarioDeMarca(ticket.marca))
+  if (nueva.getTime() === fechaLimite.getTime()) return undefined
+  ticket.fechaLimite = nueva
+  return fechaLimite
 }

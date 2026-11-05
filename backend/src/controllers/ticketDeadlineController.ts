@@ -59,6 +59,7 @@ export const updateFechaLimite = async (req: AuthRequest, res: Response, next: N
     }
 
     ticket.fechaLimite = nueva
+    if (ticket.pausadoDesde) ticket.pausadoDesde = new Date() // la fecha nueva empieza a contar al reanudar
     await ticket.save()
 
     await registrarEvento({

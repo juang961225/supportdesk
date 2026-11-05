@@ -13,7 +13,7 @@ export type Periodo = typeof PERIODOS_VALIDOS[number]
 const ZONA = 'America/Bogota'
 const OFFSET_MS = -5 * 60 * 60 * 1000 // Colombia: UTC-5 fijo
 const DIA_MS = 24 * 60 * 60 * 1000
-const ORDEN_ESTADOS = ['abierto', 'reabierto', 'en_progreso', 'en_revision', 'cerrado']
+const ORDEN_ESTADOS = ['abierto', 'reabierto', 'en_progreso', 'en_revision', 'esperando_usuario', 'resuelto', 'cerrado']
 
 interface Conteo {
   _id: unknown

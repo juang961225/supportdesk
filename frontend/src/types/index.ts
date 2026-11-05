@@ -85,7 +85,7 @@ export interface Ticket {
   _id: string
   titulo: string
   descripcion: string
-  estado: 'abierto' | 'en_progreso' | 'en_revision' | 'cerrado' | 'reabierto'
+  estado: 'abierto' | 'en_progreso' | 'en_revision' | 'esperando_usuario' | 'resuelto' | 'cerrado' | 'reabierto'
   prioridad: 'baja' | 'media' | 'alta' | 'critica'
   categoria: {
     _id: string

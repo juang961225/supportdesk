@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 import { ITicket } from '../models/Ticket'
-import { esEstadoValido } from './ticketStatus'
+import { ESTADOS_SIN_RELOJ, esEstadoValido } from './ticketStatus'
 
 const PRIORIDADES: ITicket['prioridad'][] = ['baja', 'media', 'alta', 'critica']
 const MAX_BUSQUEDA = 100
@@ -74,10 +74,10 @@ export const leerFiltrosTicket = (query: Record<string, unknown>): Record<string
 
   const ahora = new Date()
   if (query.vencimiento === 'vencidos') {
-    condiciones.push({ estado: { $ne: 'cerrado' }, fechaLimite: { $lt: ahora } })
+    condiciones.push({ estado: { $nin: ESTADOS_SIN_RELOJ }, fechaLimite: { $lt: ahora } })
   } else if (query.vencimiento === 'pronto') {
     condiciones.push({
-      estado: { $ne: 'cerrado' },
+      estado: { $nin: ESTADOS_SIN_RELOJ },
       fechaLimite: { $gte: ahora, $lte: new Date(ahora.getTime() + HORAS_24_MS) }
     })
   }

@@ -3,6 +3,8 @@ import TicketEvent from '../models/TicketEvent'
 import { horarioDeMarca } from './horario'
 import { HorarioLaboral } from '../utils/horarioLaboral'
 import { calcularSlaActual, inicioDelPlazo, SlaActual } from '../utils/slaActual'
+import { periodosPausa } from '../utils/tramos'
+import { ESTADOS_SIN_RELOJ, EstadoTicket } from '../utils/ticketStatus'
 
 type Ref = mongoose.Types.ObjectId | { _id: mongoose.Types.ObjectId }
 
@@ -19,7 +21,7 @@ const idDe = (ref: Ref): string => String(ref instanceof mongoose.Types.ObjectId
 // SLA actual de varios tickets: una consulta de eventos y un horario por marca
 export const slaDeTickets = async (tickets: TicketConPlazo[]): Promise<Map<string, SlaActual | null>> => {
   const resultado = new Map<string, SlaActual | null>()
-  const abiertos = tickets.filter((t) => t.estado !== 'cerrado' && t.fechaLimite)
+  const abiertos = tickets.filter((t) => !ESTADOS_SIN_RELOJ.includes(t.estado as EstadoTicket) && t.fechaLimite)
   for (const t of tickets) resultado.set(String(t._id), null)
   if (abiertos.length === 0) return resultado
 
@@ -27,8 +29,8 @@ export const slaDeTickets = async (tickets: TicketConPlazo[]): Promise<Map<strin
   const [eventos, horarios] = await Promise.all([
     TicketEvent.find({
       ticket: { $in: abiertos.map((t) => t._id) },
-      $or: [{ tipo: 'movido' }, { tipo: 'prioridad' }, { tipo: 'estado', a: 'reabierto' }]
-    }).select('ticket tipo a createdAt').lean<{ ticket: mongoose.Types.ObjectId; tipo: string; a?: string; createdAt: Date }[]>(),
+      tipo: { $in: ['movido', 'prioridad', 'estado', 'soltado', 'desasignado'] }
+    }).select('ticket tipo a createdAt').sort({ createdAt: 1 }).lean<{ ticket: mongoose.Types.ObjectId; tipo: string; a?: string; createdAt: Date }[]>(),
     Promise.all(marcas.map(async (m) => [m, await horarioDeMarca(m)] as const))
   ])
   const horarioPorMarca = new Map<string, HorarioLaboral>(horarios)
@@ -41,7 +43,8 @@ export const slaDeTickets = async (tickets: TicketConPlazo[]): Promise<Map<strin
     resultado.set(String(t._id), calcularSlaActual(
       { estado: t.estado, fechaLimite: t.fechaLimite, inicioPlazo: inicioDelPlazo(t.createdAt, propios) },
       horario,
-      ahora
+      ahora,
+      periodosPausa(t, propios)
     ))
   }
   return resultado

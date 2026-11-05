@@ -22,7 +22,7 @@ import { formatFechaLimite } from '../../utils/fechas'
 import type { Ticket } from '../../types'
 import { TicketTimeBadge } from '../../components/TicketTimeBadge'
 import ConfirmDialog from '../../components/ConfirmDialog'
-import { transicionesSoporte } from '../../utils/ticketStatus'
+import { estaEnPausa, transicionesSoporte } from '../../utils/ticketStatus'
 import type { EstadoTicket } from '../../utils/ticketStatus'
 import { useTicketEnVivo } from '../../hooks/useTiempoReal'
 import SlaBarra from '../../components/SlaBarra'
@@ -33,6 +33,8 @@ const accionEstado: Record<EstadoTicket, { label: string; className: string }> =
   en_progreso: { label: 'En progreso', className: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' },
   en_revision: { label: 'En revisión', className: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' },
   cerrado: { label: 'Cerrar ticket', className: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' },
+  esperando_usuario: { label: 'Esperar al usuario', className: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
+  resuelto: { label: 'Marcar resuelto', className: 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400' },
   abierto: { label: 'Abierto', className: '' },
   reabierto: { label: 'Reabrir', className: '' },
 }
@@ -83,7 +85,7 @@ function SoporteTicketDetail() {
     try {
       const updated = await updateTicketStatus(id, estado)
       setTicket(updated)
-      toast.success(`Ticket marcado como ${accionEstado[estado].label.toLowerCase()}`)
+      toast.success(`Estado: ${estadoLabel[estado]}`)
     } catch (err) {
       const apiMsg = axios.isAxiosError(err) ? err.response?.data?.message : undefined
       toast.error(apiMsg || 'No se pudo actualizar el estado del ticket')
@@ -93,9 +95,9 @@ function SoporteTicketDetail() {
     }
   }
 
-  // Cerrar pide confirmación; el resto de transiciones es directo
+  // Resolver pide confirmación; el resto de transiciones es directo
   const handleClickEstado = (estado: EstadoTicket) => {
-    if (estado === 'cerrado') {
+    if (estado === 'resuelto') {
       setIsConfirmingClose(true)
     } else {
       handleUpdateStatus(estado)
@@ -252,6 +254,7 @@ function SoporteTicketDetail() {
                       {formatFechaLimite(ticket.fechaLimite)}
                     </p>
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Hora Colombia</p>
+                    {estaEnPausa(ticket.estado) && <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Plazo detenido</p>}
                     <SlaBarra sla={ticket.sla} />
                   </div>
                 )}
@@ -281,7 +284,22 @@ function SoporteTicketDetail() {
                 </div>
               )}
 
-              {ticket.estado !== 'cerrado' && esMio && (
+              {ticket.estado === 'resuelto' && esMio && (
+                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                    Esperando que el usuario confirme la solución o reabra el ticket. Si fue un error, puedes volverlo a atención.
+                  </p>
+                  <button
+                    onClick={() => handleUpdateStatus('en_progreso')}
+                    disabled={isUpdatingStatus}
+                    className={`text-xs px-3 py-1 rounded hover:opacity-80 transition-opacity disabled:opacity-50 ${accionEstado.en_progreso.className}`}
+                  >
+                    Volver a En progreso
+                  </button>
+                </div>
+              )}
+
+              {ticket.estado !== 'cerrado' && ticket.estado !== 'resuelto' && esMio && (
                 <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-4">
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Cambiar estado:</p>
@@ -354,11 +372,11 @@ function SoporteTicketDetail() {
 
       <ConfirmDialog
         isOpen={isConfirmingClose}
-        title="Cerrar ticket"
-        message="El ticket quedará cerrado. Solo el usuario que lo creó podrá reabrirlo."
-        confirmLabel="Cerrar ticket"
+        title="Marcar resuelto"
+        message="El usuario podrá confirmarlo o reabrirlo. Mientras tanto, el plazo queda detenido."
+        confirmLabel="Marcar resuelto"
         isLoading={isUpdatingStatus}
-        onConfirm={() => handleUpdateStatus('cerrado')}
+        onConfirm={() => handleUpdateStatus('resuelto')}
         onCancel={() => setIsConfirmingClose(false)}
       />
 

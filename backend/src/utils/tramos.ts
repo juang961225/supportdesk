@@ -1,8 +1,9 @@
 import { HorarioLaboral, minutosLaboralesEntre } from './horarioLaboral'
+import { ESTADOS_EN_PAUSA, ESTADOS_SIN_RELOJ, EstadoTicket } from './ticketStatus'
 
 // Tramos por área de un ticket, calculados desde el historial (funciones puras).
 // - Un tramo empieza al crear el ticket o al moverlo de área, y termina al moverlo otra vez o al cerrarlo.
-// - El tiempo se mide en horario laboral y no cuenta mientras el ticket está cerrado.
+// - El tiempo se mide en horario laboral y no cuenta en pausa: esperando al usuario, resuelto o cerrado.
 // - Vencido: en algún momento abierto dentro del tramo se pasó la fecha límite vigente en ese momento.
 // - Vencido sin ajuste: lo mismo, sin contar lo que el admin amplió a mano. Mover, reabrir o corregir la
 //   prioridad sí calculan un plazo legítimo; ampliar no debe hacer que un tramo cuente como "a tiempo" sin dejar rastro.
@@ -37,7 +38,7 @@ export interface Tramo {
   vencidoSinAjuste: boolean | null // sin contar lo que el admin amplió a mano
 }
 
-interface Intervalo {
+export interface Intervalo {
   desde: number
   hasta: number
 }
@@ -56,18 +57,24 @@ const restar = (base: Intervalo, quitar: Intervalo[]): Intervalo[] =>
     [base]
   )
 
-// Periodos en que el ticket estuvo cerrado (el reloj se pausa)
-const periodosCerrado = (ticket: TicketParaTramos, eventos: EventoParaTramos[]): Intervalo[] => {
+// Eventos que sacan al ticket de una pausa sin pasar por un cambio de estado
+const TIPOS_QUE_REANUDAN = ['movido', 'soltado', 'desasignado']
+
+// Periodos en que el plazo estuvo detenido: esperando al usuario, resuelto o cerrado
+export const periodosPausa = (ticket: Pick<TicketParaTramos, 'estado' | 'fechaCierre'>, eventos: EventoParaTramos[]): Intervalo[] => {
   const periodos: Intervalo[] = []
   let cerradoDesde: number | null = null
   for (const e of eventos) {
-    if (e.tipo !== 'estado') continue
-    if (e.a === 'cerrado' && cerradoDesde === null) {
-      cerradoDesde = e.createdAt.getTime()
-    } else if (e.a === 'reabierto' && cerradoDesde !== null) {
+    if (e.tipo === 'estado' && ESTADOS_SIN_RELOJ.includes(e.a as EstadoTicket)) {
+      if (cerradoDesde === null) cerradoDesde = e.createdAt.getTime()
+    } else if ((e.tipo === 'estado' || TIPOS_QUE_REANUDAN.includes(e.tipo)) && cerradoDesde !== null) {
       periodos.push({ desde: cerradoDesde, hasta: e.createdAt.getTime() })
       cerradoDesde = null
     }
+  }
+  if (cerradoDesde !== null && ESTADOS_EN_PAUSA.includes(ticket.estado as EstadoTicket)) {
+    periodos.push({ desde: cerradoDesde, hasta: Infinity })
+    return periodos
   }
   if (ticket.estado === 'cerrado') {
     // Tickets cerrados antes del historial no tienen evento: se usa fechaCierre
@@ -84,7 +91,7 @@ export const calcularTramos = (
   ahora: Date = new Date()
 ): Tramo[] => {
   const movidos = eventos.filter((e) => e.tipo === 'movido')
-  const cerrado = periodosCerrado(ticket, eventos)
+  const cerrado = periodosPausa(ticket, eventos)
 
   // Cambios de fecha límite (mover, ajuste del admin, reabrir): cada uno guarda la anterior
   const cambios = eventos
@@ -107,7 +114,8 @@ export const calcularTramos = (
     return proximo ? proximo.anterior : ticket.fechaLimite?.getTime() ?? null
   }
 
-  const salidaPorCierre = ticket.estado === 'cerrado'
+  // Resolver termina el tramo: lo que tarde el usuario en confirmar no cuenta
+  const salidaPorCierre = ticket.estado === 'cerrado' || ticket.estado === 'resuelto'
     ? (cerrado[cerrado.length - 1]?.desde ?? null)
     : null
 

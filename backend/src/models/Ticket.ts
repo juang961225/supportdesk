@@ -5,7 +5,7 @@ import { ContextoTicket } from '../utils/contextoUsuario'
 export interface ITicket extends Document {
   titulo: string
   descripcion: string
-  estado: 'abierto' | 'en_progreso' | 'en_revision' | 'cerrado' | 'reabierto'
+  estado: 'abierto' | 'en_progreso' | 'en_revision' | 'esperando_usuario' | 'resuelto' | 'cerrado' | 'reabierto'
   prioridad: 'baja' | 'media' | 'alta' | 'critica'
   categoria: mongoose.Types.ObjectId
   archivos: Adjunto[]
@@ -18,6 +18,7 @@ export interface ITicket extends Document {
   area?: mongoose.Types.ObjectId // área actual (puede diferir de la de su categoría tras moverlo)
   fechaLimite?: Date
   fechaCierre?: Date
+  pausadoDesde?: Date // en Esperando al usuario o Resuelto: desde cuándo está detenido el plazo
   createdAt: Date
 }
 
@@ -35,7 +36,7 @@ const TicketSchema = new Schema<ITicket>(
     },
     estado: {
       type: String,
-      enum: ['abierto', 'en_progreso', 'en_revision', 'cerrado', 'reabierto'],
+      enum: ['abierto', 'en_progreso', 'en_revision', 'esperando_usuario', 'resuelto', 'cerrado', 'reabierto'],
       default: 'abierto'
     },
     prioridad: {
@@ -89,6 +90,9 @@ const TicketSchema = new Schema<ITicket>(
       type: Date
     },
     fechaCierre: {
+      type: Date
+    },
+    pausadoDesde: {
       type: Date
     }
   },

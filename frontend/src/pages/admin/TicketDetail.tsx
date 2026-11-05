@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Pencil } from 'lucide-react'
 import Layout from '../../components/Layout'
+import { estaEnPausa } from '../../utils/ticketStatus'
 import { PageSkeleton } from '../../components/Skeleton'
 import CommentThread from '../../components/CommentThread'
 import AttachmentList from '../../components/AttachmentList'
@@ -197,13 +198,14 @@ function AdminTicketDetail() {
                       )}
                     </p>
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Hora Colombia</p>
+                    {estaEnPausa(ticket.estado) && <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Plazo detenido</p>}
                     <SlaBarra sla={ticket.sla} />
                   </div>
                 )}
               </div>
 
               {/* 🔵 ADMIN: asignar y mover de área (no en cerrados; superadmin solo lectura) */}
-              {canAssign && ticket.estado !== 'cerrado' && (
+              {canAssign && ticket.estado !== 'cerrado' && ticket.estado !== 'resuelto' && (
                 <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
                   <button
                     onClick={() => setIsAssignOpen(true)}

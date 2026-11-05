@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Pencil } from 'lucide-react'
 import Layout from '../../components/Layout'
+import { estaEnPausa } from '../../utils/ticketStatus'
 import { PageSkeleton } from '../../components/Skeleton'
 import CommentThread from '../../components/CommentThread'
 import AttachmentList from '../../components/AttachmentList'
@@ -53,6 +54,19 @@ function UsuarioTicketDetail() {
       cancelado = true
     }
   }, [id, versionTicket, toast])
+
+  const handleConfirm = async () => {
+    if (!id) return
+    setIsReopening(true)
+    try {
+      setTicket(await updateTicketStatus(id, 'cerrado'))
+      toast.success('Gracias por confirmar. Ticket cerrado')
+    } catch {
+      toast.error('No se pudo confirmar el ticket')
+    } finally {
+      setIsReopening(false)
+    }
+  }
 
   const handleReopen = async () => {
     if (!id) return
@@ -170,6 +184,7 @@ function UsuarioTicketDetail() {
                 <p className="text-gray-800 dark:text-white font-medium">
                   {formatFechaCorta(ticket.fechaLimite)}
                 </p>
+                {estaEnPausa(ticket.estado) && <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Plazo detenido</p>}
                 <SlaBarra sla={ticket.sla} />
               </div>
             )}
@@ -193,19 +208,53 @@ function UsuarioTicketDetail() {
           observadorIds={ticket.observadores?.map((o) => o._id)}
         />
 
-        {/* Ticket cerrado — opción de reabrir */}
-        {/* Solo el creador puede reabrir */}
-        {ticket.estado === 'cerrado' && esCreador && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+        {/* El soporte espera una respuesta: al comentar, el ticket vuelve a atención */}
+        {ticket.estado === 'esperando_usuario' && (
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-6 mb-4">
+            <p className="text-sm text-amber-800 dark:text-amber-300">
+              Soporte necesita tu respuesta para continuar. Escribe arriba en los comentarios y el ticket seguirá su atención.
+            </p>
+          </div>
+        )}
+
+        {/* Resuelto: solo el creador confirma o reabre */}
+        {ticket.estado === 'resuelto' && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-4">
             <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
-              Este ticket está cerrado. Si el problema no fue resuelto puedes reabrirlo.
+              {esCreador ? 'Soporte marcó este ticket como resuelto. ¿Se solucionó tu problema?' : 'Soporte marcó este ticket como resuelto. Quien lo creó puede confirmarlo.'}
+            </p>
+            {esCreador && (
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={handleConfirm}
+                  disabled={isReopening}
+                  className="px-4 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
+                >
+                  Sí, se solucionó
+                </button>
+                <button
+                  onClick={() => setIsConfirmingReopen(true)}
+                  disabled={isReopening}
+                  className="px-4 py-2 text-sm bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 transition-colors"
+                >
+                  No, sigue el problema
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Un ticket cerrado no se reabre: si el problema vuelve, se crea uno nuevo */}
+        {ticket.estado === 'cerrado' && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-4">
+            <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
+              Este ticket está cerrado. Si el problema volvió, crea un ticket nuevo.
             </p>
             <button
-              onClick={() => setIsConfirmingReopen(true)}
-              disabled={isReopening}
-              className="px-4 py-2 text-sm bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 transition-colors"
+              onClick={() => navigate('/usuario/tickets/new')}
+              className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >
-              {isReopening ? 'Reabriendo...' : 'Reabrir ticket'}
+              Crear ticket nuevo
             </button>
           </div>
         )}
@@ -223,7 +272,7 @@ function UsuarioTicketDetail() {
       <ConfirmDialog
         isOpen={isConfirmingReopen}
         title="Reabrir ticket"
-        message="El ticket volverá al soporte que lo atendió para que lo revise de nuevo."
+        message="El ticket volverá al equipo que lo atendió para que lo revise de nuevo."
         confirmLabel="Reabrir"
         variant="default"
         isLoading={isReopening}

@@ -9,7 +9,7 @@ import { actorParaDestinatario } from '../utils/privacidadTicket'
 //   creado     → soportes del área + admins de la marca
 //   movido     → soportes del área destino
 //   asignado   → el soporte asignado (asignar, reasignar o pasar)
-//   estado     → creador + observadores (+ el soporte asignado si se reabre)
+//   estado     → creador + observadores (+ el soporte asignado si el usuario confirma o reabre)
 //   comentario → creador + observadores + soporte asignado (o los soportes del área si está en cola)
 //   nota interna → soporte asignado y soportes del área; nunca el usuario final
 //   prioridad  → creador + observadores + soporte asignado
@@ -76,7 +76,7 @@ const idsDestinatarios = async (ticket: TicketNotificable, evento: EventoNotific
     case 'asignado':
       return ticket.asignadoA ? [ticket.asignadoA] : []
     case 'estado':
-      return evento.a === 'reabierto' && ticket.asignadoA ? [...participantes, ticket.asignadoA] : participantes
+      return (evento.a === 'reabierto' || evento.a === 'cerrado') && ticket.asignadoA ? [...participantes, ticket.asignadoA] : participantes
     case 'prioridad':
       return ticket.asignadoA ? [...participantes, ticket.asignadoA] : participantes
     case 'comentario':
@@ -97,6 +97,12 @@ const contenido = (ticket: TicketNotificable, evento: EventoNotificable, actor: 
       return { ...base, asunto: `Te asignaron un ticket: ${ticket.titulo}`, resumen: `${actor} te asignó este ticket.`, extracto: ticket.descripcion }
     case 'estado': {
       const a = estadoLegible[evento.a] ?? evento.a
+      if (evento.a === 'esperando_usuario') {
+        return { ...base, asunto: `Necesitamos tu respuesta: ${ticket.titulo}`, resumen: `${actor} necesita información para continuar. Responde en el ticket y seguirá su atención.` }
+      }
+      if (evento.a === 'resuelto') {
+        return { ...base, asunto: `Ticket resuelto: ${ticket.titulo}`, resumen: `${actor} marcó el ticket como resuelto. Entra para confirmarlo, o reábrelo si el problema sigue.` }
+      }
       const resumen = evento.a === 'reabierto'
         ? `${actor} reabrió el ticket.`
         : `${actor} cambió el estado: ${estadoLegible[evento.de] ?? evento.de} → ${a}.`

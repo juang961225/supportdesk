@@ -8,6 +8,7 @@ import Area from '../models/Area'
 import { AuthRequest } from '../middlewares/auth'
 import { leerPaginacion, armarPaginacion } from '../utils/pagination'
 import { registrarEvento } from '../services/ticketEvents'
+import { reanudarPlazo } from '../services/horario'
 import { revocarTodos } from '../services/sesion'
 import { invalidarSesion } from '../middlewares/auth'
 import { avisarCambioTicket, desconectarUsuario } from '../services/tiempoReal'
@@ -37,8 +38,10 @@ const liberarTickets = async (
   motivo: string,
   autorId: string
 ): Promise<void> => {
-  const tickets = await Ticket.find({ asignadoA: soporteId, estado: { $ne: 'cerrado' }, ...filtroExtra })
+  // Los resueltos ya no necesitan a nadie: solo esperan la confirmación del usuario
+  const tickets = await Ticket.find({ asignadoA: soporteId, estado: { $nin: ['cerrado', 'resuelto'] }, ...filtroExtra })
   for (const ticket of tickets) {
+    await reanudarPlazo(ticket)
     ticket.asignadoA = undefined
     ticket.estado = 'abierto'
     await ticket.save()

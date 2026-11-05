@@ -37,12 +37,12 @@ describe('inicioDelPlazo', () => {
     expect(inicioDelPlazo(bog('2026-10-26T10:00'), [])).toEqual(bog('2026-10-26T10:00'))
   })
 
-  it('es el último mover o reabrir; los demás eventos no cuentan', () => {
+  it('es el último mover o corregir la prioridad; reabrir continúa el plazo', () => {
     expect(inicioDelPlazo(bog('2026-10-26T10:00'), [
       { tipo: 'movido', createdAt: bog('2026-10-26T12:00') },
       { tipo: 'estado', a: 'reabierto', createdAt: bog('2026-10-27T09:00') },
       { tipo: 'estado', a: 'cerrado', createdAt: bog('2026-10-27T15:00') },
       { tipo: 'fecha_limite', createdAt: bog('2026-10-27T16:00') }
-    ])).toEqual(bog('2026-10-27T09:00'))
+    ])).toEqual(bog('2026-10-26T12:00'))
   })
 })

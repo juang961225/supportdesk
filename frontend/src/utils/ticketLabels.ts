@@ -5,6 +5,8 @@ export const estadoLabel: Record<Ticket['estado'], string> = {
   abierto: 'Abierto',
   en_progreso: 'En progreso',
   en_revision: 'En revisión',
+  esperando_usuario: 'Esperando al usuario',
+  resuelto: 'Resuelto',
   cerrado: 'Cerrado',
   reabierto: 'Reabierto',
 }

@@ -9,10 +9,16 @@ import { tendenciasDeMarca, PERIODOS_VALIDOS } from '../services/tendencias'
 import { conSla } from '../services/slaActual'
 import { cacheResumenes, claveResumenAdmin, claveTendencias, CLAVE_RESUMEN_SUPERADMIN } from '../services/cacheResumenes'
 
+import { ESTADOS_SIN_RELOJ } from '../utils/ticketStatus'
+
 // Expresiones de agregación reutilizables
 const estaAsignado = { $ifNull: ['$asignadoA', false] }
 const estaVencido = (ahora: Date) => ({
-  $and: [{ $ne: [{ $ifNull: ['$fechaLimite', null] }, null] }, { $lt: ['$fechaLimite', ahora] }]
+  $and: [
+    { $ne: [{ $ifNull: ['$fechaLimite', null] }, null] },
+    { $lt: ['$fechaLimite', ahora] },
+    { $not: [{ $in: ['$estado', ESTADOS_SIN_RELOJ] }] }
+  ]
 })
 const contarSi = (condicion: unknown) => ({ $sum: { $cond: [condicion, 1, 0] } })
 
@@ -37,8 +43,8 @@ const resumenAdmin = async (marcaId: string) => {
 
   const [abiertos, enProgreso, vencidos, criticos, cerrados] = await Promise.all([
     Ticket.countDocuments({ marca, estado: { $in: ['abierto', 'reabierto'] } }),
-    Ticket.countDocuments({ marca, estado: { $in: ['en_progreso', 'en_revision'] } }),
-    Ticket.countDocuments({ ...noCerrados, fechaLimite: { $lt: ahora } }),
+    Ticket.countDocuments({ marca, estado: { $in: ['en_progreso', 'en_revision', 'esperando_usuario', 'resuelto'] } }),
+    Ticket.countDocuments({ marca, estado: { $nin: ESTADOS_SIN_RELOJ }, fechaLimite: { $lt: ahora } }),
     Ticket.countDocuments({ ...noCerrados, prioridad: 'critica' }),
     Ticket.countDocuments({ marca, estado: 'cerrado' })
   ])
@@ -64,7 +70,7 @@ const resumenAdmin = async (marcaId: string) => {
     // Urgentes: sin asignar o vencidos, los que vencen antes primero
     Ticket.find({
       ...noCerrados,
-      $or: [{ asignadoA: { $exists: false } }, { asignadoA: null }, { fechaLimite: { $lt: ahora } }]
+      $or: [{ asignadoA: { $exists: false } }, { asignadoA: null }, { estado: { $nin: ESTADOS_SIN_RELOJ }, fechaLimite: { $lt: ahora } }]
     })
       .select('titulo estado prioridad fechaLimite area asignadoA marca createdAt')
       .populate('area', 'nombre')
@@ -122,7 +128,7 @@ const resumenSuperadmin = async () => {
         $group: {
           _id: '$marca',
           abiertos: contarSi(noCerrado),
-          vencidos: contarSi({ $and: [noCerrado, estaVencido(ahora)] }),
+          vencidos: contarSi(estaVencido(ahora)),
           cerrados: contarSi({ $eq: ['$estado', 'cerrado'] })
         }
       }

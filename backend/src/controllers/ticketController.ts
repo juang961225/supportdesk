@@ -5,7 +5,7 @@ import TicketCategory from '../models/TicketCategory'
 import SubMarca from '../models/SubMarca'
 import User from '../models/User'
 import TicketEvent, { TipoEvento } from '../models/TicketEvent'
-import { esEstadoValido, puedeTransicionar, aplicarEstado } from '../utils/ticketStatus'
+import { esEstadoValido, puedeTransicionar, aplicarEstado, ESTADOS_SIN_RELOJ } from '../utils/ticketStatus'
 import { AuthRequest } from '../middlewares/auth'
 import { leerPaginacion, armarPaginacion } from '../utils/pagination'
 import { filtroDeLista } from '../utils/ticketFilters'
@@ -14,7 +14,7 @@ import { registrarEvento } from '../services/ticketEvents'
 import { notificar } from '../services/notificaciones'
 import { conSla } from '../services/slaActual'
 import { findTicketResponse } from '../services/ticketQueries'
-import { fechaLimiteDeTicket } from '../services/horario'
+import { fechaLimiteDeTicket, reanudarPlazo } from '../services/horario'
 import { buscarObservadorValido } from './ticketObserverController'
 import { guardarAdjuntos } from '../services/attachments'
 import { storageConfigurado } from '../services/storage'
@@ -307,13 +307,14 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
       return
     }
 
-    if (rol === 'usuario' && estado !== 'reabierto') {
-      res.status(403).json({ message: 'Solo puedes reabrir un ticket' })
+    // El usuario confirma o reabre lo resuelto; lo demás es del soporte
+    if (rol === 'usuario' && estado !== 'reabierto' && estado !== 'cerrado') {
+      res.status(403).json({ message: 'Solo puedes confirmar o reabrir un ticket resuelto' })
       return
     }
 
-    if (rol === 'soporte' && estado === 'reabierto') {
-      res.status(403).json({ message: 'Solo el usuario creador puede reabrir un ticket' })
+    if (rol === 'soporte' && (estado === 'reabierto' || estado === 'cerrado')) {
+      res.status(403).json({ message: 'Solo el usuario creador puede confirmar o reabrir un ticket resuelto' })
       return
     }
 
@@ -334,14 +335,12 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
       return
     }
 
-    // Al reabrir se conserva asignadoA: vuelve al soporte que lo cerró.
-    // Recibe una fecha límite nueva desde la reapertura (si no, nacería vencido)
+    // Al reabrir se conserva asignadoA: vuelve al soporte que lo resolvió.
+    // Al salir de una pausa el ticket conserva el tiempo que le quedaba (la fecha límite se corre)
     const estadoAnterior = ticket.estado
-    const fechaLimiteAnterior = ticket.fechaLimite
+    const saleDePausa = !ESTADOS_SIN_RELOJ.includes(estado)
+    const fechaLimiteAnterior = saleDePausa ? await reanudarPlazo(ticket) : undefined
     aplicarEstado(ticket, estado)
-    if (estado === 'reabierto') {
-      ticket.fechaLimite = await fechaLimiteDeTicket(ticket.marca, ticket.area, ticket.prioridad)
-    }
     await ticket.save()
 
     await registrarEvento({
@@ -351,7 +350,7 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
       autor: id,
       de: estadoAnterior,
       a: estado,
-      ...(estado === 'reabierto' && { fechaLimiteAnterior, fechaLimiteNueva: ticket.fechaLimite })
+      ...(fechaLimiteAnterior && { fechaLimiteAnterior, fechaLimiteNueva: ticket.fechaLimite })
     })
 
     notificar(ticket._id, id, { tipo: 'estado', de: estadoAnterior, a: estado })
@@ -361,7 +360,7 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response, next: 
     const ticketActualizado = ticketRespuesta && ticketParaRol(ticketRespuesta, req.user?.rol)
 
     res.status(200).json({
-      message: estado === 'reabierto' ? 'Ticket reabierto exitosamente' : 'Estado actualizado exitosamente',
+      message: estado === 'reabierto' ? 'Ticket reabierto exitosamente' : estado === 'cerrado' ? 'Ticket cerrado' : 'Estado actualizado exitosamente',
       ticket: ticketActualizado
     })
 

@@ -62,14 +62,14 @@ describe('leerFiltrosTicket', () => {
 
     it('vencidos', () => {
       expect(leerFiltrosTicket({ vencimiento: 'vencidos' })).toEqual([
-        { estado: { $ne: 'cerrado' }, fechaLimite: { $lt: new Date('2026-10-27T15:00:00.000Z') } }
+        { estado: { $nin: ['esperando_usuario', 'resuelto', 'cerrado'] }, fechaLimite: { $lt: new Date('2026-10-27T15:00:00.000Z') } }
       ])
     })
 
     it('vencen en 24 h', () => {
       expect(leerFiltrosTicket({ vencimiento: 'pronto' })).toEqual([
         {
-          estado: { $ne: 'cerrado' },
+          estado: { $nin: ['esperando_usuario', 'resuelto', 'cerrado'] },
           fechaLimite: { $gte: new Date('2026-10-27T15:00:00.000Z'), $lte: new Date('2026-10-28T15:00:00.000Z') }
         }
       ])

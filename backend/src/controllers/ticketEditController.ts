@@ -129,6 +129,7 @@ export const updateTicketPrioridad = async (req: AuthRequest, res: Response, nex
     const fechaLimiteAnterior = ticket.fechaLimite
     ticket.prioridad = prioridad
     ticket.fechaLimite = await fechaLimiteDeTicket(ticket.marca, ticket.area, prioridad)
+    if (ticket.pausadoDesde) ticket.pausadoDesde = new Date() // el plazo nuevo empieza a contar al reanudar
     await ticket.save()
 
     await registrarEvento({

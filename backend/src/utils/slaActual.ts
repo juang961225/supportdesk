@@ -1,4 +1,5 @@
 import { HorarioLaboral, minutosJornada, minutosLaboralesEntre } from './horarioLaboral'
+import { ESTADOS_SIN_RELOJ, EstadoTicket } from './ticketStatus'
 
 // Estado del SLA en este momento: cuánto del plazo vigente se consumió (en tiempo laboral) y qué tan urgente es
 
@@ -23,19 +24,20 @@ interface EventoPlazo {
   createdAt: Date
 }
 
-// El plazo vigente empezó la última vez que la fecha límite se calculó sola: al crear, mover, reabrir o corregir la prioridad.
-// (Un ajuste del admin cambia la fecha límite, no el inicio del plazo)
+// El plazo vigente empezó la última vez que la fecha límite se calculó de cero: al crear, mover o corregir la prioridad.
+// (Un ajuste del admin cambia la fecha límite, no el inicio del plazo; reabrir continúa el plazo que venía)
 export const inicioDelPlazo = (createdAt: Date, eventos: EventoPlazo[]): Date =>
   eventos
-    .filter((e) => e.tipo === 'movido' || e.tipo === 'prioridad' || (e.tipo === 'estado' && e.a === 'reabierto'))
+    .filter((e) => e.tipo === 'movido' || e.tipo === 'prioridad')
     .reduce((ultimo, e) => (e.createdAt > ultimo ? e.createdAt : ultimo), createdAt)
 
 export const calcularSlaActual = (
   ticket: { estado: string; fechaLimite?: Date | null; inicioPlazo: Date },
   horario: HorarioLaboral,
-  ahora: Date = new Date()
+  ahora: Date = new Date(),
+  pausas: { desde: number; hasta: number }[] = []
 ): SlaActual | null => {
-  if (ticket.estado === 'cerrado' || !ticket.fechaLimite) return null
+  if (ESTADOS_SIN_RELOJ.includes(ticket.estado as EstadoTicket) || !ticket.fechaLimite) return null
   const limite = ticket.fechaLimite
 
   if (ahora.getTime() >= limite.getTime()) {
@@ -48,7 +50,13 @@ export const calcularSlaActual = (
     }
   }
 
-  const plazo = minutosLaboralesEntre(ticket.inicioPlazo, limite, horario)
+  // Lo que estuvo en pausa alargó la fecha, pero no es parte del plazo
+  const minutosEnPausa = pausas.reduce((suma, p) => {
+    const desde = Math.max(p.desde, ticket.inicioPlazo.getTime())
+    const hasta = Math.min(p.hasta, limite.getTime())
+    return hasta > desde ? suma + minutosLaboralesEntre(new Date(desde), new Date(hasta), horario) : suma
+  }, 0)
+  const plazo = minutosLaboralesEntre(ticket.inicioPlazo, limite, horario) - minutosEnPausa
   const restante = minutosLaboralesEntre(ahora, limite, horario)
   const porcentaje = plazo > 0 ? Math.min(100, Math.max(0, Math.round((1 - restante / plazo) * 100))) : 100
   const nivel: NivelSla = porcentaje >= UMBRAL_PRONTO ? 'pronto' : porcentaje >= UMBRAL_ATENCION ? 'atencion' : 'ok'

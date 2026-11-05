@@ -5,7 +5,7 @@ import Area from '../models/Area'
 import { horarioDeMarca } from './horario'
 import { calcularTramos, EventoParaTramos, TicketParaTramos, Tramo } from '../utils/tramos'
 
-const TIPOS_RELEVANTES: TipoEvento[] = ['movido', 'estado', 'fecha_limite', 'prioridad']
+const TIPOS_RELEVANTES: TipoEvento[] = ['movido', 'estado', 'fecha_limite', 'prioridad', 'soltado', 'desasignado']
 const CAMPOS_EVENTO = 'ticket tipo createdAt de a deNombre aNombre fechaLimiteAnterior'
 
 // Forma de los eventos que trae CAMPOS_EVENTO con .lean()

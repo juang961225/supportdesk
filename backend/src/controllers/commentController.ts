@@ -7,7 +7,10 @@ import { puedeVerTicket } from '../utils/ticketAccess'
 import { guardarAdjuntos, firmarAdjuntos } from '../services/attachments'
 import { storageConfigurado } from '../services/storage'
 import { notificar } from '../services/notificaciones'
-import { avisarComentario } from '../services/tiempoReal'
+import { avisarCambioTicket, avisarComentario } from '../services/tiempoReal'
+import { reanudarPlazo } from '../services/horario'
+import { registrarEvento } from '../services/ticketEvents'
+import { aplicarEstado } from '../utils/ticketStatus'
 import { comentarioParaRol } from '../utils/privacidadTicket'
 
 // Comentario con sus adjuntos firmados (URL temporal)
@@ -60,6 +63,24 @@ export const createComment = async (req: AuthRequest, res: Response, next: NextF
       ticket: new mongoose.Types.ObjectId(req.params.id as string),
       autor: new mongoose.Types.ObjectId(req.user!.id)
     })
+
+    // El usuario respondió: el ticket vuelve a atención y conserva el tiempo que le quedaba.
+    // El soporte se entera por el aviso del comentario
+    if (ticket.estado === 'esperando_usuario' && req.user?.rol === 'usuario') {
+      const fechaLimiteAnterior = await reanudarPlazo(ticket)
+      aplicarEstado(ticket, 'en_progreso')
+      await ticket.save()
+      await registrarEvento({
+        ticket: ticket._id,
+        marca: ticket.marca,
+        tipo: 'estado',
+        autor: req.user.id,
+        de: 'esperando_usuario',
+        a: 'en_progreso',
+        ...(fechaLimiteAnterior && { fechaLimiteAnterior, fechaLimiteNueva: ticket.fechaLimite })
+      })
+      avisarCambioTicket(ticket._id)
+    }
 
     notificar(ticket._id, req.user!.id, { tipo: 'comentario', contenido, adjuntos: archivos.length, interna })
     avisarComentario(ticket._id)
